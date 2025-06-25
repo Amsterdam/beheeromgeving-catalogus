@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     "beheeromgeving",
 ]
 
+APPEND_SLASH = False
+
 MIDDLEWARE = [
     "django.middleware.gzip.GZipMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -328,9 +330,8 @@ HEALTH_CHECKS_ERROR_CODE = 503
 
 REST_FRAMEWORK = dict(
     DEFAULT_RENDERER_CLASSES=[
-        # Removed HTML rendering, Give pure application/problem+json responses instead.
-        # The HTML rendering is not needed and conflicts with the exception_handler code.
         "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
     ],
     UNAUTHENTICATED_USER=None,  # Avoid importing django.contrib.auth.models
     UNAUTHENTICATED_TOKEN=None,
