@@ -126,7 +126,7 @@ else:
     DATABASES = {
         "default": env.db_url(
             "DATABASE_URL",
-            default="postgres://dataservices:insecure@localhost:5416/beheeromgeving",
+            default="postgres://postgres:insecure@localhost:5416/beheeromgeving",
             engine="django.db.backends.postgresql",
         ),
     }

@@ -82,13 +82,22 @@ class DataContractSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, data):
-        data["is_geo"] = data["crs"] != "NVT"
-        if not data["schema"] and not data["schema_url"]:
-            raise serializers.ValidationError("Either enter a schema, or a schema url.")
-        if data["schema"] and data["schema_url"]:
-            raise serializers.ValidationError("Either enter a schema, or a schema url, not both")
-        data["themes"] = list(data["themes"])
-        data["tags"] = list(data["tags"])
+        if self.partial:
+            if data.get("crs", None):
+                data["is_geo"] = data["crs"] != "NVT"
+            if data.get("themes", None) is not None:
+                data["themes"] = list(data["themes"])
+            if data.get("tags", None) is not None:
+                data["tags"] = list(data["tags"])
+        else:
+            data["is_geo"] = data["crs"] != "NVT"
+            if not data.get("schema", None) and not data.get("schema_url", None):
+                raise serializers.ValidationError("Either enter a schema, or a schema url.")
+            data["themes"] = list(data["themes"])
+            data["tags"] = list(data["tags"])
+
+        if data.get("schema", None) and data.get("schema_url", None):
+            raise serializers.ValidationError("Either enter a schema, or a schema url, not both.")
         return data
 
     def create(self, validated_data):
@@ -103,19 +112,22 @@ class DataContractSerializer(serializers.ModelSerializer):
         return DataContract.objects.create(distribution=distribution, **validated_data)
 
     def update(self, instance, validated_data):
-        distribution_data = validated_data.pop("distribution")
-        files_data = distribution_data.pop("files", [])
-        apis_data = distribution_data.pop("apis", [])
-        Distribution.objects.filter(id=instance.distribution.id).update(**distribution_data)
-        # Replace the File/API distributions completely
-        FileDistribution.objects.filter(distribution=instance.distribution).delete()
-        for file_data in files_data:
-            file_data.pop("distribution", None)
-            FileDistribution.objects.create(distribution=instance.distribution, **file_data)
-        APIDistribution.objects.filter(distribution=instance.distribution).delete()
-        for api_data in apis_data:
-            api_data.pop("distribution", None)
-            APIDistribution.objects.create(distribution=instance.distribution, **api_data)
+        distribution_data = validated_data.pop("distribution", None)
+        if distribution_data:
+            files_data = distribution_data.pop("files", [])
+            apis_data = distribution_data.pop("apis", [])
+            Distribution.objects.filter(id=instance.distribution.id).update(**distribution_data)
+
+            # Replace the File/API distributions completely
+            FileDistribution.objects.filter(distribution=instance.distribution).delete()
+            for file_data in files_data:
+                file_data.pop("distribution", None)
+                FileDistribution.objects.create(distribution=instance.distribution, **file_data)
+            APIDistribution.objects.filter(distribution=instance.distribution).delete()
+            for api_data in apis_data:
+                api_data.pop("distribution", None)
+                APIDistribution.objects.create(distribution=instance.distribution, **api_data)
+
         owner = validated_data.pop("owner", None)
         DataContract.objects.filter(pk=instance.pk).update(
             distribution=instance.distribution, **validated_data
