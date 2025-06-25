@@ -1,12 +1,19 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-from .views import index
+from .views import (
+    DataContractViewSet,
+    DataTeamViewSet,
+    health,
+)
 
-urlpatterns = [
-    path("", index),
-]
+router = DefaultRouter(trailing_slash=False)
+router.register(r"datateams/?", DataTeamViewSet, basename="datateams")
+router.register(r"datacontracts/?", DataContractViewSet, basename="datacontracts")
+
+urlpatterns = [path("pulse", health)] + router.urls
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
