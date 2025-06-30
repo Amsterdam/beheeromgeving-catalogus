@@ -10,8 +10,8 @@ from .views import (
 )
 
 router = DefaultRouter(trailing_slash=False)
-router.register(r"datateams/?", DataTeamViewSet, basename="datateams")
-router.register(r"datacontracts/?", DataContractViewSet, basename="datacontracts")
+router.register(r"datateams", DataTeamViewSet, basename="datateams")
+router.register(r"datacontracts", DataContractViewSet, basename="datacontracts")
 
 urlpatterns = [path("pulse", health)] + router.urls
 

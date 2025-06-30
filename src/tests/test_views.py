@@ -75,7 +75,7 @@ def test_datacontracts_detail(api_client, datacontract):
 @pytest.mark.django_db
 def test_datacontracts_create(api_client, datateam):
     response = api_client.post(
-        "/datacontracts/",
+        "/datacontracts",
         data={
             "name": "bommen",
             "description": "bommen in am",
@@ -115,7 +115,7 @@ def test_datacontracts_create(api_client, datateam):
 @pytest.mark.django_db
 def test_datacontracts_create_missing_schema(api_client, datateam):
     response = api_client.post(
-        "/datacontracts/",
+        "/datacontracts",
         data={
             "name": "bommen",
             "description": "bommen in am",
