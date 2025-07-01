@@ -10,7 +10,6 @@ class DataContract(models.Model):
     name = models.CharField(
         _("Naam"),
         unique=True,
-        primary_key=True,
         max_length=64,
         help_text="De naam van het Data Product. Deze moet uniek zijn",
     )

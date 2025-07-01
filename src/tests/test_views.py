@@ -67,7 +67,7 @@ def test_datacontracts_list(api_client, datacontract):
 
 @pytest.mark.django_db
 def test_datacontracts_detail(api_client, datacontract):
-    response = api_client.get(f"/datacontracts/{datacontract.name}")
+    response = api_client.get(f"/datacontracts/{datacontract.id}")
     assert response.status_code == 200
     assert response.data["name"] == "bomen"
 
@@ -155,7 +155,7 @@ def test_datacontracts_create_missing_schema(api_client, datateam):
 @pytest.mark.django_db
 def test_datacontracts_update(api_client, datacontract):
     response = api_client.patch(
-        f"/datacontracts/{datacontract.name}",
+        f"/datacontracts/{datacontract.id}",
         data={
             "owner": "Iemand Anders",
         },
@@ -169,7 +169,7 @@ def test_datacontracts_update(api_client, datacontract):
 def test_datacontracts_update_crs_sets_is_geo(api_client, datacontract):
     assert datacontract.is_geo
     response = api_client.patch(
-        f"/datacontracts/{datacontract.name}",
+        f"/datacontracts/{datacontract.id}",
         data={
             "crs": "NVT",
         },
@@ -182,7 +182,7 @@ def test_datacontracts_update_crs_sets_is_geo(api_client, datacontract):
 @pytest.mark.django_db
 def test_datacontracts_update_schema_and_url_fails(api_client, datacontract):
     response = api_client.patch(
-        f"/datacontracts/{datacontract.name}",
+        f"/datacontracts/{datacontract.id}",
         data={
             "schema": {"test": "schema"},
             "schema_url": "https://schemas.data.amsterdam.nl/bomen",
@@ -197,7 +197,7 @@ def test_datacontracts_update_schema_and_url_fails(api_client, datacontract):
 @pytest.mark.django_db
 def test_datacontracts_update_distribution(api_client, datacontract):
     response = api_client.patch(
-        f"/datacontracts/{datacontract.name}",
+        f"/datacontracts/{datacontract.id}",
         data={
             "distribution": {
                 "table": True,
@@ -217,6 +217,6 @@ def test_datacontracts_update_distribution(api_client, datacontract):
 
 @pytest.mark.django_db
 def test_datacontracts_delete(api_client, datacontract):
-    response = api_client.delete(f"/datacontracts/{datacontract.name}")
+    response = api_client.delete(f"/datacontracts/{datacontract.id}")
     assert response.status_code == 204
     assert DataContract.objects.count() == 0

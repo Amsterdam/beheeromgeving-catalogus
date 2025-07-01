@@ -59,6 +59,7 @@ class DataContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = DataContract
         fields = (
+            "id",
             "name",
             "description",
             "purpose",
