@@ -34,7 +34,7 @@ class TeamViewSet(ViewSet):
         try:
             team = self.service.get_team(int(pk))
         except exceptions.ObjectDoesNotExist as e:
-            return Response(status=404, data=str(e))
+            return Response(status=404, data=str(e.message))
 
         return Response(dtos.to_response_object(team), status=200)
 
@@ -55,7 +55,7 @@ class TeamViewSet(ViewSet):
             team_dto = self._validate_dto(request.data, dtos.TeamPartial)
             self.service.update_team(int(pk), team_dto.model_dump(exclude_unset=True))
         except exceptions.IllegalOperation as e:
-            return Response(status=400, data=str(e))
+            return Response(status=400, data=str(e.message))
         except ValidationError as e:
             return Response(
                 status=400,
@@ -107,7 +107,7 @@ class ProductViewSet(ViewSet):
                 data=e.json(include_url=False, include_input=False, include_context=False),
             )
         except exceptions.IllegalOperation as e:
-            return Response(status=400, data=str(e))
+            return Response(status=400, data=str(e.message))
         return Response(dtos.to_response_object(product), status=201)
 
     def partial_update(self, request, pk=None):
@@ -120,7 +120,7 @@ class ProductViewSet(ViewSet):
                 product_dto.model_dump(exclude_unset=True, exclude=["contracts", "services"]),
             )
         except exceptions.IllegalOperation as e:
-            return Response(status=400, data=str(e))
+            return Response(status=400, data=str(e.message))
         except ValidationError as e:
             return Response(
                 status=400,
@@ -188,7 +188,7 @@ class ProductViewSet(ViewSet):
                 data=e.json(include_url=False, include_input=False, include_context=False),
             )
         except exceptions.IllegalOperation as e:
-            return Response(status=400, data=str(e))
+            return Response(status=400, data=str(e.message))
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
@@ -248,7 +248,7 @@ class ProductViewSet(ViewSet):
                 data=e.json(include_url=False, include_input=False, include_context=False),
             )
         except exceptions.IllegalOperation as e:
-            return Response(status=400, data=str(e))
+            return Response(status=400, data=str(e.message))
         data = dtos.to_response_object(service)
         return Response(data, status=200)
 

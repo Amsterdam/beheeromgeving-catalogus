@@ -1,10 +1,17 @@
-class ObjectDoesNotExist(Exception):
+class DomainException(Exception):
+    message: str
+
+    def __init__(self, message: str = ""):
+        self.message = message
+
+
+class ObjectDoesNotExist(DomainException):
     pass
 
 
-class IllegalOperation(Exception):
+class IllegalOperation(DomainException):
     pass
 
 
-class ValidationError(Exception):
+class ValidationError(DomainException):
     pass
