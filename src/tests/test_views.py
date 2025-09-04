@@ -1,6 +1,6 @@
 import pytest
 
-from beheeromgeving.models import DataContract, DataTeam
+from beheeromgeving.models import Team
 
 
 def test_health(api_client):
@@ -10,213 +10,173 @@ def test_health(api_client):
 
 
 @pytest.mark.django_db
-def test_datateams_list(api_client, datateam):
-    response = api_client.get("/datateams")
-    assert response.status_code == 200
-    assert response.data[0]["acronym"] == "DADI"
+class TestViews:
 
-
-@pytest.mark.django_db
-def test_datateams_detail(api_client, datateam):
-    response = api_client.get(f"/datateams/{datateam.id}")
-    assert response.status_code == 200
-    assert response.data["acronym"] == "DADI"
-
-
-@pytest.mark.django_db
-def test_datateams_create(api_client):
-    response = api_client.post(
-        "/datateams",
-        data={
-            "name": "Basis- en Kernregistratie",
-            "acronym": "BENK",
-            "product_owner": "Iemand",
-            "contact_email": "benk@amsterdam.nl",
-        },
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/products/1337",
+            "/products/1337/contracts",
+            "/products/1337/contracts/1337",
+            "/products/1337/services",
+            "/products/1337/services/1337",
+            "/teams/1337",
+        ],
     )
-    assert response.status_code == 201
-    assert response.data["acronym"] == "BENK"
+    def test_404(self, api_client, path):
+        response = api_client.get(path)
+        assert response.status_code == 404
 
+    def test_teams_list(self, api_client, orm_team):
+        response = api_client.get("/teams")
+        assert response.status_code == 200
+        assert response.data[0]["acronym"] == "DADI"
 
-@pytest.mark.django_db
-def test_datateams_update(api_client, datateam):
-    response = api_client.patch(
-        f"/datateams/{datateam.id}",
-        data={
-            "product_owner": "Iemand Anders",
-        },
-    )
-    assert response.status_code == 200
-    assert response.data["product_owner"] == "Iemand Anders"
-    assert response.data["acronym"] == "DADI"
+    def test_teams_detail(self, api_client, orm_team):
+        response = api_client.get("/teams")
+        response = api_client.get(f"/teams/{orm_team.id}")
+        assert response.status_code == 200
+        assert response.data["acronym"] == "DADI"
 
-
-@pytest.mark.django_db
-def test_datateams_delete(api_client, datateam):
-    response = api_client.delete(f"/datateams/{datateam.id}")
-    assert response.status_code == 204
-    assert DataTeam.objects.count() == 0
-
-
-@pytest.mark.django_db
-def test_datacontracts_list(api_client, datacontract):
-    response = api_client.get("/datacontracts")
-    assert response.status_code == 200
-    assert response.data[0]["name"] == datacontract.name
-
-
-@pytest.mark.django_db
-def test_datacontracts_detail(api_client, datacontract):
-    response = api_client.get(f"/datacontracts/{datacontract.id}")
-    assert response.status_code == 200
-    assert response.data["name"] == "bomen"
-
-
-@pytest.mark.django_db
-def test_datacontracts_create(api_client, datateam):
-    response = api_client.post(
-        "/datacontracts",
-        data={
-            "name": "bommen",
-            "description": "bommen in am",
-            "purpose": "zodat er niets ontploft",
-            "themes": [
-                "H",
-            ],
-            "tags": [],
-            "datateam": datateam.id,
-            "owner": None,
-            "language": "NL",
-            "confidentiality": "Openbaar",
-            "privacy": "NPI",
-            "crs": "WGS84",
-            "refresh_period": "3 maanden",
-            "retainment_period": 60,
-            "start_date": "2025-01-01",
-            "schema": None,
-            "schema_url": "https://schemas.data.amsterdam.nl/datasets/bommen/dataset",
-            "distribution": {
-                "id": 1,
-                "files": [{"file_format": "csv", "link": "K:\\>file.csv"}],
-                "apis": [
-                    {"api_type": "REST", "url": "https://api.data.amsterdam.nl/bommen"},
-                    {"api_type": "WFS", "url": "https://api.data.amsterdam.nl/bommen/wfs"},
-                ],
-                "table": True,
+    def test_teams_create(self, api_client):
+        response = api_client.post(
+            "/teams",
+            data={
+                "name": "Basis- en Kernregistratie",
+                "description": "Beschrijving",
+                "acronym": "BENK",
+                "po_name": "Iemand",
+                "po_email": "iemand@amsterdam.nl",
+                "contact_email": "benk@amsterdam.nl",
+                "scope": "scope_benk",
             },
-            "version": "v1",
-        },
-    )
+        )
+        assert response.status_code == 201
+        result = api_client.get(f"/teams/{response.data}")
+        assert result.data["acronym"] == "BENK"
 
-    assert response.status_code == 201
-    assert response.data["name"] == "bommen"
-
-
-@pytest.mark.django_db
-def test_datacontracts_create_missing_schema(api_client, datateam):
-    response = api_client.post(
-        "/datacontracts",
-        data={
-            "name": "bommen",
-            "description": "bommen in am",
-            "purpose": "zodat er niets ontploft",
-            "themes": [
-                "H",
-            ],
-            "tags": [],
-            "datateam": datateam.id,
-            "owner": None,
-            "language": "NL",
-            "confidentiality": "Openbaar",
-            "privacy": "NPI",
-            "crs": "WGS84",
-            "refresh_period": "3 maanden",
-            "retainment_period": 60,
-            "start_date": "2025-01-01",
-            "schema": None,
-            "schema_url": None,
-            "distribution": {
-                "id": 1,
-                "files": [{"file_format": "csv", "link": "K:\\>file.csv"}],
-                "apis": [
-                    {"api_type": "REST", "url": "https://api.data.amsterdam.nl/bommen"},
-                    {"api_type": "WFS", "url": "https://api.data.amsterdam.nl/bommen/wfs"},
-                ],
-                "table": True,
+    def test_teams_update(self, api_client, orm_team):
+        response = api_client.patch(
+            f"/teams/{orm_team.id}",
+            data={
+                "po_name": "Iemand Anders",
             },
-            "version": "v1",
-        },
+        )
+        assert response.status_code == 200
+
+        orm_team.refresh_from_db()
+        assert orm_team.po_name == "Iemand Anders"
+
+    def test_teams_delete(self, api_client, orm_team):
+        response = api_client.delete(f"/teams/{orm_team.id}")
+        assert response.status_code == 204
+        assert Team.objects.count() == 0
+
+    def test_products_list(self, api_client, orm_product):
+        response = api_client.get("/products")
+        assert response.status_code == 200
+        assert response.data[0]["name"] == orm_product.name
+
+    def test_product_detail(self, api_client, orm_product):
+        response = api_client.get(f"/products/{orm_product.id}")
+        assert response.status_code == 200
+        assert response.data["name"] == "bomen"
+
+    def test_product_create(self, api_client, orm_team):
+        response = api_client.post("/products", data={"type": "D", "team_id": orm_team.id})
+        assert response.status_code == 201
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {"id": 1337},  # Cannot set id
+            {"refresh_period": 2},  # Wrong type
+        ],
     )
+    def test_product_create_bad_data(self, api_client, data, orm_team):
+        response = api_client.post("/products", data={**data, "team_id": orm_team.id})
+        assert response.status_code == 400
 
-    assert response.status_code == 400
-    assert response.data["non_field_errors"][0] == "Either enter a schema, or a schema url."
+    def test_product_update(self, api_client, orm_product):
+        response = api_client.patch(
+            f"/products/{orm_product.id}", data={"refresh_period": "2 maanden"}
+        )
+        assert response.status_code == 200
 
+    def test_contract_list(self, api_client, orm_product):
+        response = api_client.get(f"/products/{orm_product.id}/contracts")
 
-@pytest.mark.django_db
-def test_datacontracts_update(api_client, datacontract):
-    response = api_client.patch(
-        f"/datacontracts/{datacontract.id}",
-        data={
-            "owner": "Iemand Anders",
-        },
+        assert response.status_code == 200
+        assert len(response.data) == 1
+
+    def test_contract_create(self, api_client, orm_product):
+        response = api_client.post(
+            f"/products/{orm_product.id}/contracts", data={"name": "contract1"}
+        )
+        assert response.status_code == 201
+
+    def test_contract_update(self, api_client, orm_product):
+        contract_id = orm_product.contracts.first().id
+        response = api_client.patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}", data={"name": "contract1"}
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {"id": 1337},  # Cannot set id
+            {"name": 2},  # Wrong type
+            {"distributions": [{"type": 3}]},  # Wrong type on subfield
+        ],
     )
-    assert response.status_code == 200
-    assert response.data["owner"] == "Iemand Anders"
-    assert response.data["name"] == "bomen"
+    def test_contract_update_bad_data(self, api_client, data, orm_product):
+        contract_id = orm_product.contracts.first().id
+        response = api_client.patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}", data=data
+        )
+        assert response.status_code == 400
 
+    def test_contract_delete(self, api_client, orm_product):
+        contract_id = orm_product.contracts.first().id
+        response = api_client.delete(f"/products/{orm_product.id}/contracts/{contract_id}")
 
-@pytest.mark.django_db
-def test_datacontracts_update_crs_sets_is_geo(api_client, datacontract):
-    assert datacontract.is_geo
-    response = api_client.patch(
-        f"/datacontracts/{datacontract.id}",
-        data={
-            "crs": "NVT",
-        },
+        assert response.status_code == 204
+
+    def test_service_list(self, api_client, orm_product):
+        response = api_client.get(f"/products/{orm_product.id}/services")
+
+        assert response.status_code == 200
+        assert len(response.data) == 1
+
+    def test_service_create(self, api_client, orm_product):
+        response = api_client.post(
+            f"/products/{orm_product.id}/services",
+            data={"type": "REST", "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2"},
+        )
+        assert response.status_code == 201
+
+    def test_service_update(self, api_client, orm_product):
+        service_id = orm_product.services.first().id
+        response = api_client.patch(
+            f"/products/{orm_product.id}/services/{service_id}", data={"type": "WMS"}
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {"id": 1337},  # Cannot set id
+            {"type": "API"},  # Wrong type
+        ],
     )
-    assert response.status_code == 200
-    datacontract.refresh_from_db()
-    assert not datacontract.is_geo
+    def test_service_update_bad_data(self, api_client, data, orm_product):
+        service_id = orm_product.services.first().id
+        response = api_client.patch(f"/products/{orm_product.id}/services/{service_id}", data=data)
+        assert response.status_code == 400
 
+    def test_service_delete(self, api_client, orm_product):
+        service_id = orm_product.services.first().id
+        response = api_client.delete(f"/products/{orm_product.id}/services/{service_id}")
 
-@pytest.mark.django_db
-def test_datacontracts_update_schema_and_url_fails(api_client, datacontract):
-    response = api_client.patch(
-        f"/datacontracts/{datacontract.id}",
-        data={
-            "schema": {"test": "schema"},
-            "schema_url": "https://schemas.data.amsterdam.nl/bomen",
-        },
-    )
-    assert response.status_code == 400
-    assert (
-        response.data["non_field_errors"][0] == "Either enter a schema, or a schema url, not both."
-    )
-
-
-@pytest.mark.django_db
-def test_datacontracts_update_distribution(api_client, datacontract):
-    response = api_client.patch(
-        f"/datacontracts/{datacontract.id}",
-        data={
-            "distribution": {
-                "table": True,
-                "files": [{"file_format": "csv", "link": "K:\\>download.csv"}],
-                "apis": [
-                    {"api_type": "REST", "url": "https://api.data.amsterdam.nl/bomen"},
-                ],
-            },
-        },
-    )
-    assert response.status_code == 200
-    # should replace the nested fields
-    assert len(response.data["distribution"]["apis"]) == 1
-    assert response.data["distribution"]["files"][0]["link"].endswith("download.csv")
-    assert response.data["name"] == "bomen"
-
-
-@pytest.mark.django_db
-def test_datacontracts_delete(api_client, datacontract):
-    response = api_client.delete(f"/datacontracts/{datacontract.id}")
-    assert response.status_code == 204
-    assert DataContract.objects.count() == 0
+        assert response.status_code == 204
