@@ -1,19 +1,7 @@
-from __future__ import annotations
-
-from pathlib import Path
-
 import pytest
 from rest_framework.test import APIClient
 
-from beheeromgeving.models import (
-    APIDistribution,
-    DataContract,
-    DataTeam,
-    Distribution,
-    FileDistribution,
-)
-
-HERE = Path(__file__).parent
+from beheeromgeving.models import DataContract, DataService, Distribution, Product, Team
 
 
 @pytest.fixture()
@@ -25,43 +13,66 @@ def api_client() -> APIClient:
 
 
 @pytest.fixture()
-def datateam() -> DataTeam:
-    return DataTeam.objects.create(
+def orm_team() -> Team:
+    return Team.objects.create(
         name="DataDiensten",
         acronym="DADI",
-        product_owner="Someone",
+        description="",
+        po_name="Someone",
+        po_email="someone.dadi@amsterdam.nl",
         contact_email="dadi@amsterdam.nl",
+        scope="scope_dadi",
     )
 
 
 @pytest.fixture()
-def datacontract(datateam) -> DataContract:
-    distribution = Distribution.objects.create(table=True)
-    FileDistribution.objects.create(
-        file_format="csv", link=r"K:\>file.csv", distribution=distribution
-    )
-    APIDistribution.objects.create(
-        api_type="REST", url="https://api.data.amsterdam.nl/bomen", distribution=distribution
-    )
-    APIDistribution.objects.create(
-        api_type="WFS", url="https://api.data.amsterdam.nl/bomen/wfs", distribution=distribution
-    )
-    return DataContract.objects.create(
+def orm_product(orm_team) -> Product:
+    product = Product.objects.create(
         name="bomen",
         description="bomen in Amsterdam",
-        purpose="onderhoud van bomen",
+        team=orm_team,
+        language="NL",
+        is_geo=True,
+        schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+        type="D",
         themes=["NM"],
         tags=["bomen", "groen"],
-        datateam=datateam,
-        language="NL",
-        confidentiality="Openbaar",
-        privacy="NPI",
-        is_geo=True,
-        crs="WGS84",
+        has_personal_data=False,
+        has_special_personal_data=False,
         refresh_period="3 maanden",
-        retainment_period=1200,
-        start_date="2025-01-01",
-        schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
-        version="v1",
-        distribution=distribution,
+        publication_status="D",
     )
+
+    service = DataService.objects.create(
+        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+    )
+
+    contract = DataContract.objects.create(
+        product=product,
+        publication_status="D",
+        purpose="onderhoud van bomen",
+        conditions="voorwaarden: ja",
+        name="beheer bomen",
+        description="contract voor data nodig voor het beheer van bomen",
+        data_steward="meneerboom@amsterdam.nl",
+        has_personal_data=False,
+        has_special_personal_data=False,
+        profile="scope_bomen_beheer",
+        confidentiality="I",
+        start_date="2025-01-01",
+        retainment_period=12,
+    )
+
+    Distribution.objects.create(
+        contract=contract,
+        access_service=service,
+        type="A",
+    )
+    Distribution.objects.create(
+        contract=contract,
+        download_url="https://bomen.amsterdam.nl/beheer.csv",
+        format="csv",
+        type="F",
+    )
+
+    return product

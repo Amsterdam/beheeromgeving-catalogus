@@ -1,0 +1,130 @@
+// DBML Docs: https://dbml.dbdiagram.io/docs
+// DCAT NL 3: https://docs.geostandaarden.nl/dcat/dcat-ap-nl30/
+
+// Datacontract and product combined form a dcat:dataset
+Table Product {
+  id                        int [pk]
+  name                      string
+  type                      productType
+  themes                    Themas[] [Note: "Array of enum not supported by dbml"]
+  tags                      string[]
+  last_updated              datetime
+  has_personal_data         boolean
+  has_special_personal_data boolean
+  refresh_period            string
+  team                      Team [ref: > Team.id]
+  publication_status        publicationStatus
+  owner                     string [Note: "Default PO dataTeam"]
+  schema_url                URL [Note: "Alleen voor dataproducten"]
+  language                  "Language Code" [Note: "ISO 639-1, Alleen voor dataproducten"]
+  is_geo                    boolean [Note: "Uit amsterdam schema, Alleen voor dataproducten"]
+  sources                   Product[] [ref: < Product.id]
+  services                  DataService[] [ref: < DataService.id]
+  Note: 'Product kan een dataproduct of een informatieproduct (PowerBI dashboard) zijn'
+  Note: 'Een dataproduct bevat data uit een (subset van) een dataset voor een specifiek doel'
+  Note: 'Een informatieproduct (PowerBI product) presenteert informatie uit 1 of meer datasets voor een specifiek doel'
+}
+
+Table DataContract [Note: "Datacontract"] {
+  id                          integer [primary key]
+  publication_status          publicationStatus
+  purpose                     string [note: "Doelbinding"]
+  conditions                  string [note: "Voorwaarden"]
+  name                        string [note: "Naam van het contract"]
+  description                 string
+  contact_email               email
+  data_steward                email
+  has_personal_data           boolean
+  has_special_personal_data   boolean
+  confidentiality             Vertrouwelijkheidsniveau
+  retainment_period           integer [Note: 'in maanden']
+  start_date                  date
+  last_updated                datetime
+  product                     Product [ref: > Product.id]
+  profile                     URL
+  Note: 'Een datacontract bevat de leverings voorwaarden en doelbinding'
+}
+
+enum publicationStatus {
+  "draft"
+  "in_review"
+  "approved"
+  "published"
+  "expired"
+}
+
+Table Team {
+  id                      int [pk]
+  name                    string
+  description             string
+  acronym                 string
+  contact_email           email
+  scope                   string [note: "entra groep naam"]
+  po_email                email
+  po_name                 string
+}
+
+
+enum productType {
+  "Informatieproduct"
+  "Dataproduct"
+}
+
+Table Distribution {
+  id                  int [pk]
+  contract            DataContract [ref: > DataContract.id]
+  type                DistributionType
+  service             DataService [ref: - DataService.id, null]
+  format              string [Note: "MIME-type"]
+  download_url        URL
+  access_url          URL
+  refresh_period      string
+}
+
+Table DataService {
+  id                  int [pk]
+  type                DataServiceType
+  endpoint_url        URL
+}
+
+enum DistributionType {
+  "API"
+  "Dashboard"
+  "Map"
+  "Bestand"
+  "Bestand,custom"
+}
+
+enum DataServiceType {
+  "REST/JSON"
+  "WMS"
+  "WFS"
+}
+
+// Items uit landelijke standaard lijst
+enum Themas {
+  "Bestuur"
+  "Cultuur en recreatie"
+  "Economie"
+  "Financiën"
+  "Huisvesting"
+  "Internationaal"
+  "Landbouw"
+  "Migratie en integratie"
+  "Natuur en milieu"
+  "Onderwijs en wetenschap"
+  "Openbare orde en veiligheid"
+  "Recht"
+  "Ruimte en infrastructuur"
+  "Sociale zekerheid"
+  "Verkeer"
+  "Werk"
+  "Zorg en gezondheid"
+}
+
+enum Vertrouwelijkheidsniveau {
+  "Openbaar"
+  "Intern"
+  "Vertrouwelijk"
+  "Geheim"
+}
