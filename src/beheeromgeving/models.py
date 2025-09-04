@@ -140,10 +140,18 @@ class Product(models.Model):
     @classmethod
     def from_domain(cls, product: objects.Product):
         instance, _created = cls.objects.filter(pk=product.id).update_or_create(
-            pk=product.id, defaults=product.items()
+            defaults=product.items()
         )
         instance.owner = product.owner
         instance.save()
+        # Create/update services
+        for service in product.services or []:
+            DataService.from_domain(service, instance.id)
+
+        # Create/update contracts
+        for contract in product.contracts or []:
+            DataContract.from_domain(contract, instance.id)
+
         return instance.to_domain()
 
 
@@ -254,12 +262,12 @@ class DataContract(models.Model):
             name=self.name,
             description=self.description,
             contact_email=self.contact_email,
-            business_data_steward=self.data_steward,
+            data_steward=self.data_steward,
             last_updated=self.last_updated,
             has_personal_data=self.has_personal_data,
             has_special_personal_data=self.has_special_personal_data,
             profile=self.profile,
-            confidentiality_level=self.confidentiality,
+            confidentiality=self.confidentiality,
             start_date=self.start_date,
             retainment_period=self.retainment_period,
             distributions=[d.to_domain() for d in self.distributions.all()],
@@ -267,15 +275,15 @@ class DataContract(models.Model):
 
     @classmethod
     def from_domain(cls, contract: objects.DataContract, product_id: int):
-        distributions = contract.distributions
         instance, _created = cls.objects.filter(pk=contract.id).update_or_create(
             defaults={**contract.items(), "product_id": product_id}
         )
         instance.save()
-        if distributions:
-            instance.distributions_set.clear()
-            for distribution in distributions:
-                Distribution.from_domain(distribution, instance.id)
+        # Replace all distributions.
+        instance.distributions.all().delete()
+        for distribution in contract.distributions or []:
+            Distribution.from_domain(distribution, instance.id)
+
         return instance.to_domain()
 
 
@@ -352,7 +360,6 @@ class Distribution(models.Model):
 
     def to_domain(self):
         return objects.Distribution(
-            id=self.id,
             access_service_id=self.access_service_id,
             access_url=self.access_url,
             download_url=self.download_url,
@@ -363,9 +370,7 @@ class Distribution(models.Model):
 
     @classmethod
     def from_domain(cls, distribution: objects.Distribution, contract_id: int):
-        instance, _created = cls.objects.filter(pk=distribution.id).update_or_create(
-            defaults={**distribution.items(), "contract_id": contract_id}
-        )
+        instance = cls.objects.create(**distribution.items(), contract_id=contract_id)
         return instance.id
 
 
@@ -387,7 +392,7 @@ class DataService(models.Model):
     )
 
     def __str__(self):
-        return f"{self.type}: {self.url}"
+        return f"{self.type}: {self.endpoint_url}"
 
     def to_domain(self):
         return objects.DataService(id=self.id, type=self.type, endpoint_url=self.endpoint_url)
