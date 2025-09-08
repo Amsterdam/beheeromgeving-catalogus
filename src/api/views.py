@@ -15,11 +15,11 @@ def health(request):
 
 
 class TeamViewSet(ViewSet):
-    service = TeamService(repo=TeamRepository())
+    service: TeamService
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service.repository.refresh()
+        self.service = TeamService(repo=TeamRepository())
 
     def _validate_dto(self, data, dto_model=dtos.Team):
         # Raises if data is invalid
@@ -72,11 +72,11 @@ class TeamViewSet(ViewSet):
 
 
 class ProductViewSet(ViewSet):
-    service = ProductService(repo=ProductRepository())
+    service: ProductService
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service.repository.refresh()
+        self.service = ProductService(repo=ProductRepository())
 
     def _validate_dto(self, data, dto_type=dtos.ProductDetail):
         # Raises if data is invalid

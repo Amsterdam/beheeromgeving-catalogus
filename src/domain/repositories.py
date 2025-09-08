@@ -26,9 +26,6 @@ class TeamRepository(AbstractRepository):
     _teams = dict[int, objects.Team]
 
     def __init__(self):
-        self.refresh()
-
-    def refresh(self):
         self._teams = {t.id: t.to_domain() for t in orm.Team.objects.all()}
 
     def get(self, team_id: int) -> objects.Team:
@@ -59,9 +56,6 @@ class ProductRepository(AbstractRepository):
     _products: dict[int, objects.Product]
 
     def __init__(self):
-        self.refresh()
-
-    def refresh(self):
         self._products = {p.id: p.to_domain() for p in orm.Product.objects.all()}
 
     def get(self, product_id: int) -> objects.Product:
