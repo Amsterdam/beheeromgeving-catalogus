@@ -1,11 +1,11 @@
-Django == 5.2.5
+Django == 5.2.6
 django-environ == 0.12.0
-django-cors-headers == 4.7.0
+django-cors-headers == 4.8.0
 django-healthchecks == 1.5.0
 datapunt-authorization-django == 1.6.2
 djangorestframework == 3.16.1
 drf-spectacular == 0.28.0
-psycopg == 3.2.9
+psycopg == 3.2.10
 pydantic[email] == 2.11.7
 python-json-logger==3.3.0
 python-dateutil==2.9.0.post0
@@ -19,8 +19,8 @@ uwsgitop == 0.12
 uwsgi-readiness-check == 0.2.0
 
 # Testing
-pytest == 8.4.1
+pytest == 8.4.2
 pytest-django == 4.11.1
-pytest-cov == 6.2.1
+pytest-cov == 6.3.0
 python-owasp-zap-v2.4 == 0.1.0
 requests-mock == 1.12.1
