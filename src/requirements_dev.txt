@@ -42,12 +42,12 @@ azure-identity==1.24.0 \
     --hash=sha256:6c3a40b2a70af831e920b89e6421e8dcd4af78a0cb38b9642d86c67643d4930c \
     --hash=sha256:9e04997cde0ab02ed66422c74748548e620b7b29361c72ce622acab0267ff7c4
     # via
-    #   -r requirements.in
+    #   -r ./requirements.in
     #   azure-monitor-opentelemetry-exporter
 azure-monitor-opentelemetry==1.6.10 \
     --hash=sha256:1f8145f665abb1626ac1caf14f75fc9b4fc43b818694798f7a43ea369e265683 \
     --hash=sha256:8b5953454f72da42f7959a8017e5f9712427b931d1d08be008d32722c4605a0d
-    # via -r requirements.in
+    # via -r ./requirements.in
 azure-monitor-opentelemetry-exporter==1.0.0b37 \
     --hash=sha256:689e826a03f338b81523aaa13c49a9d91c508eb0c3e5d58b33129f2839415b67 \
     --hash=sha256:dbbf33770163944ead49ef34628b15d723d81774e7baada3b746fedd8e1fcf41
@@ -387,11 +387,11 @@ distlib==0.3.9 \
     --hash=sha256:47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87 \
     --hash=sha256:a60f20dea646b8a33f3e7772f74dc0b2d0772d2837ee1342a00645c81edf9403
     # via virtualenv
-django==5.2.5 \
-    --hash=sha256:0745b25681b129a77aae3d4f6549b62d3913d74407831abaa0d9021a03954bae \
-    --hash=sha256:2b2ada0ee8a5ff743a40e2b9820d1f8e24c11bac9ae6469cd548f0057ea6ddcd
+django==5.2.6 \
+    --hash=sha256:60549579b1174a304b77e24a93d8d9fafe6b6c03ac16311f3e25918ea5a20058 \
+    --hash=sha256:da5e00372763193d73cecbf71084a3848458cecf4cee36b9a1e8d318d114a87b
     # via
-    #   -r requirements.in
+    #   -r ./requirements.in
     #   datapunt-authorization-django
     #   django-cors-headers
     #   django-debug-toolbar
@@ -399,9 +399,9 @@ django==5.2.5 \
     #   django-healthchecks
     #   djangorestframework
     #   drf-spectacular
-django-cors-headers==4.7.0 \
-    --hash=sha256:6fdf31bf9c6d6448ba09ef57157db2268d515d94fc5c89a0a1028e1fc03ee52b \
-    --hash=sha256:f1c125dcd58479fe7a67fe2499c16ee38b81b397463cf025f0e2c42937421070
+django-cors-headers==4.8.0 \
+    --hash=sha256:0a12a2efcd59a3cea741e44db8ab589e929949de5bc4cdf35a29c6ae77297686 \
+    --hash=sha256:3b883f4c6d07848673218456a5e070d8ab51f97341c1f27d0242ca167e7272ab
     # via -r ./requirements.in
 django-debug-toolbar==6.0.0 \
     --hash=sha256:0cf2cac5c307b77d6e143c914e5c6592df53ffe34642d93929e5ef095ae56841 \
@@ -410,7 +410,7 @@ django-debug-toolbar==6.0.0 \
 django-environ==0.12.0 \
     --hash=sha256:227dc891453dd5bde769c3449cf4a74b6f2ee8f7ab2361c93a07068f4179041a \
     --hash=sha256:92fb346a158abda07ffe6eb23135ce92843af06ecf8753f43adf9d2366dcc0ca
-    # via -r requirements.in
+    # via -r ./requirements.in
 django-extensions==4.1 \
     --hash=sha256:0699a7af28f2523bf8db309a80278519362cd4b6e1fd0a8cd4bf063e1e023336 \
     --hash=sha256:7b70a4d28e9b840f44694e3f7feb54f55d495f8b3fa6c5c0e5e12bcb2aa3cdeb
@@ -418,12 +418,12 @@ django-extensions==4.1 \
 django-healthchecks==1.5.0 \
     --hash=sha256:0f167deaa30bde59552796799abf2a97a118bc190e8601eef713379703cf9f64 \
     --hash=sha256:25eb021a4a94240b28d996e82775ad6c3b392a2b262360b965a24b88fcfad78d
-    # via -r requirements.in
+    # via -r ./requirements.in
 djangorestframework==3.16.1 \
     --hash=sha256:166809528b1aced0a17dc66c24492af18049f2c9420dbd0be29422029cfc3ff7 \
     --hash=sha256:33a59f47fb9c85ede792cbf88bde71893bcda0667bc573f784649521f1102cec
     # via
-    #   -r requirements.in
+    #   -r ./requirements.in
     #   drf-spectacular
 dnspython==2.7.0 \
     --hash=sha256:b4c34b7d10b51bcc3a5071e7b8dee77939f1e878477eeecc965e9835f63c6c86 \
@@ -432,7 +432,7 @@ dnspython==2.7.0 \
 drf-spectacular==0.28.0 \
     --hash=sha256:2c778a47a40ab2f5078a7c42e82baba07397bb35b074ae4680721b2805943061 \
     --hash=sha256:856e7edf1056e49a4245e87a61e8da4baff46c83dbc25be1da2df77f354c7cb4
-    # via -r requirements.in
+    # via -r ./requirements.in
 email-validator==2.2.0 \
     --hash=sha256:561977c2d73ce3611850a06fa56b414621e0c8faa9d66f2611407d87465da631 \
     --hash=sha256:cb690f344c617a714f22e66ae771445a1ceb46821152df8e165c5f9a364582b7
@@ -668,10 +668,10 @@ psutil==7.0.0 \
     --hash=sha256:a5f098451abc2828f7dc6b58d44b532b22f2088f4999a937557b603ce72b1993 \
     --hash=sha256:ba3fcef7523064a6c9da440fc4d6bd07da93ac726b5733c29027d7dc95b39d99
     # via azure-monitor-opentelemetry-exporter
-psycopg==3.2.9 \
-    --hash=sha256:01a8dadccdaac2123c916208c96e06631641c0566b22005493f09663c7a8d3b6 \
-    --hash=sha256:2fbb46fcd17bc81f993f28c47f1ebea38d66ae97cc2dbc3cad73b37cefbff700
-    # via -r requirements.in
+psycopg==3.2.10 \
+    --hash=sha256:0bce99269d16ed18401683a8569b2c5abd94f72f8364856d56c0389bcd50972a \
+    --hash=sha256:ab5caf09a9ec42e314a21f5216dbcceac528e0e05142e42eea83a3b28b320ac3
+    # via -r ./requirements.in
 pur==7.3.3 \
     --hash=sha256:83acc7fc4d07dbd6b026e2bcb33611f61f7c51a30b9f5ef6f4f9e2846a23f19d
     # via -r requirements_dev.in
@@ -682,7 +682,7 @@ pycparser==2.22 \
 pydantic[email]==2.11.7 \
     --hash=sha256:d989c3c6cb79469287b1569f7447a17848c998458d49ebe294e975b9baf0f0db \
     --hash=sha256:dde5df002701f6de26248661f6835bbe296a47bf73990135c7d07ce741b9623b
-    # via -r requirements.in
+    # via -r ./requirements.in
 pydantic-core==2.33.2 \
     --hash=sha256:0069c9acc3f3981b9ff4cdfaf088e98d83440a4c7ea1bc07460af3d4dc22e72d \
     --hash=sha256:031c57d67ca86902726e0fae2214ce6770bbe2f710dc33063187a68744a5ecac \
@@ -798,38 +798,38 @@ pyproject-hooks==1.2.0 \
     # via
     #   build
     #   pip-tools
-pytest==8.4.1 \
-    --hash=sha256:539c70ba6fcead8e78eebbf1115e8b589e7565830d7d006a8723f19ac8a0afb7 \
-    --hash=sha256:7c67fd69174877359ed9371ec3af8a3d2b04741818c51e5e99cc1742251fa93c
+pytest==8.4.2 \
+    --hash=sha256:86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01 \
+    --hash=sha256:872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79
     # via
-    #   -r requirements.in
+    #   -r ./requirements.in
     #   pytest-cov
     #   pytest-django
     #   pytest-sugar
-pytest-cov==6.2.1 \
-    --hash=sha256:25cc6cc0a5358204b8108ecedc51a9b57b34cc6b8c967cc2c01a4e00d8a67da2 \
-    --hash=sha256:f5bc4c23f42f1cdd23c70b1dab1bbaef4fc505ba950d53e0081d0730dd7e86d5
-    # via -r requirements.in
+pytest-cov==6.3.0 \
+    --hash=sha256:35c580e7800f87ce892e687461166e1ac2bcb8fb9e13aea79032518d6e503ff2 \
+    --hash=sha256:440db28156d2468cafc0415b4f8e50856a0d11faefa38f30906048fe490f1749
+    # via -r ./requirements.in
 pytest-django==4.11.1 \
     --hash=sha256:1b63773f648aa3d8541000c26929c1ea63934be1cfa674c76436966d73fe6a10 \
     --hash=sha256:a949141a1ee103cb0e7a20f1451d355f83f5e4a5d07bdd4dcfdd1fd0ff227991
     # via -r ./requirements.in
-pytest-sugar==1.1.0 \
-    --hash=sha256:53138645cabc311a677bb09c307eab41681a563e498318cd2a0d7cd184837af4 \
-    --hash=sha256:c853866512288f1b679efc10c565303de4617854287e977781f07904f4560668
+pytest-sugar==1.1.1 \
+    --hash=sha256:2f8319b907548d5b9d03a171515c1d43d2e38e32bd8182a1781eb20b43344cc8 \
+    --hash=sha256:73b8b65163ebf10f9f671efab9eed3d56f20d2ca68bda83fa64740a92c08f65d
     # via -r requirements_dev.in
 python-dateutil==2.9.0.post0 \
     --hash=sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3 \
     --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
-    # via -r requirements.in
+    # via -r ./requirements.in
 python-json-logger==3.3.0 \
     --hash=sha256:12b7e74b17775e7d565129296105bbe3910842d9d0eb083fc83a6a617aa8df84 \
     --hash=sha256:dd980fae8cffb24c13caf6e158d3d61c0d6d22342f932cb6e9deedab3d35eec7
-    # via -r requirements.in
+    # via -r ./requirements.in
 python-owasp-zap-v2-4==0.1.0 \
     --hash=sha256:2af4252320b3b77a38712081422688e676e038306cf1f2792feed811235afa8b \
     --hash=sha256:d4dc00387b0089d81683be01b8272577ad39fb47674377f65c7da0fd30b8abe9
-    # via -r requirements.in
+    # via -r ./requirements.in
 pyyaml==6.0.2 \
     --hash=sha256:01179a4a8559ab5de078078f37e5c1a30d76bb88519906844fd7bdea1b7729ff \
     --hash=sha256:0833f8694549e586547b576dcfaba4a6b55b9e96098b36cdc7ebefe667dfed48 \
@@ -897,7 +897,7 @@ requests==2.32.5 \
     --hash=sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6 \
     --hash=sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf
     # via
-    #   -r requirements.in
+    #   -r ./requirements.in
     #   azure-core
     #   datapunt-authorization-django
     #   django-healthchecks
@@ -910,7 +910,7 @@ requests==2.32.5 \
 requests-mock==1.12.1 \
     --hash=sha256:b1e37054004cdd5e56c84454cc7df12b25f90f382159087f4b6915aaeef39563 \
     --hash=sha256:e9e12e333b525156e82a3c852f22016b9158220d2f47454de9cae8a77d371401
-    # via -r requirements.in
+    # via -r ./requirements.in
 requests-oauthlib==2.0.0 \
     --hash=sha256:7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36 \
     --hash=sha256:b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9
@@ -1036,26 +1036,26 @@ rpds-py==0.25.1 \
     # via
     #   jsonschema
     #   referencing
-ruff==0.12.11 \
-    --hash=sha256:0d737b4059d66295c3ea5720e6efc152623bb83fde5444209b69cd33a53e2000 \
-    --hash=sha256:411954eca8464595077a93e580e2918d0a01a19317af0a72132283e28ae21bee \
-    --hash=sha256:4d1df0098124006f6a66ecf3581a7f7e754c4df7644b2e6704cd7ca80ff95211 \
-    --hash=sha256:4dc75533039d0ed04cd33fb8ca9ac9620b99672fe7ff1533b6402206901c34ee \
-    --hash=sha256:4fc58f9266d62c6eccc75261a665f26b4ef64840887fc6cbc552ce5b29f96cc8 \
-    --hash=sha256:5a0113bd6eafd545146440225fe60b4e9489f59eb5f5f107acd715ba5f0b3d2f \
-    --hash=sha256:5a8dd5f230efc99a24ace3b77e3555d3fbc0343aeed3fc84c8d89e75ab2ff793 \
-    --hash=sha256:6a2c0a2e1a450f387bf2c6237c727dd22191ae8c00e448e0672d624b2bbd7fb0 \
-    --hash=sha256:8ca4c3a7f937725fd2413c0e884b5248a19369ab9bdd850b5781348ba283f644 \
-    --hash=sha256:916fc5defee32dbc1fc1650b576a8fed68f5e8256e2180d4d9855aea43d6aab2 \
-    --hash=sha256:93fce71e1cac3a8bf9200e63a38ac5c078f3b6baebffb74ba5274fb2ab276065 \
-    --hash=sha256:a3283325960307915b6deb3576b96919ee89432ebd9c48771ca12ee8afe4a0fd \
-    --hash=sha256:b8e33ac7b28c772440afa80cebb972ffd823621ded90404f29e5ab6d1e2d4b93 \
-    --hash=sha256:bae4d6e6a2676f8fb0f98b74594a048bae1b944aab17e9f5d504062303c6dbea \
-    --hash=sha256:c6b09ae8426a65bbee5425b9d0b82796dbb07cb1af045743c79bfb163001165d \
-    --hash=sha256:c792e8f597c9c756e9bcd4d87cf407a00b60af77078c96f7b6366ea2ce9ba9d3 \
-    --hash=sha256:c984f07d7adb42d3ded5be894fb4007f30f82c87559438b4879fe7aa08c62b39 \
-    --hash=sha256:d69fb9d4937aa19adb2e9f058bc4fbfe986c2040acb1a4a9747734834eaa0bfd \
-    --hash=sha256:e07fbb89f2e9249f219d88331c833860489b49cdf4b032b8e4432e9b13e8a4b9
+ruff==0.12.12 \
+    --hash=sha256:01543c137fd3650d322922e8b14cc133b8ea734617c4891c5a9fccf4bfc9aa92 \
+    --hash=sha256:0c0945246f5ad776cb8925e36af2438e66188d2b57d9cf2eed2c382c58b371e5 \
+    --hash=sha256:173be2bfc142af07a01e3a759aba6f7791aa47acf3604f610b1c36db888df7b1 \
+    --hash=sha256:26a1b5a2bf7dd2c47e3b46d077cd9c0fc3b93e6c6cc9ed750bd312ae9dc302ee \
+    --hash=sha256:2a8199cab4ce4d72d158319b63370abf60991495fb733db96cd923a34c52d093 \
+    --hash=sha256:2afc2fa864197634e549d87fb1e7b6feb01df0a80fd510d6489e1ce8c0b1cc45 \
+    --hash=sha256:42a67d16e5b1ffc6d21c5f67851e0e769517fb57a8ebad1d0781b30888aa704e \
+    --hash=sha256:59f909c0fdd8f1dcdbfed0b9569b8bf428cf144bec87d9de298dcd4723f5bee8 \
+    --hash=sha256:5f12856123b0ad0147d90b3961f5c90e7427f9acd4b40050705499c98983f489 \
+    --hash=sha256:7acd6045e87fac75a0b0cdedacf9ab3e1ad9d929d149785903cff9bb69ad9727 \
+    --hash=sha256:968e77094b1d7a576992ac078557d1439df678a34c6fe02fd979f973af167577 \
+    --hash=sha256:9ac93d87047e765336f0c18eacad51dad0c1c33c9df7484c40f98e1d773876f5 \
+    --hash=sha256:a0fbafe8c58e37aae28b84a80ba1817f2ea552e9450156018a478bf1fa80f4e4 \
+    --hash=sha256:abf4073688d7d6da16611f2f126be86523a8ec4343d15d276c614bda8ec44edb \
+    --hash=sha256:b216ec0a0674e4b1214dcc998a5088e54eaf39417327b19ffefba1c4a1e4971e \
+    --hash=sha256:b86cd3415dbe31b3b46a71c598f4c4b2f550346d1ccf6326b347cc0c8fd063d6 \
+    --hash=sha256:b9c456fb2fc8e1282affa932c9e40f5ec31ec9cbb66751a316bd131273b57c23 \
+    --hash=sha256:de1c4b916d98ab289818e55ce481e2cacfaad7710b01d1f990c497edf217dafc \
+    --hash=sha256:e99620bf01884e5f38611934c09dd194eb665b0109104acae3ba6102b600fd0d
     # via -r requirements_dev.in
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
@@ -1102,10 +1102,10 @@ urllib3==2.4.0 \
 uwsgi-readiness-check==0.2.0 \
     --hash=sha256:b8c4bfba260ec6f1937ca8d8968f2415aba82428637da17653fc04a3378d752e \
     --hash=sha256:e7a2b5a94407193bc876efd28157a45833cb69c372f7684004fa729eca2f1ab0
-    # via -r requirements.in
+    # via -r ./requirements.in
 uwsgitop==0.12 \
     --hash=sha256:4f9330951f0fb9633226de36cf0c28c04dcf323efab608834aa81f638b6019b2
-    # via -r requirements.in
+    # via -r ./requirements.in
 virtualenv==20.31.2 \
     --hash=sha256:36efd0d9650ee985f0cad72065001e66d49a6f24eb44d98980f630686243cf11 \
     --hash=sha256:e10c0a9d02835e592521be48b332b6caee6887f332c111aa79a09b9e79efc2af
@@ -1117,7 +1117,7 @@ wheel==0.45.1 \
 whitenoise==6.9.0 \
     --hash=sha256:8c4a7c9d384694990c26f3047e118c691557481d624f069b7f7752a2f735d609 \
     --hash=sha256:c8a489049b7ee9889617bb4c274a153f3d979e8f51d2efd0f5b403caf41c57df
-    # via -r requirements.in
+    # via -r ./requirements.in
 wrapt==1.17.2 \
     --hash=sha256:08e7ce672e35efa54c5024936e559469436f8b8096253404faeb54d2a878416f \
     --hash=sha256:0a6e821770cf99cc586d33833b2ff32faebdbe886bd6322395606cf55153246c \
