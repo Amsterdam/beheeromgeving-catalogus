@@ -61,6 +61,8 @@ class ModelMixin:
 
 
 class Team(ModelMixin, BaseModel):
+    """Used for create and detail views."""
+
     id: int | None = None
     name: str
     description: str
@@ -72,6 +74,8 @@ class Team(ModelMixin, BaseModel):
 
 
 class TeamPartial(ModelMixin, BaseModel):
+    """Strictly used for partial updates."""
+
     name: str | None = None
     description: str | None = None
     acronym: str | None = None
@@ -110,6 +114,8 @@ class DataContractList(ModelMixin, BaseModel):
 
 
 class DataContract(ModelMixin, BaseModel):
+    """Used for create/partial update."""
+
     id: int | None = None
     publication_status: enums.PublicationStatus | None = None
     purpose: str | None = None
@@ -129,6 +135,8 @@ class DataContract(ModelMixin, BaseModel):
 
 
 class ProductDetail(ModelMixin, BaseModel):
+    """Used for create/partial update."""
+
     id: int | None = None
     name: str | None = None
     description: str | None = None

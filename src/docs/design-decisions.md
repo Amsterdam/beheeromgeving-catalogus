@@ -2,6 +2,7 @@
 
 ## Changelog
 
+2025-09-09: Minor tweaks after finishing up domain layer.
 2025-09-03: First draft of this document.
 
 ## High level design
@@ -37,7 +38,8 @@ The **presentation layer** is responsible for:
 - Validating fields if present
 - Serializing responses
 
-For this layer, we will use pydantic to validate and (de)serialize.
+For this layer, we will use pydantic to validate and (de)serialize. These pydantic objects are
+treated as DTOs (Data Transfer Objects).
 
 The **domain layer** is responsible for:
 
@@ -53,7 +55,10 @@ Note that this means we do not do validation on this layer (besides the built-in
 
 ### Flow
 
-view -> domain service -> domain repository -> ORM / Django models
+view -> service -> domain -> repository -> ORM / Django models.
+
+The (domain) service is the interface between the domain and the presentation layer. The
+repository is the interface between the domain and the ORM.
 
 ### Advantages and drawbacks
 

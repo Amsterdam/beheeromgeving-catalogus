@@ -1,12 +1,17 @@
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
+from typing import Any
 
 from domain import enums
 
 
 @dataclass
 class BaseObject:
-    def items(self):
+    """The Base Object from which all domain objects inherit."""
+
+    def items(self) -> dict[str, Any]:
+        """Returns a dictionary that can be persisted in the ORM, omitting fields
+        that need their own logic."""
         dictionary = asdict(self)
         for key in self._skip_keys | {"_skip_keys"}:
             if key in dictionary:
@@ -105,7 +110,3 @@ class Product(BaseObject):
     sinks: list[int] = None
 
     _skip_keys = {"contracts", "team", "owner", "sources", "sinks", "services"}
-
-    def update_from_dict(self, data: dict):
-        for k, v in data.items():
-            setattr(self, k, v)
