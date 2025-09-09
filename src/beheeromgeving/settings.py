@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import environ
@@ -48,6 +49,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "authorization_django.authorization_middleware",
 ]
 
 if DEBUG:
@@ -338,3 +340,13 @@ REST_FRAMEWORK = dict(
     URL_FORMAT_OVERRIDE="_format",  # use ?_format=.. instead of ?format=..
     DEFAULT_AUTHENTICATION_CLASSES=[],
 )
+
+DATAPUNT_AUTHZ = {
+    # To verify JWT tokens, either the PUB_JWKS or a OAUTH_JWKS_URL needs to be set.
+    "JWKS": os.getenv("PUB_JWKS"),
+    "JWKS_URL": os.getenv("OAUTH_JWKS_URL"),
+    "JWKS_URLS": env.list("OAUTH_JWKS_URLS", default=[]),  # To support both keyclock and Entra ID
+    # "ALWAYS_OK": True if DEBUG else False,
+    "ALWAYS_OK": False,
+    "MIN_INTERVAL_KEYSET_UPDATE": 30 * 60,  # 30 minutes
+}
