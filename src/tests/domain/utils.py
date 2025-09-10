@@ -29,3 +29,6 @@ class DummyRepository(AbstractRepository):
             self._items.pop(id)
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object with id {id} does not exist") from e
+
+    def get_all_team_scopes(self):
+        return [getattr(item, "scope", None) for item in self._items]

@@ -350,3 +350,7 @@ DATAPUNT_AUTHZ = {
     "ALWAYS_OK": False,
     "MIN_INTERVAL_KEYSET_UPDATE": 30 * 60,  # 30 minutes
 }
+
+# App Config
+
+ADMIN_ROLE_NAME = os.getenv("ADMIN_ROLE_NAME", "admin")

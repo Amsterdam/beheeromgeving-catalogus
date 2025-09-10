@@ -52,6 +52,9 @@ class TeamRepository(AbstractRepository):
         orm.Team.objects.filter(id=team_id).delete()
         return team_id
 
+    def get_all_team_scopes(self):
+        return [t.scope for t in self._teams.values()]
+
 
 class ProductRepository(AbstractRepository):
     _products: dict[int, objects.Product]

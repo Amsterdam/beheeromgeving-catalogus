@@ -33,7 +33,7 @@ class ExceptionHandlerMixin:
                 return Response(status=404, data=e.message)
             case exceptions.DomainException():
                 return Response(status=500, data=e.message)
-        return Response()
+        raise e
 
 
 class TeamViewSet(ExceptionHandlerMixin, ViewSet):
@@ -41,7 +41,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service = TeamService(repo=TeamRepository(), auth_config=settings.ADMIN_ROLE_NAME)
+        self.service = TeamService(repo=TeamRepository(), admin_role=settings.ADMIN_ROLE_NAME)
 
     def _validate_dto(self, data, dto_model=dtos.Team):
         # Raises if data is invalid
@@ -58,7 +58,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
 
     def create(self, request):
         team_dto = self._validate_dto(request.data)
-        team_id = self.service.create_team(team_dto.model_dump())
+        team_id = self.service.create_team(team_dto.model_dump(), scopes=request.get_token_scopes)
         return Response(status=201, data=team_id)
 
     def partial_update(self, request, pk=None):
@@ -67,7 +67,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(status=200)
 
     def destroy(self, request, pk=None):
-        self.service.delete_team(int(pk))
+        self.service.delete_team(int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
 
 

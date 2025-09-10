@@ -39,3 +39,6 @@ STORAGES = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+
+# App config
+ADMIN_ROLE_NAME = "test_admin"

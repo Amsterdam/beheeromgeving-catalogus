@@ -1,13 +1,17 @@
 from domain import exceptions
+from domain.auth.objects import Role
+from domain.auth.services import AuthorizationService
 from domain.product.objects import DataContract, DataService, Product, Team
 from domain.product.repositories import AbstractRepository
 
 
 class TeamService:
     repository: AbstractRepository
+    auth: AuthorizationService = AuthorizationService()
 
-    def __init__(self, repo):
+    def __init__(self, repo, admin_role: str):
         self.repository = repo
+        self.auth.configure(admin_role, repo.get_all_team_scopes())
 
     def get_team(self, team_id: str) -> Team:
         return self.repository.get(team_id)
@@ -15,7 +19,8 @@ class TeamService:
     def get_teams(self) -> list[Team]:
         return self.repository.list()
 
-    def create_team(self, data) -> Team:
+    @auth.require(role=Role.ADMIN)
+    def create_team(self, data, **kwargs) -> Team:
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
         team = Team(**data)
@@ -28,7 +33,8 @@ class TeamService:
         team.update_from_dict(data)
         return self._persist(team)
 
-    def delete_team(self, team_id) -> None:
+    @auth.require(role=Role.ADMIN)
+    def delete_team(self, team_id, **kwargs) -> None:
         return self.repository.delete(team_id)
 
     def _persist(self, team: Team) -> None:

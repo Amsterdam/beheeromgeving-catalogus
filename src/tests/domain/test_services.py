@@ -1,14 +1,20 @@
 import pytest
+from django.conf import settings
 
-from domain.exceptions import IllegalOperation, ObjectDoesNotExist
+from domain.exceptions import IllegalOperation, NotAuthorized, ObjectDoesNotExist
 from domain.product.objects import DataContract, DataService
 from domain.product.services import ProductService, TeamService
 from tests.domain.utils import DummyRepository
 
+ADMIN_SCOPES = [settings.ADMIN_ROLE_NAME]
+UNAUTHORIZED = ["unauthorized_scope"]
+
 
 class TestTeamService:
     def get_service(self, team=None):
-        return TeamService(DummyRepository([team] if team else []))
+        return TeamService(
+            DummyRepository([team] if team else []), admin_role=settings.ADMIN_ROLE_NAME
+        )
 
     def test_get_team(self, team):
         service = self.get_service(team)
@@ -27,7 +33,7 @@ class TestTeamService:
 
         assert result == [team]
 
-    def test_create_team(self):
+    def test_create_team_by_admin(self):
         team_data = {
             "name": "Beheer Openbare Ruimte",
             "acronym": "BOR",
@@ -38,10 +44,24 @@ class TestTeamService:
             "scope": "scope_bor",
         }
         service = self.get_service()
-        result = service.create_team(team_data)
+        result = service.create_team(team_data, scopes=ADMIN_SCOPES)
 
         assert result.acronym == "BOR"
         assert len(service.get_teams()) == 1
+
+    @pytest.mark.xfail(raises=NotAuthorized)
+    def test_create_team_unauthorized(self):
+        team_data = {
+            "name": "Beheer Openbare Ruimte",
+            "acronym": "BOR",
+            "description": "",
+            "po_name": "Jan Bor",
+            "po_email": "j.bor@amsterdam.nl",
+            "contact_email": "bor@amsterdam.nl",
+            "scope": "scope_bor",
+        }
+        service = self.get_service()
+        service.create_team(team_data, scopes=UNAUTHORIZED)
 
     @pytest.mark.xfail(raises=IllegalOperation)
     def test_create_team_with_id(self):
@@ -56,7 +76,7 @@ class TestTeamService:
             "scope": "scope_bor",
         }
         service = self.get_service()
-        service.create_team(team_data)
+        service.create_team(team_data, scopes=ADMIN_SCOPES)
 
     def test_update_team(self, team):
         service = self.get_service(team)
@@ -75,16 +95,21 @@ class TestTeamService:
         service = self.get_service(team)
         service.update_team(team.id, {"id": 1337})
 
-    def test_delete_team(self, team):
+    def test_delete_team_by_admin(self, team):
         service = self.get_service(team)
-        service.delete_team(team.id)
+        service.delete_team(team.id, scopes=ADMIN_SCOPES)
 
         assert len(service.get_teams()) == 0
+
+    @pytest.mark.xfail(raises=NotAuthorized)
+    def test_delete_team_unauthorized(self, team):
+        service = self.get_service(team)
+        service.delete_team(team.id, scopes=UNAUTHORIZED)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_delete_team_non_existent(self, team):
         service = self.get_service(team)
-        service.delete_team(1337)  # non-existent
+        service.delete_team(1337, scopes=ADMIN_SCOPES)  # non-existent
 
 
 class TestProductService:
