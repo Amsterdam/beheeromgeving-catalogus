@@ -31,4 +31,4 @@ class DummyRepository(AbstractRepository):
             raise exceptions.ObjectDoesNotExist(f"Object with id {id} does not exist") from e
 
     def get_all_team_scopes(self):
-        return [getattr(item, "scope", None) for item in self._items]
+        return [getattr(item, "scope", None) for item in self._items.values()]

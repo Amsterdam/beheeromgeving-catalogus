@@ -63,7 +63,9 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
 
     def partial_update(self, request, pk=None):
         team_dto = self._validate_dto(request.data, dtos.TeamPartial)
-        self.service.update_team(int(pk), team_dto.model_dump(exclude_unset=True))
+        self.service.update_team(
+            int(pk), data=team_dto.model_dump(exclude_unset=True), scopes=request.get_token_scopes
+        )
         return Response(status=200)
 
     def destroy(self, request, pk=None):

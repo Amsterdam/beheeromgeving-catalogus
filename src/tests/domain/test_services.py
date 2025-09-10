@@ -80,20 +80,42 @@ class TestTeamService:
 
     def test_update_team(self, team):
         service = self.get_service(team)
-        service.update_team(team.id, {"description": "New Description"})
+        service.update_team(team.id, data={"description": "New Description"}, scopes=ADMIN_SCOPES)
 
         result = service.get_team(team.id)
         assert result.description == "New Description"
 
+    @pytest.mark.xfail(raises=NotAuthorized)
+    def test_update_team_unauthorized_field(self, team):
+        service = self.get_service(team)
+        service.update_team(team.id, data={"description": "New Description"}, scopes={team.scope})
+
+    def test_update_team_by_team_member(self, team):
+        service = self.get_service(team)
+        service.update_team(
+            team.id,
+            data={
+                "po_name": "Someone Else",
+                "po_email": "s.else@amsterdam.nl",
+                "contact_email": "new.email@amsterdam.nl",
+            },
+            scopes={team.scope},
+        )
+
+        result = service.get_team(team.id)
+        assert result.po_name == "Someone Else"
+        assert result.po_email == "s.else@amsterdam.nl"
+        assert result.contact_email == "new.email@amsterdam.nl"
+
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_update_team_non_existent(self, team):
         service = self.get_service(team)
-        service.update_team(1337, {"description": "New Description"})
+        service.update_team(1337, data={"description": "New Description"}, scopes=ADMIN_SCOPES)
 
     @pytest.mark.xfail(raises=IllegalOperation)
     def test_update_team_cannot_update_id(self, team):
         service = self.get_service(team)
-        service.update_team(team.id, {"id": 1337})
+        service.update_team(team.id, data={"id": 1337}, scopes=ADMIN_SCOPES)
 
     def test_delete_team_by_admin(self, team):
         service = self.get_service(team)
@@ -115,7 +137,11 @@ class TestTeamService:
 class TestProductService:
     def get_service(self, product=None) -> ProductService:
         """Returns a service connected to a repo with 0 or 1 products."""
-        return ProductService(DummyRepository([product] if product else []))
+        return ProductService(
+            admin_role=settings.ADMIN_ROLE_NAME,
+            repo=DummyRepository([product] if product else []),
+            team_repo=DummyRepository([]),
+        )
 
     def test_get_products(self, product):
         service = self.get_service(product)

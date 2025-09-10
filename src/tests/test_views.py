@@ -80,11 +80,13 @@ class TestViews:
         assert len(result.data) == 0
 
     def test_teams_update(self, api_client, orm_team):
+        token = build_jwt_token([settings.ADMIN_ROLE_NAME])
         response = api_client.patch(
             f"/teams/{orm_team.id}",
             data={
                 "po_name": "Iemand Anders",
             },
+            HTTP_AUTHORIZATION=f"Bearer {token}",
         )
         assert response.status_code == 200
 

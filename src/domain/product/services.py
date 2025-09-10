@@ -1,5 +1,5 @@
 from domain import exceptions
-from domain.auth.objects import Role
+from domain.auth.objects import Permissions, Role
 from domain.auth.services import AuthorizationService
 from domain.product.objects import DataContract, DataService, Product, Team
 from domain.product.repositories import AbstractRepository
@@ -26,7 +26,12 @@ class TeamService:
         team = Team(**data)
         return self._persist(team)
 
-    def update_team(self, team_id, data) -> Team:
+    @auth.require(
+        permissions=Permissions(
+            admin=Permissions.all, team_member={"po_name", "po_email", "contact_email"}
+        )
+    )
+    def update_team(self, team_id, data: dict, **kwargs) -> Team:
         if int(data.get("id", team_id)) != int(team_id):
             raise exceptions.IllegalOperation("Cannot update product id")
         team = self.get_team(team_id)
