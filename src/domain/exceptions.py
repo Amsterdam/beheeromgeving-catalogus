@@ -15,3 +15,7 @@ class IllegalOperation(DomainException):
 
 class ValidationError(DomainException):
     pass
+
+
+class NotAuthorized(DomainException):
+    pass
