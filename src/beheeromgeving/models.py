@@ -5,7 +5,7 @@ from django.core.validators import EmailValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from domain import enums, objects
+from domain.product import enums, objects
 
 
 class Product(models.Model):

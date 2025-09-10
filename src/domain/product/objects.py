@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from typing import Any
 
-from domain import enums
+from domain.product import enums
 
 
 @dataclass

@@ -3,7 +3,7 @@ from datetime import date, datetime
 from django.db.models.manager import BaseManager
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from domain import enums, objects
+from domain.product import enums, objects
 
 
 def to_response_object(obj: objects.BaseObject | list[objects.BaseObject]) -> dict:

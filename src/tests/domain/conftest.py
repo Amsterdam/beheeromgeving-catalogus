@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from domain.objects import DataContract, DataService, Distribution, Product, Team
+from domain.product.objects import DataContract, DataService, Distribution, Product, Team
 
 
 @pytest.fixture()

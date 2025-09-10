@@ -1,5 +1,6 @@
-from domain import exceptions, objects
-from domain.repositories import AbstractRepository
+from domain import exceptions
+from domain.product import objects
+from domain.product.repositories import AbstractRepository
 
 
 class DummyRepository(AbstractRepository):

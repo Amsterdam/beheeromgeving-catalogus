@@ -1,6 +1,6 @@
 from domain import exceptions
-from domain.objects import DataContract, DataService, Product, Team
-from domain.repositories import AbstractRepository
+from domain.product.objects import DataContract, DataService, Product, Team
+from domain.product.repositories import AbstractRepository
 
 
 class TeamService:

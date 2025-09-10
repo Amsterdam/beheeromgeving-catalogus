@@ -1,8 +1,8 @@
 import pytest
 
 from domain.exceptions import IllegalOperation, ObjectDoesNotExist
-from domain.objects import DataContract, DataService
-from domain.services import ProductService, TeamService
+from domain.product.objects import DataContract, DataService
+from domain.product.services import ProductService, TeamService
 from tests.domain.utils import DummyRepository
 
 

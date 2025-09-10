@@ -1,7 +1,8 @@
 import abc
 
 from beheeromgeving import models as orm
-from domain import exceptions, objects
+from domain import exceptions
+from domain.product import objects
 
 
 class AbstractRepository(abc.ABC):
