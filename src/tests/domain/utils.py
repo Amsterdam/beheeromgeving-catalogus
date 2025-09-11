@@ -1,6 +1,9 @@
+from django.conf import settings
+
 from domain import exceptions
+from domain.auth import AuthorizationConfiguration
+from domain.base import AbstractAuthRepository, AbstractRepository
 from domain.product import objects
-from domain.product.repositories import AbstractRepository
 
 
 class DummyRepository(AbstractRepository):
@@ -30,5 +33,16 @@ class DummyRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object with id {id} does not exist") from e
 
-    def get_all_team_scopes(self):
+
+class DummyAuthRepo(AbstractAuthRepository):
+    _items: dict[int, objects.BaseObject] = {}
+
+    def __init__(self, objects: list[objects.BaseObject]):
+        for object in objects:
+            self._items[object.id] = object
+
+    def get_config(self):
+        return AuthorizationConfiguration(settings.ADMIN_ROLE_NAME, self.get_team_scopes())
+
+    def get_team_scopes(self):
         return [getattr(item, "scope", None) for item in self._items.values()]

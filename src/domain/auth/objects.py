@@ -10,7 +10,7 @@ class Role(StrEnum):
 
 @dataclass
 class Permissions:
-    all = "__all__"
+    ALL = "__all__"
     admin: set[str] | str = field(default_factory=set)
     team_member: set[str] | str = field(default_factory=set)
     anonymous: set[str] | str = field(default_factory=set)
@@ -18,7 +18,7 @@ class Permissions:
     def can_access_fields(self, roles: set[Role], fields: set[str]):
         for role in roles:
             allowed_fields = getattr(self, role.value)
-            if allowed_fields == self.all:
+            if allowed_fields == self.ALL:
                 return True
             if not fields - allowed_fields:
                 return True

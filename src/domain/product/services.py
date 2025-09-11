@@ -1,17 +1,21 @@
 from domain import exceptions
-from domain.auth.objects import Permissions, Role
-from domain.auth.services import AuthorizationService
-from domain.product.objects import DataContract, DataService, Product, Team
-from domain.product.repositories import AbstractRepository
+from domain.auth import AuthorizationService, Permissions, Role
+from domain.base import (
+    AbstractProductRepository,
+    AbstractRepository,
+    AbstractService,
+    AbstractTeamRepository,
+)
+from domain.product import DataContract, DataService, Product, Team
 
 
 class TeamService:
-    repository: AbstractRepository
-    auth: AuthorizationService = AuthorizationService()
+    repository: AbstractTeamRepository
+    auth: AbstractService
 
-    def __init__(self, repo, admin_role: str):
+    def __init__(self, repo: AbstractTeamRepository, auth: AbstractService):
         self.repository = repo
-        self.auth.configure(admin_role, repo.get_all_team_scopes())
+        self.auth = auth
 
     def get_team(self, team_id: str) -> Team:
         return self.repository.get(team_id)
@@ -19,27 +23,27 @@ class TeamService:
     def get_teams(self) -> list[Team]:
         return self.repository.list()
 
-    @auth.require(role=Role.ADMIN)
-    def create_team(self, data, **kwargs) -> Team:
+    def create_team(self, *, data, scopes) -> Team:
+        self.auth.require(role=Role.ADMIN, scopes=scopes)
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
         team = Team(**data)
         return self._persist(team)
 
-    @auth.require(
-        permissions=Permissions(
-            admin=Permissions.all, team_member={"po_name", "po_email", "contact_email"}
-        )
+    UPDATE_TEAM_PERMISSION = Permissions(
+        admin=Permissions.ALL, team_member={"po_name", "po_email", "contact_email"}
     )
-    def update_team(self, team_id, data: dict, **kwargs) -> Team:
+
+    def update_team(self, team_id, *, data: dict, scopes: list[str]) -> Team:
+        self.auth.permit(self.UPDATE_TEAM_PERMISSION, scopes=scopes, fields=data.keys())
         if int(data.get("id", team_id)) != int(team_id):
             raise exceptions.IllegalOperation("Cannot update product id")
         team = self.get_team(team_id)
         team.update_from_dict(data)
         return self._persist(team)
 
-    @auth.require(role=Role.ADMIN)
-    def delete_team(self, team_id, **kwargs) -> None:
+    def delete_team(self, team_id, *, scopes) -> None:
+        self.auth.require(role=Role.ADMIN, scopes=scopes)
         return self.repository.delete(team_id)
 
     def _persist(self, team: Team) -> None:
@@ -47,10 +51,12 @@ class TeamService:
 
 
 class ProductService:
-    repository: AbstractRepository
+    repository: AbstractProductRepository
+    auth: AuthorizationService
 
-    def __init__(self, repo):
+    def __init__(self, repo: AbstractRepository, auth: AbstractService):
         self.repository = repo
+        self.auth = auth
 
     def get_products(self, **kwargs) -> list[Product]:
         return self.repository.list(**kwargs)
@@ -148,7 +154,7 @@ class ProductService:
             )
         except StopIteration:
             raise exceptions.ObjectDoesNotExist(
-                f"Contract with id {service_id} does not exist on Product {product_id}"
+                f"Service with id {service_id} does not exist on Product {product_id}"
             ) from None
 
     def create_service(self, product_id: int, service_data: int) -> DataService:

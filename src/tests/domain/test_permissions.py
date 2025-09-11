@@ -1,10 +1,10 @@
 import pytest
 
-from domain.auth.objects import Permissions, Role
+from domain.auth import Permissions, Role
 
 TEST_CASES = [
     pytest.param(
-        Permissions.all,
+        Permissions.ALL,
         set(),
         {Role.ADMIN},
         {"some_field", "other_field"},
@@ -12,7 +12,7 @@ TEST_CASES = [
         id="Permissions.all works",
     ),
     pytest.param(
-        Permissions.all,
+        Permissions.ALL,
         set(),
         {Role.TEAM_MEMBER},
         {"some_field", "other_field"},
@@ -20,7 +20,7 @@ TEST_CASES = [
         id="Empty set of fields fails for Team Member",
     ),
     pytest.param(
-        Permissions.all,
+        Permissions.ALL,
         set(),
         {Role.ANONYMOUS},
         {"some_field", "other_field"},
@@ -28,7 +28,7 @@ TEST_CASES = [
         id="Empty set of fields fails for Anonymous",
     ),
     pytest.param(
-        Permissions.all,
+        Permissions.ALL,
         {"some_field", "other_field"},
         {Role.TEAM_MEMBER},
         {"some_field", "other_field"},
@@ -36,7 +36,7 @@ TEST_CASES = [
         id="Can access when fields are allowed for role",
     ),
     pytest.param(
-        Permissions.all,
+        Permissions.ALL,
         set(),
         {Role.TEAM_MEMBER, Role.ADMIN},
         {"some_field", "other_field"},

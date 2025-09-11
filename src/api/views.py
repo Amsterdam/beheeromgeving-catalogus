@@ -1,4 +1,3 @@
-from django.conf import settings
 from pydantic import ValidationError
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
@@ -6,8 +5,8 @@ from rest_framework.viewsets import ViewSet
 
 from api import datatransferobjects as dtos
 from domain import exceptions
-from domain.product.repositories import ProductRepository, TeamRepository
-from domain.product.services import ProductService, TeamService
+from domain.auth import AuthorizationRepository, AuthorizationService
+from domain.product import ProductRepository, ProductService, TeamRepository, TeamService
 
 
 @api_view(["GET"])
@@ -41,7 +40,8 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service = TeamService(repo=TeamRepository(), admin_role=settings.ADMIN_ROLE_NAME)
+        auth_service = AuthorizationService(AuthorizationRepository())
+        self.service = TeamService(repo=TeamRepository(), auth=auth_service)
 
     def _validate_dto(self, data, dto_model=dtos.Team):
         # Raises if data is invalid
@@ -58,7 +58,9 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
 
     def create(self, request):
         team_dto = self._validate_dto(request.data)
-        team_id = self.service.create_team(team_dto.model_dump(), scopes=request.get_token_scopes)
+        team_id = self.service.create_team(
+            data=team_dto.model_dump(), scopes=request.get_token_scopes
+        )
         return Response(status=201, data=team_id)
 
     def partial_update(self, request, pk=None):
@@ -78,7 +80,8 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service = ProductService(repo=ProductRepository())
+        auth_service = AuthorizationService(AuthorizationRepository())
+        self.service = ProductService(repo=ProductRepository(), auth=auth_service)
 
     def _validate_dto(self, data, dto_type=dtos.ProductDetail):
         # Raises if data is invalid

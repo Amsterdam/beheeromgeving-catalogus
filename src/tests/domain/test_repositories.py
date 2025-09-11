@@ -3,8 +3,15 @@ import pytest
 from beheeromgeving.models import Product as ORMProduct
 from beheeromgeving.models import Team as ORMTeam
 from domain.exceptions import ObjectDoesNotExist
-from domain.product.objects import DataContract, DataService, Distribution, Product, Team
-from domain.product.repositories import ProductRepository, TeamRepository
+from domain.product import (
+    DataContract,
+    DataService,
+    Distribution,
+    Product,
+    ProductRepository,
+    Team,
+    TeamRepository,
+)
 
 
 @pytest.mark.django_db

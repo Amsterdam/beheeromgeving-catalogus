@@ -1,50 +1,37 @@
 from domain import exceptions
-from domain.auth.objects import AuthorizationConfiguration, Permissions, Role
+from domain.auth import AuthorizationConfiguration, Permissions, Role
+from domain.base import AbstractRepository
 
 
 class AuthorizationService:
-    _config: AuthorizationConfiguration
 
-    def configure(self, admin_role: str, team_scopes: list[str]):
-        self._config = AuthorizationConfiguration(admin_role, team_scopes)
+    def __init__(self, repo: AbstractRepository):
+        self.repo = repo
 
     @property
-    def config(self):
-        if not hasattr(self, "_config"):
-            raise exceptions.DomainException("AuthorizationSerice is not configured!")
-        return self._config
+    def config(self) -> AuthorizationConfiguration:
+        return self.repo.get_config()
 
-    def require(self, role: Role | None = None, permissions: Permissions | None = None):
-        if not role and not permissions:
+    def require(self, role: Role | None = None, roles: set[Role] | None = None, scopes=list[str]):
+        if role is None and roles is None:
             raise exceptions.DomainException(
-                "AuthorizationService.require needs either a Role or Permissions"
+                "AuthorizationService.require needs at least one Role."
+            )
+        if role and roles:
+            raise exceptions.DomainException(
+                "AuthorizationService.require cannot handle both role and roles."
             )
 
-        def wrapper(func):
-            def wrapped(*args, **kwargs):
-                if role is not None:
-                    scopes = kwargs.get("scopes", [])
-                    if self.is_allowed(scopes, role):
-                        return func(*args, **kwargs)
-                    else:
-                        raise exceptions.NotAuthorized(
-                            "You are not authorized to perform this operation"
-                        )
-                else:
-                    scopes = kwargs.get("scopes", [])
-                    roles = {self.config.scope_to_role(scope) for scope in scopes}
-                    fields = set(kwargs.get("data", {}).keys())
-                    print(permissions)
-                    if permissions.can_access_fields(roles, fields):
-                        return func(*args, **kwargs)
-                    else:
-                        raise exceptions.NotAuthorized(
-                            "You are not authorized to perform this operation"
-                        )
+        required_roles = {role} if role else roles
+        if not any(self.is_allowed(scopes, role) for role in required_roles):
+            raise exceptions.NotAuthorized("You are not authorized to perform this operation")
 
-            return wrapped
-
-        return wrapper
+    def permit(self, permissions: Permissions | None = None, scopes=list[str], fields=list[str]):
+        if permissions is None:
+            raise exceptions.DomainException("AuthorizationService.permit needs Permissions")
+        roles = {self.config.scope_to_role(scope) for scope in scopes}
+        if not permissions.can_access_fields(roles, fields):
+            raise exceptions.NotAuthorized("You are not authorized to perform this operation")
 
     def is_allowed(self, scopes: list[str], role: Role):
         return any(self.config.scope_to_role(scope) == role for scope in scopes)

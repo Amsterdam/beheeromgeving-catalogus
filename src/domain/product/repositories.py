@@ -1,26 +1,7 @@
-import abc
-
 from beheeromgeving import models as orm
 from domain import exceptions
+from domain.base import AbstractRepository
 from domain.product import objects
-
-
-class AbstractRepository(abc.ABC):
-    @abc.abstractmethod
-    def get(self, ref):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def list(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def save(self, ref, data):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def delete(self, ref):
-        raise NotImplementedError
 
 
 class TeamRepository(AbstractRepository):
@@ -51,9 +32,6 @@ class TeamRepository(AbstractRepository):
 
         orm.Team.objects.filter(id=team_id).delete()
         return team_id
-
-    def get_all_team_scopes(self):
-        return [t.scope for t in self._teams.values()]
 
 
 class ProductRepository(AbstractRepository):
