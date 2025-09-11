@@ -1,15 +1,12 @@
-from domain.product.objects import DataContract, DataService, Distribution, Product, Team
-from domain.product.repositories import ProductRepository, TeamRepository
-from domain.product.services import ProductService, TeamService
+from domain.product.objects import DataContract, DataService, Distribution, Product
+from domain.product.repositories import ProductRepository
+from domain.product.services import ProductService
 
 __all__ = [
     Product,
     DataContract,
     DataService,
-    Team,
     Distribution,
     ProductRepository,
-    TeamRepository,
-    TeamService,
     ProductService,
 ]

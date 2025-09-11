@@ -9,9 +9,8 @@ from domain.product import (
     Distribution,
     Product,
     ProductRepository,
-    Team,
-    TeamRepository,
 )
+from domain.team import Team, TeamRepository
 
 
 @pytest.mark.django_db

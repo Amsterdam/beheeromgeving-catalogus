@@ -2,14 +2,13 @@ from django.conf import settings
 
 from domain import exceptions
 from domain.auth import AuthorizationConfiguration
-from domain.base import AbstractAuthRepository, AbstractRepository
-from domain.product import objects
+from domain.base import AbstractAuthRepository, AbstractRepository, BaseObject
 
 
 class DummyRepository(AbstractRepository):
-    _items: dict[int, objects.BaseObject] = {}
+    _items: dict[int, BaseObject] = {}
 
-    def __init__(self, objects: list[objects.BaseObject]):
+    def __init__(self, objects: list[BaseObject]):
         for object in objects:
             self._items[object.id] = object
 
@@ -22,7 +21,7 @@ class DummyRepository(AbstractRepository):
     def list(self):
         return list(self._items.values())
 
-    def save(self, object: objects.BaseObject):
+    def save(self, object: BaseObject):
         object.id = object.id or max(self._items.keys()) if len(self._items.keys()) else 0
         self._items[object.id] = object
         return object
@@ -35,9 +34,9 @@ class DummyRepository(AbstractRepository):
 
 
 class DummyAuthRepo(AbstractAuthRepository):
-    _items: dict[int, objects.BaseObject] = {}
+    _items: dict[int, BaseObject] = {}
 
-    def __init__(self, objects: list[objects.BaseObject]):
+    def __init__(self, objects: list[BaseObject]):
         for object in objects:
             self._items[object.id] = object
 

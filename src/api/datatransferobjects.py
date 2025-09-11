@@ -4,6 +4,7 @@ from django.db.models.manager import BaseManager
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from domain.product import enums, objects
+from domain.team import Team as DomainTeam
 
 
 def to_response_object(obj: objects.BaseObject | list[objects.BaseObject]) -> dict:
@@ -14,7 +15,7 @@ def to_response_object(obj: objects.BaseObject | list[objects.BaseObject]) -> di
 
 def to_dto(domain_object: objects.BaseObject, dto_type: str = "detail") -> dict:
     OBJECT_MAPPING = {
-        objects.Team: {
+        DomainTeam: {
             "detail": Team,
             "list": TeamList,
         },

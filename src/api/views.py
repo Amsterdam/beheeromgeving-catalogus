@@ -6,7 +6,8 @@ from rest_framework.viewsets import ViewSet
 from api import datatransferobjects as dtos
 from domain import exceptions
 from domain.auth import AuthorizationRepository, AuthorizationService
-from domain.product import ProductRepository, ProductService, TeamRepository, TeamService
+from domain.product import ProductRepository, ProductService
+from domain.team import TeamRepository, TeamService
 
 
 @api_view(["GET"])

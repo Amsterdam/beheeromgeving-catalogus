@@ -3,7 +3,8 @@ from django.conf import settings
 
 from domain.auth import AuthorizationService
 from domain.exceptions import IllegalOperation, NotAuthorized, ObjectDoesNotExist
-from domain.product import DataContract, DataService, ProductService, TeamService
+from domain.product import DataContract, DataService, ProductService
+from domain.team import TeamService
 from tests.domain.utils import DummyAuthRepo, DummyRepository
 
 ADMIN_SCOPE = [settings.ADMIN_ROLE_NAME]
