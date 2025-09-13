@@ -21,6 +21,20 @@ def team() -> Team:
 
 
 @pytest.fixture()
+def other_team() -> Team:
+    return Team(
+        id=2,
+        name="Beheer Openbare Ruimte",
+        acronym="BOR",
+        description="",
+        po_name="Jan Bor",
+        po_email="j.bor@amsterdam.nl",
+        contact_email="bor@amsterdam.nl",
+        scope="scope_bor",
+    )
+
+
+@pytest.fixture()
 def product(team: Team) -> Product:
     return Product(
         id=1,

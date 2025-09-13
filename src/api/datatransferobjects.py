@@ -136,12 +136,38 @@ class DataContract(ModelMixin, BaseModel):
 
 
 class ProductDetail(ModelMixin, BaseModel):
-    """Used for create/partial update."""
+    """Used for get/create."""
 
+    team_id: int
     id: int | None = None
     name: str | None = None
     description: str | None = None
     team_id: int | None = None
+    language: enums.Language | None = None
+    is_geo: bool | None = None
+    schema_url: str | None = None
+    type: enums.ProductType | None = None
+    contracts: list[DataContract] | None = None
+    themes: list[enums.Theme] | None = None
+    tags: list[str] | None = None
+    last_updated: datetime | None = None
+    has_personal_data: bool | None = None
+    has_special_personal_data: bool | None = None
+    refresh_period: str | None = None
+    publication_status: enums.PublicationStatus | None = None
+    owner: str | None = None
+    services: list[DataService] | None = None
+    sources: list[int] | None = None
+    sinks: list[int] | None = None
+
+
+class ProductUpdate(ModelMixin, BaseModel):
+    """Used for partial update"""
+
+    id: int | None = None
+    team_id: int | None = None
+    name: str | None = None
+    description: str | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
     schema_url: str | None = None

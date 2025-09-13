@@ -1,5 +1,5 @@
 from domain import exceptions
-from domain.auth import Permissions, Role
+from domain.auth import Permission, Role, authorize
 from domain.base import (
     AbstractService,
     AbstractTeamRepository,
@@ -11,9 +11,21 @@ class TeamService:
     repository: AbstractTeamRepository
     auth: AbstractService
 
-    def __init__(self, repo: AbstractTeamRepository, auth: AbstractService):
+    def __init__(self, repo: AbstractTeamRepository, auth: AbstractService, **kwargs):
         self.repository = repo
         self.auth = auth
+        authorize.register_auth(
+            "is_admin",
+            method=self.auth.permit,
+            permission=Permission(role=Role.ADMIN, allowed_fields=Permission.ALL),
+        )
+        authorize.register_auth(
+            "can_update_team",
+            method=self.auth.permit,
+            permission=Permission(
+                role=Role.TEAM_MEMBER, allowed_fields={"po_name", "po_email", "contact_email"}
+            ),
+        )
 
     def get_team(self, team_id: str) -> Team:
         return self.repository.get(team_id)
@@ -28,12 +40,9 @@ class TeamService:
         team = Team(**data)
         return self._persist(team)
 
-    UPDATE_TEAM_PERMISSION = Permissions(
-        admin=Permissions.ALL, team_member={"po_name", "po_email", "contact_email"}
-    )
-
-    def update_team(self, team_id, *, data: dict, scopes: list[str]) -> Team:
-        self.auth.permit(self.UPDATE_TEAM_PERMISSION, scopes=scopes, fields=data.keys())
+    @authorize("is_admin", "can_update_team")
+    def update_team(self, team_id: int, **kwargs) -> Team:
+        data = kwargs.get("data", {})
         if int(data.get("id", team_id)) != int(team_id):
             raise exceptions.IllegalOperation("Cannot update product id")
         team = self.get_team(team_id)

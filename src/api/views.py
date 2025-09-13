@@ -67,7 +67,9 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
     def partial_update(self, request, pk=None):
         team_dto = self._validate_dto(request.data, dtos.TeamPartial)
         self.service.update_team(
-            int(pk), data=team_dto.model_dump(exclude_unset=True), scopes=request.get_token_scopes
+            team_id=int(pk),
+            data=team_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
         )
         return Response(status=200)
 
@@ -101,22 +103,24 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         product_dto = self._validate_dto(request.data)
         # ignore contracts/service as these should be created through their own endpoint
         product = self.service.create_product(
-            product_dto.model_dump(exclude=["contracts", "services"])
+            data=product_dto.model_dump(exclude=["contracts", "services"]),
+            scopes=request.get_token_scopes,
         )
         return Response(dtos.to_response_object(product), status=201)
 
     def partial_update(self, request, pk=None):
-        product_dto = self._validate_dto(request.data)
+        product_dto = self._validate_dto(request.data, dto_type=dtos.ProductUpdate)
 
         # ignore contracts/service as these should be created through their own endpoint
         self.service.update_product(
-            int(pk),
-            product_dto.model_dump(exclude_unset=True, exclude=["contracts", "services"]),
+            product_id=int(pk),
+            data=product_dto.model_dump(exclude_unset=True, exclude=["contracts", "services"]),
+            scopes=request.get_token_scopes,
         )
         return Response(status=200)
 
     def destroy(self, request, pk=None):
-        self.service.delete_product(int(pk))
+        self.service.delete_product(product_id=int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
 
     @action(detail=True, methods=["get"], url_path="contracts", url_name="contracts-list")
@@ -128,7 +132,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @contracts_list.mapping.post
     def create_contract(self, request, pk=None):
         contract_dto = self._validate_dto(request.data, dtos.DataContract)
-        contract = self.service.create_contract(int(pk), contract_dto.model_dump())
+        contract = self.service.create_contract(
+            product_id=int(pk), data=contract_dto.model_dump(), scopes=request.get_token_scopes
+        )
         data = dtos.to_response_object(contract)
         return Response(data, status=201)
 
@@ -147,14 +153,19 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def update_contract(self, request, pk=None, contract_id=None):
         contract_dto = self._validate_dto(request.data, dtos.DataContract)
         contract = self.service.update_contract(
-            int(pk), int(contract_id), contract_dto.model_dump(exclude_unset=True)
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            data=contract_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
         )
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
     @contract_detail.mapping.delete
     def delete_contract(self, request, pk=None, contract_id=None):
-        self.service.delete_contract(int(pk), int(contract_id))
+        self.service.delete_contract(
+            product_id=int(pk), contract_id=int(contract_id), scopes=request.get_token_scopes
+        )
         return Response(status=204)
 
     @action(detail=True, methods=["get"], url_path="services", url_name="services-list")
@@ -166,7 +177,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @services_list.mapping.post
     def create_service(self, request, pk=None):
         service_dto = self._validate_dto(request.data, dtos.DataService)
-        service = self.service.create_service(int(pk), service_dto.model_dump())
+        service = self.service.create_service(
+            product_id=int(pk),
+            data=service_dto.model_dump(),
+            scopes=request.get_token_scopes,
+        )
         data = dtos.to_response_object(service)
         return Response(data, status=201)
 
@@ -185,12 +200,17 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def update_service(self, request, pk=None, service_id=None):
         service_dto = self._validate_dto(request.data, dtos.DataService)
         service = self.service.update_service(
-            int(pk), int(service_id), service_dto.model_dump(exclude_unset=True)
+            product_id=int(pk),
+            service_id=int(service_id),
+            data=service_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
         )
         data = dtos.to_response_object(service)
         return Response(data, status=200)
 
     @service_detail.mapping.delete
     def delete_servie(self, request, pk=None, service_id=None):
-        self.service.delete_service(int(pk), int(service_id))
+        self.service.delete_service(
+            product_id=int(pk), service_id=int(service_id), scopes=request.get_token_scopes
+        )
         return Response(status=204)

@@ -6,9 +6,10 @@ from domain.base import AbstractAuthRepository, AbstractRepository, BaseObject
 
 
 class DummyRepository(AbstractRepository):
-    _items: dict[int, BaseObject] = {}
+    _items: dict[int, BaseObject]
 
     def __init__(self, objects: list[BaseObject]):
+        self._items = {}
         for object in objects:
             self._items[object.id] = object
 
@@ -34,14 +35,15 @@ class DummyRepository(AbstractRepository):
 
 
 class DummyAuthRepo(AbstractAuthRepository):
-    _items: dict[int, BaseObject] = {}
-
-    def __init__(self, objects: list[BaseObject]):
-        for object in objects:
-            self._items[object.id] = object
+    def __init__(self, teams: list[BaseObject], products: list[BaseObject]):
+        self.team_scopes = {}
+        self.product_scopes = {}
+        for team in teams:
+            self.team_scopes[team.id] = team.scope
+        for product in products:
+            self.product_scopes[product.id] = self.team_scopes.get(product.team_id)
 
     def get_config(self):
-        return AuthorizationConfiguration(settings.ADMIN_ROLE_NAME, self.get_team_scopes())
-
-    def get_team_scopes(self):
-        return [getattr(item, "scope", None) for item in self._items.values()]
+        return AuthorizationConfiguration(
+            settings.ADMIN_ROLE_NAME, self.team_scopes, self.product_scopes
+        )

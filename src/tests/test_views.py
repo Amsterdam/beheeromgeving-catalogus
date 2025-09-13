@@ -2,7 +2,6 @@ import pytest
 from django.conf import settings
 
 from beheeromgeving.models import Team
-from tests.utils import build_jwt_token
 
 
 def test_health(api_client):
@@ -40,9 +39,8 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["acronym"] == "DADI"
 
-    def test_teams_create_by_admin(self, api_client):
-        token = build_jwt_token([settings.ADMIN_ROLE_NAME])
-        response = api_client.post(
+    def test_teams_create_by_admin(self, client_with_token):
+        response = client_with_token([settings.ADMIN_ROLE_NAME]).post(
             "/teams",
             data={
                 "name": "Basis- en Kernregistratie",
@@ -53,15 +51,13 @@ class TestViews:
                 "contact_email": "benk@amsterdam.nl",
                 "scope": "scope_benk",
             },
-            HTTP_AUTHORIZATION=f"Bearer {token}",
         )
         assert response.status_code == 201
-        result = api_client.get(f"/teams/{response.data}")
+        result = client_with_token().get(f"/teams/{response.data}")
         assert result.data["acronym"] == "BENK"
 
-    def test_teams_create_unauthorized(self, api_client):
-        token = build_jwt_token(["some_unauthorized_scope"])
-        response = api_client.post(
+    def test_teams_create_unauthorized(self, client_with_token):
+        response = client_with_token(["some_unauthorized_scope"]).post(
             "/teams",
             data={
                 "name": "Basis- en Kernregistratie",
@@ -72,36 +68,31 @@ class TestViews:
                 "contact_email": "benk@amsterdam.nl",
                 "scope": "scope_benk",
             },
-            HTTP_AUTHORIZATION=f"Bearer {token}",
         )
         assert response.status_code == 401
         # No team created
-        result = api_client.get("/teams")
+        result = client_with_token([]).get("/teams")
         assert len(result.data) == 0
 
-    def test_teams_update(self, api_client, orm_team):
-        token = build_jwt_token([settings.ADMIN_ROLE_NAME])
-        response = api_client.patch(
+    def test_teams_update(self, client_with_token, orm_team):
+        response = client_with_token([settings.ADMIN_ROLE_NAME]).patch(
             f"/teams/{orm_team.id}",
             data={
                 "po_name": "Iemand Anders",
             },
-            HTTP_AUTHORIZATION=f"Bearer {token}",
         )
         assert response.status_code == 200
 
         orm_team.refresh_from_db()
         assert orm_team.po_name == "Iemand Anders"
 
-    def test_teams_delete_by_admin(self, api_client, orm_team):
-        token = build_jwt_token([settings.ADMIN_ROLE_NAME])
-        response = api_client.delete(f"/teams/{orm_team.id}", HTTP_AUTHORIZATION=f"Bearer {token}")
+    def test_teams_delete_by_admin(self, client_with_token, orm_team):
+        response = client_with_token([settings.ADMIN_ROLE_NAME]).delete(f"/teams/{orm_team.id}")
         assert response.status_code == 204
         assert Team.objects.count() == 0
 
-    def test_teams_delete_unauthorized(self, api_client, orm_team):
-        token = build_jwt_token(["some_unauthorized_scope"])
-        response = api_client.delete(f"/teams/{orm_team.id}", HTTP_AUTHORIZATION=f"Bearer {token}")
+    def test_teams_delete_unauthorized(self, client_with_token, orm_team):
+        response = client_with_token(["some_unauthorized_scope"]).delete(f"/teams/{orm_team.id}")
         assert response.status_code == 401
         assert Team.objects.count() == 1
 
@@ -115,8 +106,11 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == "bomen"
 
-    def test_product_create(self, api_client, orm_team):
-        response = api_client.post("/products", data={"type": "D", "team_id": orm_team.id})
+    def test_product_create(self, client_with_token, orm_team):
+        response = client_with_token([orm_team.scope]).post(
+            "/products",
+            data={"type": "D", "team_id": orm_team.id},
+        )
         assert response.status_code == 201
 
     @pytest.mark.parametrize(
@@ -126,13 +120,17 @@ class TestViews:
             {"refresh_period": 2},  # Wrong type
         ],
     )
-    def test_product_create_bad_data(self, api_client, data, orm_team):
-        response = api_client.post("/products", data={**data, "team_id": orm_team.id})
+    def test_product_create_bad_data(self, client_with_token, data, orm_team):
+        response = client_with_token([orm_team.scope]).post(
+            "/products",
+            data={**data, "team_id": orm_team.id},
+        )
         assert response.status_code == 400
 
-    def test_product_update(self, api_client, orm_product):
-        response = api_client.patch(
-            f"/products/{orm_product.id}", data={"refresh_period": "2 maanden"}
+    def test_product_update(self, client_with_token, orm_product, orm_team):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}",
+            data={"refresh_period": "2 maanden"},
         )
         assert response.status_code == 200
 
@@ -142,15 +140,16 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 1
 
-    def test_contract_create(self, api_client, orm_product):
-        response = api_client.post(
-            f"/products/{orm_product.id}/contracts", data={"name": "contract1"}
+    def test_contract_create(self, client_with_token, orm_product, orm_team):
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts",
+            data={"name": "contract1"},
         )
         assert response.status_code == 201
 
-    def test_contract_update(self, api_client, orm_product):
+    def test_contract_update(self, client_with_token, orm_product, orm_team):
         contract_id = orm_product.contracts.first().id
-        response = api_client.patch(
+        response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/contracts/{contract_id}", data={"name": "contract1"}
         )
         assert response.status_code == 200
@@ -163,16 +162,18 @@ class TestViews:
             {"distributions": [{"type": 3}]},  # Wrong type on subfield
         ],
     )
-    def test_contract_update_bad_data(self, api_client, data, orm_product):
+    def test_contract_update_bad_data(self, client_with_token, data, orm_product, orm_team):
         contract_id = orm_product.contracts.first().id
-        response = api_client.patch(
+        response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/contracts/{contract_id}", data=data
         )
         assert response.status_code == 400
 
-    def test_contract_delete(self, api_client, orm_product):
+    def test_contract_delete(self, client_with_token, orm_product, orm_team):
         contract_id = orm_product.contracts.first().id
-        response = api_client.delete(f"/products/{orm_product.id}/contracts/{contract_id}")
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
 
         assert response.status_code == 204
 
@@ -182,16 +183,16 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 1
 
-    def test_service_create(self, api_client, orm_product):
-        response = api_client.post(
+    def test_service_create(self, client_with_token, orm_product, orm_team):
+        response = client_with_token([orm_team.scope]).post(
             f"/products/{orm_product.id}/services",
             data={"type": "REST", "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2"},
         )
         assert response.status_code == 201
 
-    def test_service_update(self, api_client, orm_product):
+    def test_service_update(self, client_with_token, orm_product, orm_team):
         service_id = orm_product.services.first().id
-        response = api_client.patch(
+        response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/services/{service_id}", data={"type": "WMS"}
         )
         assert response.status_code == 200
@@ -203,13 +204,17 @@ class TestViews:
             {"type": "API"},  # Wrong type
         ],
     )
-    def test_service_update_bad_data(self, api_client, data, orm_product):
+    def test_service_update_bad_data(self, client_with_token, data, orm_product, orm_team):
         service_id = orm_product.services.first().id
-        response = api_client.patch(f"/products/{orm_product.id}/services/{service_id}", data=data)
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/services/{service_id}", data=data
+        )
         assert response.status_code == 400
 
-    def test_service_delete(self, api_client, orm_product):
+    def test_service_delete(self, client_with_token, orm_product, orm_team):
         service_id = orm_product.services.first().id
-        response = api_client.delete(f"/products/{orm_product.id}/services/{service_id}")
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/services/{service_id}"
+        )
 
         assert response.status_code == 204
