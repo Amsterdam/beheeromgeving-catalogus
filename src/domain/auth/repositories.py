@@ -7,9 +7,11 @@ from domain.base import AbstractAuthRepository
 
 class AuthorizationRepository(AbstractAuthRepository):
     def __init__(self):
-        team_scopes = [t.scope for t in orm.Team.objects.all()]
+        queryset = orm.Team.objects.all()
+        team_scopes = {t.id: t.scope for t in queryset}
+        product_scopes = {p.id: t.scope for t in queryset for p in t.products.all()}
         admin_role = settings.ADMIN_ROLE_NAME
-        self.config = AuthorizationConfiguration(admin_role, team_scopes)
+        self.config = AuthorizationConfiguration(admin_role, team_scopes, product_scopes)
 
     def get_config(self) -> AuthorizationConfiguration:
         return self.config
