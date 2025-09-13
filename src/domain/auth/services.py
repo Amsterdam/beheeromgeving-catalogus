@@ -1,3 +1,5 @@
+from functools import wraps
+
 from domain.auth import DENIED, GRANTED, AuthorizationConfiguration, Permission, Role
 from domain.base import AbstractRepository
 from domain.exceptions import DomainException, NotAuthorized
@@ -13,18 +15,19 @@ class AuthorizationService:
     def config(self) -> AuthorizationConfiguration:
         return self.repo.get_config()
 
-    def require(self, role: Role | None = None, roles: set[Role] | None = None, scopes=list[str]):
-        if role is None and roles is None:
-            raise DomainException("AuthorizationService.require needs at least one Role.")
-        if role and roles:
-            raise DomainException(
-                "AuthorizationService.require cannot handle both role and roles."
-            )
+    def require(
+        self,
+        *args,
+        role: Role | None = None,
+        scopes=list[str],
+        **kwargs,
+    ):
+        if role is None:
+            raise DomainException("AuthorizationService.require needs a Role.")
 
-        required_roles = {role} if role else roles
-        if any(self.is_allowed(scopes, role) for role in required_roles):
+        if self.is_allowed(scopes, role):
             return GRANTED
-        raise self.exception
+        return DENIED
 
     def permit(
         self,
@@ -33,6 +36,7 @@ class AuthorizationService:
         scopes: list[str],
         data: dict,
         permission: Permission,
+        **kwargs,
     ):
         if not permission:
             raise DomainException("AuthorizationService.permit needs a Permission")
@@ -77,35 +81,47 @@ class AuthorizationService:
 
 
 class Authorizer:
-    AND = "AND"
-    OR = "OR"
 
-    def __init__(self):
-        self._register = {}
+    def _create_lambda(self, team_service, method_name, permission, role):
+        try:
+            auth_service = team_service.auth
+        except AttributeError:
+            raise DomainException(
+                "Decorator can only be used in a class that has an AuthorizationService"
+            ) from None
+        try:
+            service_method = getattr(auth_service, method_name)
+            return lambda self, *args, **kwargs: service_method(
+                *args, permission=permission, role=role, **kwargs
+            )
+        except AttributeError:
+            raise DomainException(
+                f"Method {method_name} does not exist on AuthorizationService"
+            ) from None
 
-    def __call__(auth_self, *auth_types, mode=OR):
+    def _create_decorator(auth_self, auth_type, service_method_name, permission, role):
         def decorator(func):
+            @wraps(func)
             def wrapper(self, *args, **kwargs):
+                already_allowed = kwargs.pop("already_allowed", False)
+                if already_allowed:
+                    return func(self, *args, **kwargs)
                 try:
-                    authorization_functions = [
-                        auth_self._register[auth_type] for auth_type in auth_types
-                    ]
+                    authorization_function = auth_self._create_lambda(
+                        self, service_method_name, permission, role
+                    )
                 except KeyError:
                     raise DomainException(
-                        f"One or more of these auth_types do not exist: {auth_types}"
+                        f"Authorization Type does not exist: {auth_type}"
                     ) from None
-                if mode == auth_self.OR:
-                    # any of the functions should pass
-                    allowed = any(
-                        f(self, *args, **kwargs) == GRANTED for f in authorization_functions
-                    )
-                else:
-                    # all of the functions should pass
-                    allowed = all(
-                        f(self, *args, **kwargs) == GRANTED for f in authorization_functions
-                    )
+                allowed = authorization_function(self, *args, **kwargs) == GRANTED
+                if hasattr(func, "__wrapped__"):
+                    return func(self, *args, already_allowed=allowed, **kwargs)
+
                 if not allowed:
-                    raise NotAuthorized("You are not authorized to perform this operation")
+                    raise NotAuthorized(
+                        f"You are not authorized to perform this operation {auth_type}"
+                    )
                 return func(self, *args, **kwargs)
 
             return wrapper
@@ -113,11 +129,22 @@ class Authorizer:
         return decorator
 
     def register_auth(
-        self, auth_type: str, method: callable, permission: Permission | None = None
+        self,
+        auth_type: str,
+        service_method_name: str | None = None,
+        permission: Permission | None = None,
+        role: Role | None = None,
     ):
-        self._register[auth_type] = lambda self, *args, **kwargs: method(
-            *args, permission=permission, **kwargs
-        )
+        if service_method_name is None:
+            service_method_name = auth_type
+        decorator = self._create_decorator(auth_type, service_method_name, permission, role)
+        setattr(self, auth_type, decorator)
 
 
 authorize = Authorizer()
+TEAM_UPDATE_PERMISSION = Permission(
+    role=Role.TEAM_MEMBER, allowed_fields={"po_name", "po_email", "contact_email"}
+)
+authorize.register_auth("is_team_member")
+authorize.register_auth("can_update_team", "permit", permission=TEAM_UPDATE_PERMISSION)
+authorize.register_auth("is_admin", "require", role=Role.ADMIN)

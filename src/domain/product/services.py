@@ -1,10 +1,6 @@
 from domain import exceptions
 from domain.auth import AuthorizationService, authorize
-from domain.base import (
-    AbstractProductRepository,
-    AbstractRepository,
-    AbstractService,
-)
+from domain.base import AbstractProductRepository, AbstractRepository
 from domain.product import DataContract, DataService, Product
 
 
@@ -12,10 +8,9 @@ class ProductService:
     repository: AbstractProductRepository
     auth: AuthorizationService
 
-    def __init__(self, repo: AbstractRepository, auth: AbstractService):
+    def __init__(self, repo: AbstractRepository, auth: AuthorizationService):
         self.repository = repo
         self.auth = auth
-        authorize.register_auth("is_team_member", self.auth.is_team_member)
 
     def get_products(self, **kwargs) -> list[Product]:
         return self.repository.list(**kwargs)
@@ -23,18 +18,16 @@ class ProductService:
     def get_product(self, product_id) -> Product:
         return self.repository.get(product_id)
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def create_product(self, *, data: dict, scopes: list[str]) -> Product:
-        # self.auth.is_team_member(scopes=scopes, team_id=data["team_id"])
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
         product = Product(**data)
         self._persist(product)
         return product
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def update_product(self, *, product_id: str, data: dict, scopes: list[str]) -> Product:
-        # self.auth.is_team_member(scopes=scopes, product_id=product_id)
         if int(data.get("id", product_id)) != int(product_id):
             raise exceptions.IllegalOperation("Cannot update product id")
 
@@ -43,7 +36,7 @@ class ProductService:
         self._persist(existing_product)
         return existing_product.id
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def delete_product(self, *, product_id: int, scopes: list[str]) -> None:
         self.repository.delete(product_id)
 
@@ -62,7 +55,7 @@ class ProductService:
                 f"Contract with id {contract_id} does not exist on Product {product_id}"
             ) from None
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def create_contract(self, product_id: int, data: int, scopes: list[str]):
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
@@ -76,7 +69,7 @@ class ProductService:
         self._persist(product)
         return contract
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def update_contract(self, product_id: int, contract_id: int, data: dict, scopes: list[str]):
         if int(data.get("id", contract_id)) != int(contract_id):
             raise exceptions.IllegalOperation("Cannot update contract id")
@@ -96,7 +89,7 @@ class ProductService:
         self._persist(product)
         return contract
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def delete_contract(self, product_id: int, contract_id: int, scopes: list[str]):
         product = self.get_product(product_id)
         contract_ids = [c.id for c in product.contracts]
@@ -124,7 +117,7 @@ class ProductService:
                 f"Service with id {service_id} does not exist on Product {product_id}"
             ) from None
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def create_service(self, product_id: int, data: int, scopes: list[str]) -> DataService:
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
@@ -138,7 +131,7 @@ class ProductService:
         self._persist(product)
         return service
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def update_service(
         self, product_id: int, service_id: int, data: dict, scopes: list[str]
     ) -> DataService:
@@ -158,7 +151,7 @@ class ProductService:
         self._persist(product)
         return service
 
-    @authorize("is_team_member")
+    @authorize.is_team_member
     def delete_service(self, product_id: int, service_id: int, scopes: list[str]):
         product = self.get_product(product_id)
         service_ids = [s.id for s in product.services]
