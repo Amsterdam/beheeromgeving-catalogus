@@ -80,7 +80,7 @@ class TestTeamService:
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_update_team_unauthorized_field(self, team_service, team):
         team_service.update_team(
-            team_id=team.id, data={"description": "New Description"}, scopes={team.scope}
+            team_id=team.id, data={"description": "New Description"}, scopes=[team.scope]
         )
 
     def test_update_team_by_team_member(self, team_service, team):

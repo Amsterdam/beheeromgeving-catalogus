@@ -11,7 +11,10 @@ class AuthorizationRepository(AbstractAuthRepository):
         team_scopes = {t.id: t.scope for t in queryset}
         product_scopes = {p.id: t.scope for t in queryset for p in t.products.all()}
         admin_role = settings.ADMIN_ROLE_NAME
-        self.config = AuthorizationConfiguration(admin_role, team_scopes, product_scopes)
+        feature_enabled = settings.FEATURE_FLAG_USE_AUTH
+        self.config = AuthorizationConfiguration(
+            admin_role, team_scopes, product_scopes, feature_enabled=feature_enabled
+        )
 
     def get_config(self) -> AuthorizationConfiguration:
         return self.config

@@ -2,7 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from beheeromgeving.models import DataContract, DataService, Distribution, Product, Team
-from src.tests.utils import build_jwt_token
+from tests.utils import build_jwt_token
 
 
 @pytest.fixture()

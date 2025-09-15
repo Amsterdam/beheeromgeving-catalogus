@@ -90,8 +90,9 @@ class Authorizer:
         self.register_auth("can_update_team", "permit", permission=TEAM_UPDATE_PERMISSION)
         self.register_auth("is_admin", "require", role=Role.ADMIN)
 
-    def set_auth_service(self, auth):
+    def set_auth_service(self, auth: AuthorizationService):
         self.auth = auth
+        self.NO_AUTH = not auth.config.feature_enabled
 
     def _create_lambda(self, method_name, permission, role):
         if self.auth is None:
@@ -112,6 +113,8 @@ class Authorizer:
         def decorator(func):
             @wraps(func)
             def wrapper(self, *args, **kwargs):
+                if auth_self.NO_AUTH:
+                    return func(self, *args, **kwargs)
                 already_allowed = kwargs.pop("already_allowed", False)
                 if already_allowed:
                     return func(self, *args, **kwargs)

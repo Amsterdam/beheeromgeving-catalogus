@@ -40,10 +40,12 @@ class AuthorizationConfiguration:
         admin_role: str,
         team_scopes: dict[TeamId, Scope],
         product_scopes: dict[ProductId, Scope],
+        feature_enabled: bool = True,
     ):
         self.team_scopes = team_scopes or {}
         self.product_scopes = product_scopes or {}
         self.admin_role = admin_role
+        self.feature_enabled = feature_enabled
 
     def scope_to_role(self, scope: Scope) -> Role | None:
         if scope == self.admin_role:
@@ -53,7 +55,6 @@ class AuthorizationConfiguration:
         return None
 
     def team_id_to_scope(self, team_id: TeamId) -> Scope | None:
-        print(self.team_scopes)
         return self.team_scopes.get(team_id, DENIED)
 
     def product_id_to_scope(self, product_id: ProductId) -> Scope | None:
