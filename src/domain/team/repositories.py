@@ -16,15 +16,15 @@ class TeamRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Team with id {team_id} does not exist") from e
 
-    def list(self):
+    def list(self) -> list[Team]:
         return list(self._teams.values())
 
-    def save(self, team: Team):
+    def save(self, team: Team) -> int:
         saved_team = orm.Team.from_domain(team)
         self._teams[saved_team.id] = saved_team
         return saved_team.id
 
-    def delete(self, team_id: int):
+    def delete(self, team_id: int) -> int:
         try:
             self._teams.pop(team_id)
         except KeyError as e:

@@ -92,12 +92,12 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         # Raises if data is invalid
         return dto_type(**data)
 
-    def list(self, request):
+    def list(self, _request):
         products = self.service.get_products()
         data = dtos.to_response_object(products)
         return Response(data, status=200)
 
-    def retrieve(self, request, pk=None):
+    def retrieve(self, _request, pk=None):
         product = self.service.get_product(int(pk))
         return Response(dtos.to_response_object(product), status=200)
 
@@ -126,7 +126,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(status=204)
 
     @action(detail=True, methods=["get"], url_path="contracts", url_name="contracts-list")
-    def contracts_list(self, request, pk=None):
+    def contracts_list(self, _request, pk=None):
         contracts = self.service.get_contracts(int(pk))
         data = dtos.to_response_object(contracts)
         return Response(data, status=200)
@@ -146,7 +146,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_path="contracts/(?P<contract_id>[^/.]+)",
         url_name="contract-detail",
     )
-    def contract_detail(self, request, pk=None, contract_id=None):
+    def contract_detail(self, _request, pk=None, contract_id=None):
         contract = self.service.get_contract(int(pk), int(contract_id))
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
@@ -171,7 +171,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(status=204)
 
     @action(detail=True, methods=["get"], url_path="services", url_name="services-list")
-    def services_list(self, request, pk=None):
+    def services_list(self, _request, pk=None):
         services = self.service.get_services(int(pk))
         data = dtos.to_response_object(services)
         return Response(data, status=200)
@@ -193,7 +193,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_path="services/(?P<service_id>[^/.]+)",
         url_name="service-detail",
     )
-    def service_detail(self, request, pk=None, service_id=None):
+    def service_detail(self, _request, pk=None, service_id=None):
         service = self.service.get_service(int(pk), int(service_id))
         data = dtos.to_response_object(service)
         return Response(data, status=200)

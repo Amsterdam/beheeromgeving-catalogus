@@ -89,7 +89,7 @@ def product(team: Team) -> Product:
 
 
 @pytest.fixture()
-def init_auth(team, other_team, product):
+def init_auth(team, other_team, product) -> None:
     auth_service = AuthorizationService(
         DummyAuthRepo(teams=[team, other_team], products=[product])
     )

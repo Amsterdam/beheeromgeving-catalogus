@@ -1,14 +1,22 @@
-from domain.auth.objects import DENIED, GRANTED, AuthorizationConfiguration, Permission, Role
+from domain.auth.objects import (
+    RULES,
+    AuthorizationConfiguration,
+    AuthorizationResult,
+    Permission,
+    Role,
+    Rule,
+)
 from domain.auth.repositories import AuthorizationRepository
 from domain.auth.services import AuthorizationService, authorize
 
 __all__ = [
-    DENIED,
-    GRANTED,
+    RULES,
     authorize,
     AuthorizationConfiguration,
     AuthorizationService,
     AuthorizationRepository,
+    AuthorizationResult,
     Permission,
     Role,
+    Rule,
 ]

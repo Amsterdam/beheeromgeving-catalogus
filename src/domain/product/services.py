@@ -1,10 +1,10 @@
 from domain import exceptions
 from domain.auth import authorize
-from domain.base import AbstractProductRepository, AbstractRepository
+from domain.base import AbstractProductRepository, AbstractRepository, AbstractService
 from domain.product import DataContract, DataService, Product
 
 
-class ProductService:
+class ProductService(AbstractService):
     repository: AbstractProductRepository
 
     def __init__(self, repo: AbstractRepository):
@@ -13,11 +13,11 @@ class ProductService:
     def get_products(self, **kwargs) -> list[Product]:
         return self.repository.list(**kwargs)
 
-    def get_product(self, product_id) -> Product:
+    def get_product(self, product_id: int) -> Product:
         return self.repository.get(product_id)
 
     @authorize.is_team_member
-    def create_product(self, *, data: dict, scopes: list[str]) -> Product:
+    def create_product(self, *, data: dict, **kwargs) -> Product:
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
         product = Product(**data)
@@ -25,8 +25,8 @@ class ProductService:
         return product
 
     @authorize.is_team_member
-    def update_product(self, *, product_id: str, data: dict, scopes: list[str]) -> Product:
-        if int(data.get("id", product_id)) != int(product_id):
+    def update_product(self, *, product_id: int, data: dict, **kwargs) -> Product:
+        if data.get("id", product_id) != product_id:
             raise exceptions.IllegalOperation("Cannot update product id")
 
         existing_product = self.get_product(product_id)
@@ -35,7 +35,7 @@ class ProductService:
         return existing_product.id
 
     @authorize.is_team_member
-    def delete_product(self, *, product_id: int, scopes: list[str]) -> None:
+    def delete_product(self, *, product_id: int, **kwargs) -> None:
         self.repository.delete(product_id)
 
     def get_contracts(self, product_id: int) -> list[DataContract]:
@@ -54,7 +54,7 @@ class ProductService:
             ) from None
 
     @authorize.is_team_member
-    def create_contract(self, product_id: int, data: int, scopes: list[str]):
+    def create_contract(self, product_id: int, data: int, **kwargs) -> DataContract:
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
 
@@ -68,16 +68,16 @@ class ProductService:
         return contract
 
     @authorize.is_team_member
-    def update_contract(self, product_id: int, contract_id: int, data: dict, scopes: list[str]):
-        if int(data.get("id", contract_id)) != int(contract_id):
+    def update_contract(
+        self, product_id: int, contract_id: int, data: dict, **kwargs
+    ) -> DataContract:
+        if data.get("id", contract_id) != contract_id:
             raise exceptions.IllegalOperation("Cannot update contract id")
 
         product = self.get_product(product_id)
         try:
             contract = next(
-                contract
-                for contract in (product.contracts or [])
-                if contract.id == int(contract_id)
+                contract for contract in (product.contracts or []) if contract.id == contract_id
             )
         except StopIteration:
             raise exceptions.ObjectDoesNotExist(
@@ -88,7 +88,7 @@ class ProductService:
         return contract
 
     @authorize.is_team_member
-    def delete_contract(self, product_id: int, contract_id: int, scopes: list[str]):
+    def delete_contract(self, product_id: int, contract_id: int, **kwargs):
         product = self.get_product(product_id)
         contract_ids = [c.id for c in product.contracts]
         if contract_id not in contract_ids:
@@ -108,7 +108,7 @@ class ProductService:
             return next(
                 service
                 for service in (self.get_services(product_id) or [])
-                if service.id == int(service_id)
+                if service.id == service_id
             )
         except StopIteration:
             raise exceptions.ObjectDoesNotExist(
@@ -116,7 +116,7 @@ class ProductService:
             ) from None
 
     @authorize.is_team_member
-    def create_service(self, product_id: int, data: int, scopes: list[str]) -> DataService:
+    def create_service(self, product_id: int, data: int, **kwargs) -> DataService:
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
 
@@ -131,15 +131,15 @@ class ProductService:
 
     @authorize.is_team_member
     def update_service(
-        self, product_id: int, service_id: int, data: dict, scopes: list[str]
+        self, product_id: int, service_id: int, data: dict, **kwargs
     ) -> DataService:
-        if int(data.get("id", service_id)) != int(service_id):
+        if data.get("id", service_id) != service_id:
             raise exceptions.IllegalOperation("Cannot update service id")
 
         product = self.get_product(product_id)
         try:
             service = next(
-                service for service in (product.services or []) if service.id == int(service_id)
+                service for service in (product.services or []) if service.id == service_id
             )
         except StopIteration:
             raise exceptions.ObjectDoesNotExist(
@@ -150,16 +150,14 @@ class ProductService:
         return service
 
     @authorize.is_team_member
-    def delete_service(self, product_id: int, service_id: int, scopes: list[str]):
+    def delete_service(self, product_id: int, service_id: int, **kwargs) -> int:
         product = self.get_product(product_id)
         service_ids = [s.id for s in product.services]
         if service_id not in service_ids:
             raise exceptions.ObjectDoesNotExist(
                 f"Service with id {service_id} does not exist on Product {product_id}"
             ) from None
-        product.services = [
-            service for service in product.services if service.id != int(service_id)
-        ]
+        product.services = [service for service in product.services if service.id != service_id]
         self._persist(product)
         return service_id
 
