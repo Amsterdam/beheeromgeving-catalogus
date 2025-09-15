@@ -23,7 +23,7 @@ class DummyRepository(AbstractRepository):
         return list(self._items.values())
 
     def save(self, object: BaseObject):
-        object.id = object.id or max(self._items.keys()) if len(self._items.keys()) else 0
+        object.id = object.id or max(self._items.keys()) + 1 if len(self._items.keys()) else 0
         self._items[object.id] = object
         return object
 

@@ -82,6 +82,7 @@ class AuthorizationService:
 
 class Authorizer:
     def __init__(self):
+        self.auth = None
         TEAM_UPDATE_PERMISSION = Permission(
             role=Role.TEAM_MEMBER, allowed_fields={"po_name", "po_email", "contact_email"}
         )
@@ -93,7 +94,10 @@ class Authorizer:
         self.auth = auth
 
     def _create_lambda(self, method_name, permission, role):
-
+        if self.auth is None:
+            raise DomainException(
+                "Authorizer doesn't have an AuthorizationService, please call set_auth_service()"
+            )
         try:
             service_method = getattr(self.auth, method_name)
             return lambda self, *args, **kwargs: service_method(
@@ -147,9 +151,3 @@ class Authorizer:
 
 
 authorize = Authorizer()
-# TEAM_UPDATE_PERMISSION = Permission(
-#     role=Role.TEAM_MEMBER, allowed_fields={"po_name", "po_email", "contact_email"}
-# )
-# authorize.register_auth("is_team_member")
-# authorize.register_auth("can_update_team", "permit", permission=TEAM_UPDATE_PERMISSION)
-# authorize.register_auth("is_admin", "require", role=Role.ADMIN)

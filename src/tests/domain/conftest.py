@@ -2,8 +2,10 @@ from datetime import datetime
 
 import pytest
 
-from domain.product import DataContract, DataService, Distribution, Product
-from domain.team import Team
+from domain.auth import AuthorizationService, authorize
+from domain.product import DataContract, DataService, Distribution, Product, ProductService
+from domain.team import Team, TeamService
+from tests.domain.utils import DummyAuthRepo, DummyRepository
 
 
 @pytest.fixture()
@@ -84,3 +86,22 @@ def product(team: Team) -> Product:
             )
         ],
     )
+
+
+@pytest.fixture()
+def init_auth(team, other_team, product):
+    auth_service = AuthorizationService(
+        DummyAuthRepo(teams=[team, other_team], products=[product])
+    )
+    authorize.set_auth_service(auth_service)
+
+
+@pytest.fixture()
+def team_service(team, init_auth) -> TeamService:
+    repo = DummyRepository(objects=[team])
+    return TeamService(repo)
+
+
+@pytest.fixture()
+def product_service(product, init_auth) -> ProductService:
+    return ProductService(repo=DummyRepository([product]))
