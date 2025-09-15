@@ -6,15 +6,15 @@ datapunt-authorization-django == 1.6.2
 djangorestframework == 3.16.1
 drf-spectacular == 0.28.0
 psycopg == 3.2.10
-pydantic[email] == 2.11.7
+pydantic[email] == 2.11.9
 python-json-logger==3.3.0
 python-dateutil==2.9.0.post0
 requests == 2.32.5
-whitenoise == 6.9.0
+whitenoise == 6.10.0
 
 # Monitoring
 azure-monitor-opentelemetry == 1.6.10
-azure-identity == 1.24.0
+azure-identity == 1.25.0
 uwsgitop == 0.12
 uwsgi-readiness-check == 0.2.0
 
