@@ -2,6 +2,7 @@
 
 ## Changelog
 
+2025-09-15: Added Authorization.
 2025-09-09: Minor tweaks after finishing up domain layer.
 2025-09-03: First draft of this document.
 
@@ -75,12 +76,14 @@ There are some drawbacks:
 
 ## The Domain
 
+The domain is divided into three main parts: Product, Team, and Auth.
+
+### Product Aggregate
+
 The main entity users will encounter is the Product, which can be either a DataProduct or
 InformationProduct. Each Product can have multiple Contracts, each containing one or more
 distributions. The ProductService is the one entrypoint for interacting with the Product and
 its underlying elements, the latter should not be altered directly.
-
-### Product Aggregate
 
 #### Aggregate Root: Product
 
@@ -101,6 +104,21 @@ Within the domain, they don't need an id.
 
 The Team Aggregate only consists of a Team object at this point (2025-09-03). This may change in
 the future.
+
+### Authorization
+
+We create a separate Authorization Service, which performs common authorization checks.
+There is an Authorizer class that adds some syntactic sugar on top of this. It is instantiated
+once, and this singleton (called `authorize`) contains a set of decorators that can perform the
+checks from the service. In other (Team/Product) services, we can then use these decorators
+to protect certain operations.
+
+The Authorization service combines information from all existing teams and products,
+to determine which product belongs to which team. There is also a global setting
+with the name of the scope of admins.
+
+Authorization as a whole is behind a feature flag to ease development. There is a setting
+FEATURE_FLAG_USE_AUTH, which is set to True by default.
 
 ## User Stories / Use Cases
 

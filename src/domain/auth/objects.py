@@ -29,6 +29,16 @@ class Permission:
 
 
 class Rule:
+    """A Rule definition for the authorization domain.
+
+    decorator_name: The name of the decorator that will be added to the Authorizer
+                    singleton instance.
+    _method_name:   The name of the method name of the AuthorizationService if it differs
+                    from the decorator_name.
+    permission:     The applicable permission for this rule.
+    role:           The applicable role for this rule.
+    """
+
     decorator_name: str
     _method_name: str | None = None
     permission: Permission | None = None
@@ -55,6 +65,7 @@ class Rule:
         self._method_name = name
 
 
+# Define standard rules.
 RULES = [
     Rule(decorator_name="is_team_member"),
     Rule(
@@ -74,6 +85,16 @@ Scope = NewType("Scope", str)
 
 
 class AuthorizationConfiguration:
+    """This contains all configuration for the AuthorizationService, which originates either
+    in the settings or the database.
+
+    admin_role:     The role for the admin, from the settings.
+    team_scopes:    A mapping from team_id to team scope.
+    product_scopes: A mapping from product_id to team_scope.
+
+    We have a feature flag in place, the feature_enabled flag determines whether it is on or not.
+    """
+
     scopes_roles: dict[str, Role]
     scopes_team_id: dict[str, int]
 

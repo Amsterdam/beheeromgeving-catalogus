@@ -12,6 +12,7 @@ Requirements:
 ## Using Docker Compose
 
 Run docker compose:
+
 ```shell
 docker compose up
 ```
@@ -28,6 +29,7 @@ source venv/bin/activate
 ```
 
 Install all packages in it:
+
 ```shell
 pip install -U wheel pip
 cd src/
@@ -35,6 +37,7 @@ make install  # installs src/requirements_dev.txt
 ```
 
 Start the Django application:
+
 ```shell
 ./manage.py runserver localhost:8000
 ```
@@ -67,3 +70,7 @@ pyenv install 3.13.1
 pyenv virtualenv 3.13.1 beheeromgeving
 echo beheeromgeving > .python-version
 ```
+
+A setting that may be useful is the FEATURE_FLAG_USE_AUTH, which if set to False will
+prevent the application from doing any authorization checks. This is strictly for
+development purposes, and will always be set to True in production.

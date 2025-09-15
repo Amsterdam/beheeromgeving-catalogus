@@ -28,6 +28,7 @@ class AuthorizationService:
         role: Role | None = None,
         **kwargs,
     ) -> AuthorizationResult:
+        """Assert that the user has the required role."""
         if role is None:
             raise DomainException("AuthorizationService.require needs a Role.")
 
@@ -44,6 +45,7 @@ class AuthorizationService:
         permission: Permission,
         **kwargs,
     ) -> AuthorizationResult:
+        """Assert that the user can perform the action on all the fields in the data."""
         if not permission:
             raise DomainException("AuthorizationService.permit needs a Permission")
         fields = set(data.keys())
@@ -68,6 +70,7 @@ class AuthorizationService:
         product_id: int | None = None,
         **kwargs,
     ) -> AuthorizationResult:
+        """Assert the user is a member of the team that owns the resource."""
         if data is None:
             data = {}
         team_id: int = data.get("team_id")
@@ -89,6 +92,28 @@ class AuthorizationService:
 
 
 class Authorizer:
+    """Syntactic sugar around the AuthorizationService that allows us to use
+    decorators to do all the authorization checks.
+
+    Initialization:
+    ```
+    authorize = Authorizer()
+    authorize.set_auth_service(AuthorizationService(repo=AuthorizationRepository))
+    ```
+    Usage:
+
+    ```
+    class SomeService:
+        ...
+
+        @authorize.is_admin
+        def protected_method(self, *args, **kwargs):
+            pass
+    ```
+
+    The decorators are created dynamically, based on the RULES defined in auth/objects.py
+    """
+
     def __init__(self):
         self.auth = None
         for rule in RULES:
