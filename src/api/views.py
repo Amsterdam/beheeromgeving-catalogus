@@ -5,7 +5,7 @@ from rest_framework.viewsets import ViewSet
 
 from api import datatransferobjects as dtos
 from domain import exceptions
-from domain.auth import AuthorizationRepository, AuthorizationService
+from domain.auth import AuthorizationRepository, AuthorizationService, authorize
 from domain.product import ProductRepository, ProductService
 from domain.team import TeamRepository, TeamService
 
@@ -42,7 +42,8 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         auth_service = AuthorizationService(AuthorizationRepository())
-        self.service = TeamService(repo=TeamRepository(), auth=auth_service)
+        authorize.set_auth_service(auth_service)
+        self.service = TeamService(repo=TeamRepository())
 
     def _validate_dto(self, data, dto_model=dtos.Team):
         # Raises if data is invalid
@@ -84,7 +85,8 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         auth_service = AuthorizationService(AuthorizationRepository())
-        self.service = ProductService(repo=ProductRepository(), auth=auth_service)
+        authorize.set_auth_service(auth_service)
+        self.service = ProductService(repo=ProductRepository())
 
     def _validate_dto(self, data, dto_type=dtos.ProductDetail):
         # Raises if data is invalid

@@ -1,7 +1,7 @@
 import pytest
 from django.conf import settings
 
-from domain.auth import AuthorizationService
+from domain.auth import AuthorizationService, authorize
 from domain.exceptions import IllegalOperation, NotAuthorized, ObjectDoesNotExist
 from domain.product import DataContract, DataService, ProductService
 from domain.team import TeamService
@@ -21,6 +21,7 @@ class TestTeamService:
             else:
                 team_collection.append(team)
         auth_service = AuthorizationService(DummyAuthRepo(team_collection, products=[]))
+        authorize.set_auth_service(auth_service)
         return TeamService(DummyRepository(team_collection), auth=auth_service)
 
     def test_get_team(self, team):
@@ -181,7 +182,8 @@ class TestProductService:
                 product_collection.append(product)
         auth_repo = DummyAuthRepo(team_collection, product_collection)
         auth = AuthorizationService(repo=auth_repo)
-        return ProductService(repo=DummyRepository(product_collection), auth=auth)
+        authorize.set_auth_service(auth)
+        return ProductService(repo=DummyRepository(product_collection))
 
     def test_get_products(self, product):
         service = self.get_service(product)

@@ -1,16 +1,14 @@
 from domain import exceptions
-from domain.auth import AuthorizationService, authorize
+from domain.auth import authorize
 from domain.base import AbstractProductRepository, AbstractRepository
 from domain.product import DataContract, DataService, Product
 
 
 class ProductService:
     repository: AbstractProductRepository
-    auth: AuthorizationService
 
-    def __init__(self, repo: AbstractRepository, auth: AuthorizationService):
+    def __init__(self, repo: AbstractRepository):
         self.repository = repo
-        self.auth = auth
 
     def get_products(self, **kwargs) -> list[Product]:
         return self.repository.list(**kwargs)

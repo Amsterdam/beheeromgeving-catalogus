@@ -81,16 +81,21 @@ class AuthorizationService:
 
 
 class Authorizer:
+    def __init__(self):
+        TEAM_UPDATE_PERMISSION = Permission(
+            role=Role.TEAM_MEMBER, allowed_fields={"po_name", "po_email", "contact_email"}
+        )
+        self.register_auth("is_team_member")
+        self.register_auth("can_update_team", "permit", permission=TEAM_UPDATE_PERMISSION)
+        self.register_auth("is_admin", "require", role=Role.ADMIN)
 
-    def _create_lambda(self, team_service, method_name, permission, role):
+    def set_auth_service(self, auth):
+        self.auth = auth
+
+    def _create_lambda(self, method_name, permission, role):
+
         try:
-            auth_service = team_service.auth
-        except AttributeError:
-            raise DomainException(
-                "Decorator can only be used in a class that has an AuthorizationService"
-            ) from None
-        try:
-            service_method = getattr(auth_service, method_name)
+            service_method = getattr(self.auth, method_name)
             return lambda self, *args, **kwargs: service_method(
                 *args, permission=permission, role=role, **kwargs
             )
@@ -108,7 +113,7 @@ class Authorizer:
                     return func(self, *args, **kwargs)
                 try:
                     authorization_function = auth_self._create_lambda(
-                        self, service_method_name, permission, role
+                        service_method_name, permission, role
                     )
                 except KeyError:
                     raise DomainException(
@@ -142,9 +147,9 @@ class Authorizer:
 
 
 authorize = Authorizer()
-TEAM_UPDATE_PERMISSION = Permission(
-    role=Role.TEAM_MEMBER, allowed_fields={"po_name", "po_email", "contact_email"}
-)
-authorize.register_auth("is_team_member")
-authorize.register_auth("can_update_team", "permit", permission=TEAM_UPDATE_PERMISSION)
-authorize.register_auth("is_admin", "require", role=Role.ADMIN)
+# TEAM_UPDATE_PERMISSION = Permission(
+#     role=Role.TEAM_MEMBER, allowed_fields={"po_name", "po_email", "contact_email"}
+# )
+# authorize.register_auth("is_team_member")
+# authorize.register_auth("can_update_team", "permit", permission=TEAM_UPDATE_PERMISSION)
+# authorize.register_auth("is_admin", "require", role=Role.ADMIN)
