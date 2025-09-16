@@ -7,17 +7,17 @@ Table Product {
   name                      string
   type                      productType
   themes                    Themas[] [Note: "Array of enum not supported by dbml"]
-  tags                      string[]
   last_updated              datetime
   has_personal_data         boolean
   has_special_personal_data boolean
-  refresh_period            string
+  refresh_period            dict [Note: '{"frequency": int, "unit": periodString}']
   team                      Team [ref: > Team.id]
   publication_status        publicationStatus
   owner                     string [Note: "Default PO dataTeam"]
   schema_url                URL [Note: "Alleen voor dataproducten"]
   language                  "Language Code" [Note: "ISO 639-1, Alleen voor dataproducten"]
   is_geo                    boolean [Note: "Uit amsterdam schema, Alleen voor dataproducten"]
+  crs                       CRS
   sources                   Product[] [ref: < Product.id]
   services                  DataService[] [ref: < DataService.id]
   Note: 'Product kan een dataproduct of een informatieproduct (PowerBI dashboard) zijn'
@@ -29,7 +29,6 @@ Table DataContract [Note: "Datacontract"] {
   id                          integer [primary key]
   publication_status          publicationStatus
   purpose                     string [note: "Doelbinding"]
-  conditions                  string [note: "Voorwaarden"]
   name                        string [note: "Naam van het contract"]
   description                 string
   contact_email               email
@@ -41,7 +40,7 @@ Table DataContract [Note: "Datacontract"] {
   start_date                  date
   last_updated                datetime
   product                     Product [ref: > Product.id]
-  profile                     URL
+  scope                       URL
   Note: 'Een datacontract bevat de leverings voorwaarden en doelbinding'
 }
 
@@ -127,4 +126,11 @@ enum Vertrouwelijkheidsniveau {
   "Intern"
   "Vertrouwelijk"
   "Geheim"
+}
+
+enum CRS {
+  "RD"
+  "WGS84"
+  "ETRS89"
+  "UTM35S"
 }
