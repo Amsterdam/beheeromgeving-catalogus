@@ -5,7 +5,8 @@ from django.core.validators import EmailValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from domain import enums, objects
+from domain.product import enums, objects
+from domain.team import Team as DomainTeam
 
 
 class Product(models.Model):
@@ -304,7 +305,7 @@ class Team(models.Model):
         return f"{self.name} ({self.acronym})"
 
     def to_domain(self):
-        return objects.Team(
+        return DomainTeam(
             id=self.id,
             name=self.name,
             description=self.description,
@@ -316,7 +317,7 @@ class Team(models.Model):
         )
 
     @classmethod
-    def from_domain(cls, team: objects.Team):
+    def from_domain(cls, team: DomainTeam):
         instance, _created = cls.objects.filter(pk=team.id).update_or_create(defaults=team.items())
         return instance.to_domain()
 

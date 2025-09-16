@@ -39,3 +39,7 @@ STORAGES = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+
+# App config
+FEATURE_FLAG_USE_AUTH = True  # Tests rely on auth being enabled.
+ADMIN_ROLE_NAME = "test_admin"

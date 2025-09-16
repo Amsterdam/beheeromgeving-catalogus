@@ -2,6 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from beheeromgeving.models import DataContract, DataService, Distribution, Product, Team
+from tests.utils import build_jwt_token
 
 
 @pytest.fixture()
@@ -76,3 +77,25 @@ def orm_product(orm_team) -> Product:
     )
 
     return product
+
+
+@pytest.fixture()
+def client_with_token(api_client):
+    class Client:
+        def __init__(self, scopes: list[str] | None = None):
+            self._token = build_jwt_token(scopes or [])
+            self.kwargs = {"HTTP_AUTHORIZATION": f"Bearer {self._token}"}
+
+        def get(self, route):
+            return api_client.get(route, **self.kwargs)
+
+        def patch(self, route, data):
+            return api_client.patch(route, data, **self.kwargs)
+
+        def post(self, route, data):
+            return api_client.post(route, data, **self.kwargs)
+
+        def delete(self, route):
+            return api_client.delete(route, **self.kwargs)
+
+    return Client
