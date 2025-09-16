@@ -130,7 +130,7 @@ class TestViews:
     def test_product_update(self, client_with_token, orm_product, orm_team):
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}",
-            data={"refresh_period": "2 maanden"},
+            data={"refresh_period": {"unit": "MONTH", "frequency": 2}},
         )
         assert response.status_code == 200
 
