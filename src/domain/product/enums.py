@@ -80,3 +80,11 @@ class CoordRefSystem(StrChoicesEnum):
     ETRS89 = "ETRS89"
     WGS84 = "WGS84"
     UTM35S = "UTM35S"
+
+
+class TimeUnit(StrChoicesEnum):
+    HOUR = "HOUR"
+    DAY = "DAY"
+    WEEK = "WEEK"
+    MONTH = "MONTH"
+    YEAR = "YEAR"
