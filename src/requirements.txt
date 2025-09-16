@@ -38,9 +38,9 @@ azure-core-tracing-opentelemetry==1.0.0b12 \
     --hash=sha256:38fd42709f1cc4bbc4f2797008b1c30a6a01617e49910c05daa3a0d0c65053ac \
     --hash=sha256:bb454142440bae11fd9d68c7c1d67ae38a1756ce808c5e4d736730a7b4b04144
     # via azure-monitor-opentelemetry
-azure-identity==1.24.0 \
-    --hash=sha256:6c3a40b2a70af831e920b89e6421e8dcd4af78a0cb38b9642d86c67643d4930c \
-    --hash=sha256:9e04997cde0ab02ed66422c74748548e620b7b29361c72ce622acab0267ff7c4
+azure-identity==1.25.0 \
+    --hash=sha256:4177df34d684cddc026e6cf684e1abb57767aa9d84e7f2129b080ec45eee7733 \
+    --hash=sha256:becaec086bbdf8d1a6aa4fb080c2772a0f824a97d50c29637ec8cc4933f1e82d
     # via
     #   -r requirements.in
     #   azure-monitor-opentelemetry-exporter
@@ -587,9 +587,9 @@ pycparser==2.22 \
     --hash=sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6 \
     --hash=sha256:c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc
     # via cffi
-pydantic[email]==2.11.7 \
-    --hash=sha256:d989c3c6cb79469287b1569f7447a17848c998458d49ebe294e975b9baf0f0db \
-    --hash=sha256:dde5df002701f6de26248661f6835bbe296a47bf73990135c7d07ce741b9623b
+pydantic[email]==2.11.9 \
+    --hash=sha256:6b8ffda597a14812a7975c90b82a8a2e777d9257aba3453f973acd3c032a18e2 \
+    --hash=sha256:c42dd626f5cfc1c6950ce6205ea58c93efa406da65f479dcb4029d5934857da2
     # via -r requirements.in
 pydantic-core==2.33.2 \
     --hash=sha256:0069c9acc3f3981b9ff4cdfaf088e98d83440a4c7ea1bc07460af3d4dc22e72d \
@@ -972,9 +972,9 @@ uwsgi-readiness-check==0.2.0 \
 uwsgitop==0.12 \
     --hash=sha256:4f9330951f0fb9633226de36cf0c28c04dcf323efab608834aa81f638b6019b2
     # via -r requirements.in
-whitenoise==6.9.0 \
-    --hash=sha256:8c4a7c9d384694990c26f3047e118c691557481d624f069b7f7752a2f735d609 \
-    --hash=sha256:c8a489049b7ee9889617bb4c274a153f3d979e8f51d2efd0f5b403caf41c57df
+whitenoise==6.10.0 \
+    --hash=sha256:7b7e53de65d749cb1ce4a7100e751d9742e323b52746f9f93944c0d348ea2d02 \
+    --hash=sha256:bad74a40b33b055ba59731b6048dd08d5647f273b72bef922aa43ddd287b02da
     # via -r requirements.in
 wrapt==1.17.2 \
     --hash=sha256:08e7ce672e35efa54c5024936e559469436f8b8096253404faeb54d2a878416f \
