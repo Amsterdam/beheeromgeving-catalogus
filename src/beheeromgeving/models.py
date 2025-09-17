@@ -34,14 +34,6 @@ class Product(models.Model):
         help_text="Thema's voor Data Producten zoals gedefinieerd als de thema's op nationaal "
         "niveau. Dit geeft de mogelijkheid om te koppelen op de nationale repository.",
     )
-    tags = ArrayField(
-        models.CharField(_("Zoekwoorden"), max_length=32),
-        null=True,
-        blank=True,
-        help_text="Zoekwoorden of Tags die het Data Product of zijn inhoud beschrijven. Dit is "
-        "bedoeld om de vindbaarheid in de Data Catalogus te ondersteunen. Het gaat om een "
-        "logische groepering van Data Producten.",
-    )
     team: Team = models.ForeignKey(
         "Team",
         on_delete=models.CASCADE,
@@ -63,12 +55,12 @@ class Product(models.Model):
         null=True,
         blank=True,
     )
-    refresh_period = models.CharField(
+    refresh_period = models.JSONField(
         _("Ververstermijn"),
-        max_length=64,
         null=True,
-        blank=True,
-        help_text="Om de hoeveel tijd de data in het Data Product ververst wordt",
+        default=dict,
+        help_text='De ververstermijn in de vorm {"frequency": int, "unit": periodString}, '
+        'waarbij periodStr iets is als "uur", "dag", "week", "maand", "jaar"',
     )
     has_personal_data = models.BooleanField(_("Bevat Persoonsgegevens"), default=False, null=True)
     has_special_personal_data = models.BooleanField(
@@ -98,6 +90,15 @@ class Product(models.Model):
         blank=True,
         null=True,
     )
+    crs = models.CharField(
+        _("Geo coördinaatreferentiesysteem"),
+        blank=True,
+        null=True,
+        choices=enums.CoordRefSystem.choices(upper=True),
+        help_text="Geo-informatie is direct gekoppeld aan een locatie op aarde. De manier waarop "
+        "die koppeling wordt gelegd, wordt beschreven in het coördinaatreferentiesysteem (CRS). "
+        "Hierin worden coördinaten van een locatie vastgelegd",
+    )
     sources = models.ManyToManyField("self", symmetrical=False, related_name="sinks")
 
     def __str__(self):
@@ -123,10 +124,10 @@ class Product(models.Model):
             team_id=self.team.id if self.team else None,
             language=self.language,
             is_geo=self.is_geo,
+            crs=self.crs,
             schema_url=self.schema_url,
             contracts=[c.to_domain() for c in self.contracts.all()],
             themes=self.themes,
-            tags=self.tags,
             last_updated=self.last_updated,
             has_personal_data=self.has_personal_data,
             has_special_personal_data=self.has_special_personal_data,
@@ -194,12 +195,6 @@ class DataContract(models.Model):
         "omschreven en gerechtvaardigde doel. 'Welbepaald en uitdrukkelijk omschreven' houdt in "
         "dat men geen gegevens mag verzamelen zonder een precieze doelomschrijving",
     )
-    conditions = models.TextField(
-        _("Voorwaarden"),
-        blank=True,
-        null=True,
-        help_text="De voorwaarden van het datacontract",
-    )
     data_steward = models.CharField(
         _("Business Data Steward"),
         blank=True,
@@ -241,11 +236,11 @@ class DataContract(models.Model):
         "aanmaakdatum van het contract in. Wanneer het Data Product gemigreerd is vanaf de oude "
         "Data Catalogus, vul hier dan de publicatiedatum van de oude catalogus (Issued) in.",
     )
-    profile = models.URLField(
-        _("Amsterdam Schema Profiel verwijzing (url)"),
+    scope = models.URLField(
+        _("Amsterdam Schema scope verwijzing (url)"),
         blank=True,
         null=True,
-        help_text="Verwijzing naar een profiel beschreven in Amsterdam Schema.",
+        help_text="Verwijzing naar een scope beschreven in Amsterdam Schema.",
     )
 
     def __str__(self):
@@ -267,7 +262,7 @@ class DataContract(models.Model):
             last_updated=self.last_updated,
             has_personal_data=self.has_personal_data,
             has_special_personal_data=self.has_special_personal_data,
-            profile=self.profile,
+            scope=self.scope,
             confidentiality=self.confidentiality,
             start_date=self.start_date,
             retainment_period=self.retainment_period,

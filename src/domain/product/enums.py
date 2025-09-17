@@ -5,7 +5,11 @@ class StrChoicesEnum(StrEnum):
     """Implemented choices method for easy conversion to tuples used in Django Models."""
 
     @classmethod
-    def choices(cls):
+    def choices(cls, upper: bool = False):
+        if upper:
+            return tuple(
+                (cls[item].value, item.upper().replace("_", " ")) for item in list(cls.__members__)
+            )
         return tuple(
             (cls[item].value, item.lower().replace("_", " ").capitalize())
             for item in list(cls.__members__)
@@ -69,3 +73,18 @@ class DistributionType(StrChoicesEnum):
     FILE = "F"
     CUSTOM = "C"
     API = "A"
+
+
+class CoordRefSystem(StrChoicesEnum):
+    RD = "RD"
+    ETRS89 = "ETRS89"
+    WGS84 = "WGS84"
+    UTM35S = "UTM35S"
+
+
+class TimeUnit(StrChoicesEnum):
+    HOUR = "HOUR"
+    DAY = "DAY"
+    WEEK = "WEEK"
+    MONTH = "MONTH"
+    YEAR = "YEAR"
