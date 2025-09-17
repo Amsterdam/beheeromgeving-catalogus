@@ -127,10 +127,28 @@ class TestViews:
         )
         assert response.status_code == 400
 
-    def test_product_update(self, client_with_token, orm_product, orm_team):
+    @pytest.mark.parametrize(
+        "data",
+        [
+            # fields that can be updated
+            {"name": "New Name"},
+            {"description": "New Description"},
+            {"language": "EN"},
+            {"is_geo": True},
+            {"crs": "RD"},
+            {"schema_url": "https://schemas.data.amsterdam.nl/datasets/new_url"},
+            {"type": "I"},
+            {"has_personal_data": True},
+            {"has_special_personal_data": True},
+            {"refresh_period": {"unit": "MONTH", "frequency": 2}},
+            {"publication_status": "P"},
+            {"owner": "New Owner"},
+        ],
+    )
+    def test_product_update(self, client_with_token, orm_product, orm_team, data):
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}",
-            data={"refresh_period": {"unit": "MONTH", "frequency": 2}},
+            data=data,
         )
         assert response.status_code == 200
 
@@ -147,10 +165,28 @@ class TestViews:
         )
         assert response.status_code == 201
 
-    def test_contract_update(self, client_with_token, orm_product, orm_team):
+    @pytest.mark.parametrize(
+        "data",
+        [
+            # fields that can be updated
+            {"name": "New Name"},
+            {"purpose": "New Purpose"},
+            {"description": "New Description"},
+            {"has_personal_data": True},
+            {"has_special_personal_data": True},
+            {"publication_status": "P"},
+            {"contact_email": "new@email.address"},
+            {"data_steward": "Someone Else"},
+            {"scope": "another_scope"},
+            {"confidentiality": "V"},
+            {"start_date": "2025-02-02"},
+            {"retainment_period": 100},
+        ],
+    )
+    def test_contract_update(self, client_with_token, orm_product, orm_team, data):
         contract_id = orm_product.contracts.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}", data={"name": "contract1"}
+            f"/products/{orm_product.id}/contracts/{contract_id}", data=data
         )
         assert response.status_code == 200
 
