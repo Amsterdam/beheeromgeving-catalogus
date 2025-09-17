@@ -1,0 +1,24 @@
+meta {
+  name: delete contract
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/products/4/contracts/4
+  body: none
+  auth: inherit
+}
+
+script:pre-request {
+  const getToken = require("./get-token");
+
+  const token = await getToken(["scope_tn1"]);
+
+  req.setHeader("Authorization", `Bearer ${token}`);
+
+}
+
+settings {
+  encodeUrl: true
+}

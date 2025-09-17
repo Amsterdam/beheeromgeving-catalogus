@@ -1,0 +1,36 @@
+meta {
+  name: create team
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/teams
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Team nummer 2",
+    "description": "Het tweede de beste team",
+    "acronym": "TN2",
+    "po_name": "Product Owner-One",
+    "po_email": "p.ownerone@amsterdam.nl",
+    "contact_email": "team.nr.1@amsterdam.nl",
+    "scope": "scope_tn1"
+  }
+}
+
+script:pre-request {
+  const getToken = require("./get-token");
+
+  const token = await getToken(["admin"]);
+
+  req.setHeader("Authorization", `Bearer ${token}`);
+
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,15 @@
+meta {
+  name: list teams
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/teams
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

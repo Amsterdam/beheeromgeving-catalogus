@@ -1,0 +1,30 @@
+meta {
+  name: update contract
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/products/2/contracts/4
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "description": "Contract One *exists*"
+  }
+}
+
+script:pre-request {
+  const getToken = require("./get-token");
+
+  const token = await getToken(["scope_tn1"]);
+
+  req.setHeader("Authorization", `Bearer ${token}`);
+
+}
+
+settings {
+  encodeUrl: true
+}
