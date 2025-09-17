@@ -1,0 +1,31 @@
+meta {
+  name: create service
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/products/4/services
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "type": "REST",
+    "endpoint_url": "https://api.data.amsterdam.nl/v1/some_dataset"
+  }
+}
+
+script:pre-request {
+  const getToken = require("./get-token");
+
+  const token = await getToken(["scope_tn1"]);
+
+  req.setHeader("Authorization", `Bearer ${token}`);
+
+}
+
+settings {
+  encodeUrl: true
+}

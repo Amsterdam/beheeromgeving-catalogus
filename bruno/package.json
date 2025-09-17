@@ -1,0 +1,7 @@
+{
+  "name": "amsterdam",
+  "dependencies": {
+    "buffer": "^6.0.3",
+    "node-jose": "^2.2.0"
+  }
+}
