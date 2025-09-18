@@ -1,7 +1,7 @@
 from datetime import date, datetime
 
 from django.db.models.manager import BaseManager
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from domain.product import enums, objects
 from domain.team import Team as DomainTeam
@@ -144,7 +144,7 @@ class ProductDetail(ModelMixin, BaseModel):
 
     team_id: int
     id: int | None = None
-    name: str | None = None
+    name: str | None = Field(None, min_length=2)
     description: str | None = None
     team_id: int | None = None
     language: enums.Language | None = None
@@ -170,7 +170,7 @@ class ProductUpdate(ModelMixin, BaseModel):
 
     id: int | None = None
     team_id: int | None = None
-    name: str | None = None
+    name: str | None = Field(None, min_length=2)
     description: str | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
@@ -192,6 +192,6 @@ class ProductUpdate(ModelMixin, BaseModel):
 
 class ProductList(ModelMixin, BaseModel):
     id: int | None = None
-    name: str | None = None
+    name: str | None = Field(None, min_length=2)
     description: str | None = None
     type: enums.ProductType | None = None
