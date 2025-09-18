@@ -59,10 +59,7 @@ class ProductService(AbstractService):
 
         product = self.get_product(product_id)
         contract = DataContract(**data)
-        if product.contracts:
-            product.contracts.append(contract)
-        else:
-            product.contracts = [contract]
+        product.create_contract(contract)
         self._persist(product)
         return contract
 
