@@ -21,8 +21,7 @@ class ProductService(AbstractService):
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
         product = Product(**data)
-        self._persist(product)
-        return product
+        return self._persist(product)
 
     @authorize.is_team_member
     def update_product(self, *, product_id: int, data: dict, **kwargs) -> Product:
@@ -60,10 +59,7 @@ class ProductService(AbstractService):
 
         product = self.get_product(product_id)
         contract = DataContract(**data)
-        if product.contracts:
-            product.contracts.append(contract)
-        else:
-            product.contracts = [contract]
+        product.create_contract(contract)
         self._persist(product)
         return contract
 
@@ -161,5 +157,5 @@ class ProductService(AbstractService):
         self._persist(product)
         return service_id
 
-    def _persist(self, product: Product):
+    def _persist(self, product: Product) -> Product:
         return self.repository.save(product)

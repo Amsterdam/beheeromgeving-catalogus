@@ -87,19 +87,26 @@ def product(team: Team) -> Product:
 
 
 @pytest.fixture()
-def init_auth(team, other_team, product) -> None:
-    auth_service = AuthorizationService(
-        DummyAuthRepo(teams=[team, other_team], products=[product])
-    )
+def auth_repo(team, other_team, product) -> DummyAuthRepo:
+    return DummyAuthRepo(teams=[team, other_team], products=[product])
+
+
+@pytest.fixture()
+def auth_service(auth_repo) -> AuthorizationService:
+    return AuthorizationService(auth_repo)
+
+
+@pytest.fixture()
+def init_auth(auth_service) -> None:
     authorize.set_auth_service(auth_service)
 
 
 @pytest.fixture()
-def team_service(team, init_auth) -> TeamService:
-    repo = DummyRepository(objects=[team])
+def team_service(team, init_auth, auth_repo) -> TeamService:
+    repo = DummyRepository(objects=[team], auth_repo=auth_repo)
     return TeamService(repo)
 
 
 @pytest.fixture()
-def product_service(product, init_auth) -> ProductService:
-    return ProductService(repo=DummyRepository([product]))
+def product_service(product, init_auth, auth_repo) -> ProductService:
+    return ProductService(repo=DummyRepository([product], auth_repo=auth_repo))

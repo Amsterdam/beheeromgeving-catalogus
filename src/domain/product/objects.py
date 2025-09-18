@@ -1,7 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from domain.base import BaseObject
+from domain.exceptions import ValidationError
 from domain.product import enums
 
 
@@ -59,6 +60,23 @@ class RefreshPeriod:
     unit: enums.TimeUnit
 
 
+class ProductValidator:
+    def __init__(self, prod: "Product"):
+        self.product = prod
+
+    def can_create_contract(self) -> True:
+        required_fields = ["name", "type", "has_personal_data", "has_special_personal_data"]
+        missing_fields = [
+            field for field in required_fields if getattr(self.product, field) is None
+        ]
+        if missing_fields:
+            raise ValidationError(
+                "Cannot create contract, product is missing the following fields:"
+                f"[{", ".join(missing_fields)}]"
+            )
+        return True
+
+
 @dataclass(kw_only=True)
 class Product(BaseObject):
     id: int | None = None
@@ -70,7 +88,7 @@ class Product(BaseObject):
     crs: enums.CoordRefSystem | None = None
     schema_url: str | None = None
     type: enums.ProductType | None = None
-    contracts: list[DataContract] | None = None
+    contracts: list[DataContract] = field(default_factory=list)
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
     has_personal_data: bool | None = None
@@ -83,3 +101,10 @@ class Product(BaseObject):
     sinks: list[int] = None
 
     _skip_keys = {"contracts", "team", "owner", "sources", "sinks", "services"}
+
+    def __post_init__(self):
+        self.validate = ProductValidator(self)
+
+    def create_contract(self, contract: DataContract):
+        if self.validate.can_create_contract():
+            self.contracts.append(contract)

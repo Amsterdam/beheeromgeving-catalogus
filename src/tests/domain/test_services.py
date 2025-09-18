@@ -1,7 +1,7 @@
 import pytest
 from django.conf import settings
 
-from domain.exceptions import IllegalOperation, NotAuthorized, ObjectDoesNotExist
+from domain.exceptions import IllegalOperation, NotAuthorized, ObjectDoesNotExist, ValidationError
 from domain.product import DataContract, DataService
 
 ADMIN_SCOPE = [settings.ADMIN_ROLE_NAME]
@@ -240,6 +240,51 @@ class TestProductService:
         assert isinstance(contract, DataContract)
         assert len(product_service.get_contracts(product.id)) == 2
 
+    @pytest.mark.parametrize(
+        "data,missing_fields",
+        [
+            ({}, r"\[name, type, has_personal_data, has_special_personal_data\]"),
+            ({"name": "Product"}, r"\[type, has_personal_data, has_special_personal_data\]"),
+            ({"type": "D"}, r"\[name, has_personal_data, has_special_personal_data\]"),
+            ({"has_personal_data": False}, r"\[name, type, has_special_personal_data\]"),
+            ({"has_special_personal_data": True}, r"\[name, type, has_personal_data\]"),
+            (
+                {"has_personal_data": True, "name": "Product", "type": "D"},
+                r"\[has_special_personal_data\]",
+            ),
+        ],
+    )
+    def test_create_contract_missing_fields(
+        self, data, missing_fields, auth_service, product_service, team
+    ):
+        """Test to see if a contract cannot be created when the product is missing necessary
+        fields."""
+        product = product_service.create_product(
+            data={"team_id": team.id, **data}, scopes=[team.scope]
+        )
+        with pytest.raises(ValidationError, match=missing_fields):
+            product_service.create_contract(
+                product_id=product.id, data={"publication_status": "D"}, scopes=[team.scope]
+            )
+
+    def test_create_contract_no_missing_fields(self, auth_service, product_service, team):
+        """Test weather a contract can be created when all necessary fields are present on the
+        product."""
+        product = product_service.create_product(
+            data={
+                "team_id": team.id,
+                "name": "Product",
+                "type": "D",
+                "has_personal_data": True,
+                "has_special_personal_data": False,
+            },
+            scopes=[team.scope],
+        )
+        contract = product_service.create_contract(
+            product_id=product.id, data={"publication_status": "D"}, scopes=[team.scope]
+        )
+        assert contract.publication_status == "D"
+
     @pytest.mark.xfail(raises=IllegalOperation)
     def test_create_contract_with_id(self, product_service, product, team):
         product_service.create_contract(
@@ -272,7 +317,7 @@ class TestProductService:
             scopes=[team.scope],
         )
 
-    @pytest.mark.xfail(raises=NotAuthorized)
+    @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_update_contract_other_product(self, product_service, product, team):
         new_product = product_service.create_product(
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
@@ -377,7 +422,7 @@ class TestProductService:
             scopes=[team.scope],
         )
 
-    @pytest.mark.xfail(raises=NotAuthorized)
+    @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_update_service_other_product(self, product_service, product, team):
         new_product = product_service.create_product(
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
