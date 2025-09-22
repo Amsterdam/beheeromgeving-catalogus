@@ -1,7 +1,7 @@
 from domain import exceptions
 from domain.auth import authorize
 from domain.base import AbstractRepository, AbstractService
-from domain.product import DataContract, DataService, Product
+from domain.product import DataContract, DataService, Distribution, Product
 
 
 class ProductService(AbstractService):
@@ -72,6 +72,50 @@ class ProductService(AbstractService):
         product = self.get_product(product_id)
         product.delete_contract(contract_id)
         self._persist(product)
+
+    def get_distributions(self, product_id: int, contract_id: int) -> list[Distribution]:
+        product = self.repository.get(product_id)
+        return product.get_contract(contract_id).distributions
+
+    def get_distribution(
+        self, product_id: int, contract_id: int, distribution_id: int
+    ) -> Distribution:
+        product = self.repository.get(product_id)
+        return product.get_distribution(contract_id=contract_id, distribution_id=distribution_id)
+
+    @authorize.is_team_member
+    def create_distribution(
+        self, *, product_id: int, contract_id: int, data: dict, **kwargs
+    ) -> Distribution:
+        if data.get("id"):
+            raise exceptions.IllegalOperation("IDs are assigned automatically")
+
+        product = self.get_product(product_id)
+        distribution = Distribution(**data)
+        product.add_distribution_to_contract(contract_id, distribution)
+        self._persist(product)
+        updated_product = self.get_product(product_id)
+        return updated_product.get_contract(contract_id).distributions[-1]
+
+    @authorize.is_team_member
+    def update_distribution(
+        self, *, product_id: int, contract_id: int, distribution_id: int, data: dict, **kwargs
+    ) -> Distribution:
+        if data.get("id"):
+            raise exceptions.IllegalOperation("IDs are assigned automatically")
+        product = self.repository.get(product_id)
+        distribution = product.update_distribution(contract_id, distribution_id, data)
+        self._persist(product)
+        return distribution
+
+    @authorize.is_team_member
+    def delete_distribution(
+        self, product_id: int, contract_id: int, distribution_id: int, **kwargs
+    ) -> DataContract:
+        product = self.repository.get(product_id)
+        product.delete_distribution(contract_id, distribution_id)
+        self._persist(product)
+        return distribution_id
 
     def get_services(self, product_id: int) -> list[DataService]:
         return self.repository.get(product_id).services

@@ -356,6 +356,7 @@ class Distribution(models.Model):
 
     def to_domain(self):
         return objects.Distribution(
+            id=self.pk,
             access_service_id=self.access_service_id,
             access_url=self.access_url,
             download_url=self.download_url,

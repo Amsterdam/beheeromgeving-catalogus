@@ -17,6 +17,7 @@ class DataService(BaseObject):
 
 @dataclass(kw_only=True)
 class Distribution(BaseObject):
+    id: int | None = None
     access_service_id: int | None = None
     access_url: str | None = None
     download_url: str | None = None
@@ -125,3 +126,34 @@ class Product(BaseObject):
     def delete_contract(self, contract_id: int) -> int:
         self.get_contract(contract_id)  # Raise if it doesn't exist.
         self.contracts = [contract for contract in self.contracts if contract.id != contract_id]
+
+    def get_distribution(self, contract_id: int, distribution_id: int):
+        contract = self.get_contract(contract_id)
+        try:
+            return next(dist for dist in contract.distributions if dist.id == distribution_id)
+        except StopIteration:
+            raise ObjectDoesNotExist(
+                f"Distribution with id {distribution_id} does not exist on contract"
+                f"with id {contract_id}"
+            ) from None
+
+    def add_distribution_to_contract(self, contract_id: int, distribution: Distribution) -> None:
+        contract = self.get_contract(contract_id)
+        contract.distributions.append(distribution)
+
+    def update_distribution(
+        self, contract_id: int, distribution_id: int, data: dict
+    ) -> Distribution:
+        distribution = self.get_distribution(contract_id, distribution_id)
+        distribution.update_from_dict(data)
+        return distribution
+
+    def delete_distribution(self, contract_id: int, distribution_id: int) -> int:
+        self.get_distribution(contract_id, distribution_id)  # Raises if it doesn't exist.
+        contract = self.get_contract(contract_id)
+        contract.distributions = [
+            distribution
+            for distribution in contract.distributions
+            if distribution.id != distribution_id
+        ]
+        return distribution_id

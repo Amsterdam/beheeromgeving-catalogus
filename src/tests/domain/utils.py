@@ -18,6 +18,30 @@ class DummyRepository(AbstractRepository):
         for object in objects:
             self._items[object.id] = object
 
+    def _add_ids(self, object):
+        """Ensure the object we save to the repository has id for itself and all its
+        underlying subobjects."""
+        object.id = object.id or max(self._items.keys()) + 1 if len(self._items.keys()) else 0
+        if hasattr(object, "contracts") and object.contracts is not None:
+            new_contract_id = max([c.id for c in object.contracts if c.id] or [0]) + 1
+            for contract in object.contracts:
+                if contract.id is None:
+                    contract.id = new_contract_id
+                    new_contract_id += 1
+
+                if hasattr(contract, "distributions") and contract.distributions is not None:
+                    new_distro_id = max([d.id for d in contract.distributions if d.id] or [0]) + 1
+                    for distro in contract.distributions:
+                        if distro.id is None:
+                            distro.id = new_distro_id
+                            new_distro_id += 1
+        if hasattr(object, "services") and object.services is not None:
+            new_service_id = max([s.id for s in object.services if s.id] or [0]) + 1
+            for service in object.services:
+                if service.id is None:
+                    service.id = new_service_id
+                    new_service_id += 1
+
     def get(self, id):
         try:
             return self._items[id]
@@ -28,7 +52,7 @@ class DummyRepository(AbstractRepository):
         return list(self._items.values())
 
     def save(self, object: BaseObject):
-        object.id = object.id or max(self._items.keys()) + 1 if len(self._items.keys()) else 0
+        self._add_ids(object)
         self._items[object.id] = object
         self.auth_repo.add_object(object)
         return object
