@@ -41,19 +41,11 @@ class ProductService(AbstractService):
         return self.repository.get(product_id).contracts
 
     def get_contract(self, product_id: int, contract_id: int) -> DataContract:
-        try:
-            return next(
-                contract
-                for contract in (self.get_contracts(product_id) or [])
-                if contract.id == contract_id
-            )
-        except StopIteration:
-            raise exceptions.ObjectDoesNotExist(
-                f"Contract with id {contract_id} does not exist on Product {product_id}"
-            ) from None
+        product = self.repository.get(product_id)
+        return product.get_contract(contract_id)
 
     @authorize.is_team_member
-    def create_contract(self, product_id: int, data: int, **kwargs) -> DataContract:
+    def create_contract(self, product_id: int, data: dict, **kwargs) -> DataContract:
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
 
@@ -71,29 +63,14 @@ class ProductService(AbstractService):
             raise exceptions.IllegalOperation("Cannot update contract id")
 
         product = self.get_product(product_id)
-        try:
-            contract = next(
-                contract for contract in (product.contracts or []) if contract.id == contract_id
-            )
-        except StopIteration:
-            raise exceptions.ObjectDoesNotExist(
-                f"Contract with id {contract_id} does not exist on Product {product_id}"
-            ) from None
-        contract.update_from_dict(data)
+        contract = product.update_contract(contract_id, data)
         self._persist(product)
         return contract
 
     @authorize.is_team_member
     def delete_contract(self, product_id: int, contract_id: int, **kwargs):
         product = self.get_product(product_id)
-        contract_ids = [c.id for c in product.contracts]
-        if contract_id not in contract_ids:
-            raise exceptions.ObjectDoesNotExist(
-                f"Contract with id {contract_id} does not exist on Product {product_id}"
-            ) from None
-        product.contracts = [
-            contract for contract in product.contracts if contract.id != contract_id
-        ]
+        product.delete_contract(contract_id)
         self._persist(product)
 
     def get_services(self, product_id: int) -> list[DataService]:

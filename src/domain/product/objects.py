@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from domain.base import BaseObject
-from domain.exceptions import ValidationError
+from domain.exceptions import ObjectDoesNotExist, ValidationError
 from domain.product import enums
 
 
@@ -108,3 +108,20 @@ class Product(BaseObject):
     def create_contract(self, contract: DataContract):
         if self.validate.can_create_contract():
             self.contracts.append(contract)
+
+    def get_contract(self, contract_id: int):
+        try:
+            return next(contract for contract in self.contracts if contract.id == contract_id)
+        except StopIteration:
+            raise ObjectDoesNotExist(
+                f"contract with id {contract_id} does not exist on product {self.id}"
+            ) from None
+
+    def update_contract(self, contract_id: int, data: dict) -> DataContract:
+        contract = self.get_contract(contract_id)
+        contract.update_from_dict(data)
+        return contract
+
+    def delete_contract(self, contract_id: int) -> int:
+        self.get_contract(contract_id)  # Raise if it doesn't exist.
+        self.contracts = [contract for contract in self.contracts if contract.id != contract_id]
