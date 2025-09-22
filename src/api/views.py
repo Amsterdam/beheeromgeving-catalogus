@@ -170,6 +170,67 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(status=204)
 
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="contracts/(?P<contract_id>[^/.]+)/distributions",
+        url_name="distributions-list",
+    )
+    def distributions_list(self, request, pk=None, contract_id=None):
+        distributions = self.service.get_distributions(
+            product_id=int(pk), contract_id=int(contract_id)
+        )
+        data = dtos.to_response_object(distributions)
+        return Response(data, status=200)
+
+    @distributions_list.mapping.post
+    def create_distribution(self, request, pk=None, contract_id=None):
+        distribution_dto = self._validate_dto(request.data, dto_type=dtos.Distribution)
+        distribution = self.service.create_distribution(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            data=distribution_dto.model_dump(),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(distribution)
+        return Response(data, status=201)
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="contracts/(?P<contract_id>[^/.]+)/distributions/(?P<distribution_id>[^/.]+)",
+        url_name="distributions-detail",
+    )
+    def distribution_detail(self, request, pk=None, contract_id=None, distribution_id=None):
+        distribution = self.service.get_distribution(
+            product_id=int(pk), contract_id=int(contract_id), distribution_id=int(distribution_id)
+        )
+        data = dtos.to_response_object(distribution)
+        return Response(data, status=200)
+
+    @distribution_detail.mapping.patch
+    def update_distribution(self, request, pk=None, contract_id=None, distribution_id=None):
+        distribution_dto = self._validate_dto(request.data, dtos.Distribution)
+        distribution = self.service.update_distribution(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            distribution_id=int(distribution_id),
+            data=distribution_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(distribution)
+        return Response(data, status=200)
+
+    @distribution_detail.mapping.delete
+    def delete_distribution(self, request, pk=None, contract_id=None, distribution_id=None):
+        self.service.delete_distribution(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            distribution_id=int(distribution_id),
+            scopes=request.get_token_scopes,
+        )
+        return Response(status=204)
+
     @action(detail=True, methods=["get"], url_path="services", url_name="services-list")
     def services_list(self, _request, pk=None):
         services = self.service.get_services(int(pk))
