@@ -213,6 +213,91 @@ class TestViews:
 
         assert response.status_code == 204
 
+    def test_distribution_list(self, api_client, orm_product):
+        contract_id = orm_product.contracts.first().id
+        response = api_client.get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions"
+        )
+        assert response.status_code == 200
+        assert len(response.data) == 2
+
+    def test_distribution_detail(self, api_client, orm_product):
+        contract_id = orm_product.contracts.first().id
+        distribution_id = orm_product.contracts.first().distributions.first().id
+        response = api_client.get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+        )
+        assert response.status_code == 200
+        assert response.data["type"] == "A"  # API
+
+    def test_distribution_detail_404(self, api_client, orm_product):
+        contract_id = orm_product.contracts.first().id
+        response = api_client.get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/1337"
+        )
+        assert response.status_code == 404
+
+    def test_distribution_create(self, client_with_token, orm_product, orm_team):
+        contract_id = orm_product.contracts.first().id
+        data = {"format": "TEST", "type": "F"}
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+        )
+        assert response.status_code == 201
+
+    def test_distribution_create_not_allowed(self, client_with_token, orm_product, orm_other_team):
+        contract_id = orm_product.contracts.first().id
+        data = {"format": "TEST", "type": "F"}
+        response = client_with_token([orm_other_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+        )
+        assert response.status_code == 401
+
+    def test_distribution_update(self, client_with_token, orm_product, orm_team):
+        contract_id = orm_product.contracts.first().id
+        distribution_id = orm_product.contracts.first().distributions.first().id
+        data = {"format": "TEST", "type": "F"}
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}",
+            data=data,
+        )
+        assert response.status_code == 200
+        assert response.data["format"] == "TEST"
+
+    def test_distribution_update_not_allowed(self, client_with_token, orm_product):
+        contract_id = orm_product.contracts.first().id
+        distribution_id = orm_product.contracts.first().distributions.first().id
+        data = {"format": "TEST", "type": "F"}
+        response = client_with_token([]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}",
+            data=data,
+        )
+        assert response.status_code == 401
+
+    def test_distribution_delete(self, client_with_token, orm_product, orm_team):
+        contract_id = orm_product.contracts.first().id
+        distribution_id = orm_product.contracts.first().distributions.first().id
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+        )
+        assert response.status_code == 204
+
+        orm_product.refresh_from_db()
+        orm_contract = orm_product.contracts.first()
+        assert not orm_contract.distributions.filter(pk=distribution_id).exists()
+
+    def test_distribution_delete_not_allowed(self, client_with_token, orm_product, orm_other_team):
+        contract_id = orm_product.contracts.first().id
+        distribution_id = orm_product.contracts.first().distributions.first().id
+        response = client_with_token([orm_other_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+        )
+        assert response.status_code == 401
+
+        orm_product.refresh_from_db()
+        orm_contract = orm_product.contracts.first()
+        assert orm_contract.distributions.filter(pk=distribution_id).exists()
+
     def test_service_list(self, api_client, orm_product):
         response = api_client.get(f"/products/{orm_product.id}/services")
 

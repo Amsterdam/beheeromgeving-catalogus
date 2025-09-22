@@ -72,10 +72,12 @@ def product(team: Team) -> Product:
                 retainment_period=12,
                 distributions=[
                     Distribution(
+                        id=1,
                         access_service_id=1,
                         type="A",
                     ),
                     Distribution(
+                        id=2,
                         download_url="https://bomen.amsterdam.nl/beheer.csv",
                         format="csv",
                         type="F",

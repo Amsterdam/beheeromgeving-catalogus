@@ -1,13 +1,13 @@
 from domain import exceptions
 from domain.auth import authorize
-from domain.base import AbstractProductRepository, AbstractRepository, AbstractService
-from domain.product import DataContract, DataService, Product
+from domain.base import AbstractRepository, AbstractService
+from domain.product import DataContract, DataService, Distribution, Product
 
 
 class ProductService(AbstractService):
-    repository: AbstractProductRepository
+    repository: AbstractRepository[Product]
 
-    def __init__(self, repo: AbstractRepository):
+    def __init__(self, repo: AbstractRepository[Product]):
         self.repository = repo
 
     def get_products(self, **kwargs) -> list[Product]:
@@ -41,19 +41,11 @@ class ProductService(AbstractService):
         return self.repository.get(product_id).contracts
 
     def get_contract(self, product_id: int, contract_id: int) -> DataContract:
-        try:
-            return next(
-                contract
-                for contract in (self.get_contracts(product_id) or [])
-                if contract.id == contract_id
-            )
-        except StopIteration:
-            raise exceptions.ObjectDoesNotExist(
-                f"Contract with id {contract_id} does not exist on Product {product_id}"
-            ) from None
+        product = self.repository.get(product_id)
+        return product.get_contract(contract_id)
 
     @authorize.is_team_member
-    def create_contract(self, product_id: int, data: int, **kwargs) -> DataContract:
+    def create_contract(self, product_id: int, data: dict, **kwargs) -> DataContract:
         if data.get("id"):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
 
@@ -71,30 +63,59 @@ class ProductService(AbstractService):
             raise exceptions.IllegalOperation("Cannot update contract id")
 
         product = self.get_product(product_id)
-        try:
-            contract = next(
-                contract for contract in (product.contracts or []) if contract.id == contract_id
-            )
-        except StopIteration:
-            raise exceptions.ObjectDoesNotExist(
-                f"Contract with id {contract_id} does not exist on Product {product_id}"
-            ) from None
-        contract.update_from_dict(data)
+        contract = product.update_contract(contract_id, data)
         self._persist(product)
         return contract
 
     @authorize.is_team_member
     def delete_contract(self, product_id: int, contract_id: int, **kwargs):
         product = self.get_product(product_id)
-        contract_ids = [c.id for c in product.contracts]
-        if contract_id not in contract_ids:
-            raise exceptions.ObjectDoesNotExist(
-                f"Contract with id {contract_id} does not exist on Product {product_id}"
-            ) from None
-        product.contracts = [
-            contract for contract in product.contracts if contract.id != contract_id
-        ]
+        product.delete_contract(contract_id)
         self._persist(product)
+
+    def get_distributions(self, product_id: int, contract_id: int) -> list[Distribution]:
+        product = self.repository.get(product_id)
+        return product.get_contract(contract_id).distributions
+
+    def get_distribution(
+        self, product_id: int, contract_id: int, distribution_id: int
+    ) -> Distribution:
+        product = self.repository.get(product_id)
+        return product.get_distribution(contract_id=contract_id, distribution_id=distribution_id)
+
+    @authorize.is_team_member
+    def create_distribution(
+        self, *, product_id: int, contract_id: int, data: dict, **kwargs
+    ) -> Distribution:
+        if data.get("id"):
+            raise exceptions.IllegalOperation("IDs are assigned automatically")
+
+        product = self.get_product(product_id)
+        distribution = Distribution(**data)
+        product.add_distribution_to_contract(contract_id, distribution)
+        self._persist(product)
+        updated_product = self.get_product(product_id)
+        return updated_product.get_contract(contract_id).distributions[-1]
+
+    @authorize.is_team_member
+    def update_distribution(
+        self, *, product_id: int, contract_id: int, distribution_id: int, data: dict, **kwargs
+    ) -> Distribution:
+        if data.get("id"):
+            raise exceptions.IllegalOperation("IDs are assigned automatically")
+        product = self.repository.get(product_id)
+        distribution = product.update_distribution(contract_id, distribution_id, data)
+        self._persist(product)
+        return distribution
+
+    @authorize.is_team_member
+    def delete_distribution(
+        self, product_id: int, contract_id: int, distribution_id: int, **kwargs
+    ) -> DataContract:
+        product = self.repository.get(product_id)
+        product.delete_distribution(contract_id, distribution_id)
+        self._persist(product)
+        return distribution_id
 
     def get_services(self, product_id: int) -> list[DataService]:
         return self.repository.get(product_id).services

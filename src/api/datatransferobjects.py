@@ -33,6 +33,7 @@ def to_dto(domain_object: objects.BaseObject, dto_type: str = "detail") -> dict:
         },
         objects.Distribution: {
             "detail": Distribution,
+            "list": Distribution,
         },
     }
     dto_model = OBJECT_MAPPING[type(domain_object)][dto_type]
@@ -98,13 +99,19 @@ class DataService(ModelMixin, BaseModel):
     endpoint_url: str | None = None
 
 
+class RefreshPeriod(ModelMixin, BaseModel):
+    frequency: int
+    unit: enums.TimeUnit
+
+
 class Distribution(ModelMixin, BaseModel):
+    id: int | None = None
     access_service_id: int | None = None
     access_url: str | None = None
     download_url: str | None = None
     format: str | None = None
     type: enums.DistributionType | None = None
-    refresh_period: str | None = None  # Hoort volgens DCAT op Dataset
+    refresh_period: RefreshPeriod | None = None  # Hoort volgens DCAT op Dataset
 
 
 class DataContractList(ModelMixin, BaseModel):
@@ -132,11 +139,6 @@ class DataContract(ModelMixin, BaseModel):
     start_date: date | None = None
     retainment_period: int | None = None
     distributions: list[Distribution] | None = None
-
-
-class RefreshPeriod(ModelMixin, BaseModel):
-    frequency: int
-    unit: enums.TimeUnit
 
 
 class ProductDetail(ModelMixin, BaseModel):

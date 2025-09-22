@@ -1,18 +1,19 @@
 meta {
-  name: update product
+  name: create distribution
   type: http
   seq: 3
 }
 
-patch {
-  url: {{baseUrl}}/products/2
+post {
+  url: {{baseUrl}}/products/2/contracts/2/distributions
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "name": "Product 1"
+    "type": "A",
+    "access_service_id": 1
   }
 }
 
