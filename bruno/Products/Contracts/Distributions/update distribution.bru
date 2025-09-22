@@ -1,18 +1,18 @@
 meta {
-  name: update product
+  name: update distribution
   type: http
-  seq: 3
+  seq: 4
 }
 
 patch {
-  url: {{baseUrl}}/products/2
+  url: {{baseUrl}}/products/2/contracts/2/distributions/1
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "name": "Product 1"
+    "refresh_period": {"frequency": 3, "unit": "WEEK"}
   }
 }
 
