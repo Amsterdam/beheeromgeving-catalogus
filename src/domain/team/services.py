@@ -1,13 +1,13 @@
 from domain import exceptions
 from domain.auth import authorize
-from domain.base import AbstractService, AbstractTeamRepository
+from domain.base import AbstractRepository, AbstractService
 from domain.team import Team
 
 
 class TeamService(AbstractService):
-    repository: AbstractTeamRepository
+    repository: AbstractRepository[Team]
 
-    def __init__(self, repo: AbstractTeamRepository, **kwargs):
+    def __init__(self, repo: AbstractRepository[Team], **kwargs):
         self.repository = repo
 
     def get_team(self, team_id: str) -> Team:

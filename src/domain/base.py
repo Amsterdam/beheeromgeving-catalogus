@@ -21,30 +21,22 @@ class BaseObject:
             setattr(self, k, v)
 
 
-class AbstractRepository(abc.ABC):
+class AbstractRepository[T](abc.ABC):
     @abc.abstractmethod
-    def get(self, ref):
+    def get(self, ref) -> T:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def list(self):
+    def list(self) -> list[T]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save(self, ref, data):
+    def save(self, ref, data) -> T:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def delete(self, ref):
+    def delete(self, ref) -> int:
         raise NotImplementedError
-
-
-class AbstractProductRepository(AbstractRepository):
-    pass
-
-
-class AbstractTeamRepository(AbstractRepository):
-    pass
 
 
 class AbstractAuthRepository(abc.ABC):
