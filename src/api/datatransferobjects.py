@@ -129,8 +129,6 @@ class DataContract(ModelMixin, BaseModel):
     purpose: str | None = None
     name: str | None = None
     description: str | None = None
-    contact_email: str | None = None
-    data_steward: str | None = None
     last_updated: datetime | None = None
     has_personal_data: bool | None = None
     has_special_personal_data: bool | None = None
@@ -162,6 +160,8 @@ class ProductDetail(ModelMixin, BaseModel):
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
     owner: str | None = None
+    contact_email: str | None = None
+    data_steward: str | None = None
     services: list[DataService] | None = None
     sources: list[int] | None = None
     sinks: list[int] | None = None

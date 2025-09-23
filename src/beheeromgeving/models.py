@@ -48,6 +48,21 @@ class Product(models.Model):
         help_text="De eigenaar van het Data Product. Standaard is dit de Product Owner van het "
         "betreffende Datateam, tenzij anders overeengekomen. Pas in dat geval de waarde aan",
     )
+    data_steward = models.CharField(
+        _("Business Data Steward"),
+        blank=True,
+        null=True,
+        help_text="Contact E-mail adres van de verantwoordelijke Data Steward in de business",
+        validators=[EmailValidator],
+    )
+    _contact_email = models.CharField(
+        _("Contact Email"),
+        max_length=128,
+        null=True,
+        blank=True,
+        help_text="Contact E-mail adres van het team",
+        validators=[EmailValidator],
+    )
     publication_status = models.CharField(
         _("Publicatiestatus"),
         max_length=1,
@@ -105,6 +120,17 @@ class Product(models.Model):
         return self.name or str(self.id)
 
     @property
+    def contact_email(self):
+        return self._contact_email or self.team.contact_email
+
+    @contact_email.setter
+    def contact_email(self, value):
+        if value and value != self.team.contact_email:
+            self._contact_email = value
+        else:
+            self._contact_email = None
+
+    @property
     def owner(self):
         return self._owner or self.team.po_name
 
@@ -134,6 +160,8 @@ class Product(models.Model):
             refresh_period=self.refresh_period,
             publication_status=self.publication_status,
             owner=self.owner,
+            contact_email=self.contact_email,
+            data_steward=self.data_steward,
             services=[s.to_domain() for s in self.services.all()],
             sources=[s.id for s in self.sources.all()],
             sinks=[s.id for s in self.sinks.all()],
@@ -195,13 +223,6 @@ class DataContract(models.Model):
         "omschreven en gerechtvaardigde doel. 'Welbepaald en uitdrukkelijk omschreven' houdt in "
         "dat men geen gegevens mag verzamelen zonder een precieze doelomschrijving",
     )
-    data_steward = models.CharField(
-        _("Business Data Steward"),
-        blank=True,
-        null=True,
-        help_text="Contact E-mail adres van de verantwoordelijke Data Steward in de business",
-        validators=[EmailValidator],
-    )
     has_personal_data = models.BooleanField(_("Bevat Persoonsgegevens"), default=False, null=True)
     has_special_personal_data = models.BooleanField(
         _("Bevat Bijzondere Persoonsgegevens"), default=False, null=True
@@ -246,10 +267,6 @@ class DataContract(models.Model):
     def __str__(self):
         return self.name or str(self.id)
 
-    @property
-    def contact_email(self):
-        return self.product.team.contact_email
-
     def to_domain(self):
         return objects.DataContract(
             id=self.id,
@@ -257,8 +274,6 @@ class DataContract(models.Model):
             purpose=self.purpose,
             name=self.name,
             description=self.description,
-            contact_email=self.contact_email,
-            data_steward=self.data_steward,
             last_updated=self.last_updated,
             has_personal_data=self.has_personal_data,
             has_special_personal_data=self.has_special_personal_data,

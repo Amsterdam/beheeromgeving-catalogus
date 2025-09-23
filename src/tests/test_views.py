@@ -143,6 +143,8 @@ class TestViews:
             {"refresh_period": {"unit": "MONTH", "frequency": 2}},
             {"publication_status": "P"},
             {"owner": "New Owner"},
+            {"contact_email": "newmail@contact.nl"},
+            {"data_steward": "newmail@steward.nl"},
         ],
     )
     def test_product_update(self, client_with_token, orm_product, orm_team, data):

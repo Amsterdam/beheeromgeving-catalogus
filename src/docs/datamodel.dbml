@@ -14,6 +14,8 @@ Table Product {
   team                      Team [ref: > Team.id]
   publication_status        publicationStatus
   owner                     string [Note: "Default PO dataTeam"]
+  contact_email             email
+  data_steward              email
   schema_url                URL [Note: "Alleen voor dataproducten"]
   language                  "Language Code" [Note: "ISO 639-1, Alleen voor dataproducten"]
   is_geo                    boolean [Note: "Uit amsterdam schema, Alleen voor dataproducten"]
@@ -31,8 +33,6 @@ Table DataContract [Note: "Datacontract"] {
   purpose                     string [note: "Doelbinding"]
   name                        string [note: "Naam van het contract"]
   description                 string
-  contact_email               email
-  data_steward                email
   has_personal_data           boolean
   has_special_personal_data   boolean
   confidentiality             Vertrouwelijkheidsniveau
