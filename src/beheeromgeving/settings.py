@@ -352,5 +352,5 @@ DATAPUNT_AUTHZ = {
 }
 
 # App Config
-FEATURE_FLAG_USE_AUTH = os.getenv("FEATURE_FLAG_USE_AUTH", True)
+FEATURE_FLAG_USE_AUTH = env.bool("FEATURE_FLAG_USE_AUTH", True)
 ADMIN_ROLE_NAME = os.getenv("ADMIN_ROLE_NAME", "admin")
