@@ -150,7 +150,10 @@ class TestProductRepository:
         product = repo.get(orm_product.id)
         product.contracts[0].distributions = [
             Distribution(
-                type="A", access_service_id=product.services[0].id, refresh_period="hourly"
+                id=product.contracts[0].distributions[0].id,
+                type="A",
+                access_service_id=product.services[0].id,
+                refresh_period="hourly",
             ),
             Distribution(type="D", access_url="https://bomen.amsterdam.nl/dashboard"),
             Distribution(
