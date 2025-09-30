@@ -3,7 +3,9 @@
 ## Changelog
 
 2025-09-15: Added Authorization.
+
 2025-09-09: Minor tweaks after finishing up domain layer.
+
 2025-09-03: First draft of this document.
 
 ## High level design
