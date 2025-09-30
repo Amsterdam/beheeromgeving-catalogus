@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -110,3 +113,9 @@ def client_with_token(api_client):
             return api_client.delete(route, **self.kwargs)
 
     return Client
+
+
+@pytest.fixture()
+def product_json():
+    with open(Path(__file__).parent / "product.json") as file:
+        return json.load(file)
