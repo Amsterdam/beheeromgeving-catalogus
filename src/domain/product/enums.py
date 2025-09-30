@@ -65,6 +65,8 @@ class DataServiceType(StrChoicesEnum):
     REST = "REST"
     WMS = "WMS"
     WFS = "WFS"
+    MVT = "MVT"
+    ATOM = "ATOM"
 
 
 class DistributionType(StrChoicesEnum):

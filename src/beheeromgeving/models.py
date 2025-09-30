@@ -299,8 +299,8 @@ class DataContract(models.Model):
 
 
 class Team(models.Model):
-    name = models.CharField(_("Name"), max_length=64, unique=True)
-    description = models.CharField(_("Description"), max_length=512, blank=True)
+    name = models.CharField(_("Name"), max_length=128, unique=True)
+    description = models.CharField(_("Description"), max_length=512, blank=True, null=True)
     acronym = models.CharField(_("Acronym"), max_length=10, unique=True)
     po_name = models.CharField(_("Product Owner Name"), max_length=64)
     po_email = models.CharField(
@@ -314,7 +314,7 @@ class Team(models.Model):
     def __str__(self):
         return f"{self.name} ({self.acronym})"
 
-    def to_domain(self):
+    def to_domain(self) -> DomainTeam:
         return DomainTeam(
             id=self.id,
             name=self.name,
@@ -327,7 +327,7 @@ class Team(models.Model):
         )
 
     @classmethod
-    def from_domain(cls, team: DomainTeam):
+    def from_domain(cls, team: DomainTeam) -> Team:
         instance, _created = cls.objects.filter(pk=team.id).update_or_create(defaults=team.items())
         return instance.to_domain()
 
