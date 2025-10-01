@@ -1,0 +1,16 @@
+[run]
+branch = True
+source =
+    api
+    beheeromgeving
+    domain
+omit =
+    */migrations/*.py
+    settings.py
+    */commands/import*
+    wsgi.py
+plugins =
+    django_coverage_plugin
+
+[report]
+fail_under = 95
