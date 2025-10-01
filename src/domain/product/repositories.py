@@ -1,3 +1,5 @@
+from django.db.utils import IntegrityError
+
 from beheeromgeving import models as orm
 from domain import exceptions
 from domain.base import AbstractRepository
@@ -20,7 +22,10 @@ class ProductRepository(AbstractRepository):
         return list(self._products.values())
 
     def save(self, product: Product) -> Product:
-        saved_product = orm.Product.from_domain(product)
+        try:
+            saved_product = orm.Product.from_domain(product)
+        except IntegrityError as e:
+            raise exceptions.ValidationError(f"Error for {product.name}: {e!s}") from e
         self._products[saved_product.id] = saved_product
         return saved_product
 

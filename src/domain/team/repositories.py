@@ -1,3 +1,5 @@
+from django.db.utils import IntegrityError
+
 from beheeromgeving import models as orm
 from domain import exceptions
 from domain.base import AbstractRepository
@@ -5,7 +7,7 @@ from domain.team import Team
 
 
 class TeamRepository(AbstractRepository):
-    _teams = dict[int, Team]
+    _teams: dict[int, Team]
 
     def __init__(self):
         self._teams = {t.id: t.to_domain() for t in orm.Team.objects.all()}
@@ -20,7 +22,10 @@ class TeamRepository(AbstractRepository):
         return list(self._teams.values())
 
     def save(self, team: Team) -> int:
-        saved_team = orm.Team.from_domain(team)
+        try:
+            saved_team = orm.Team.from_domain(team)
+        except IntegrityError:
+            raise exceptions.ValidationError(f"Team {team.acronym} already exists") from None
         self._teams[saved_team.id] = saved_team
         return saved_team.id
 

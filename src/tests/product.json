@@ -1,0 +1,63 @@
+{
+    "id": "objecten_in_openbare_ruimte_v1",
+    "naam": "Objecten in openbare ruimte",
+    "versie": "V1",
+    "beschrijving": "Dit dataproduct bevat gegevens over objecten in de openbare ruimte die beheerd worden door de Gemeente Amsterdam. Momenteel maken groenobjecten, verhardingen en terreindelen onderdeel uit van dit dataproduct",
+    "doelbinding": "Het beschikbaar stellen van gestructureerde, statische objectgegevens van te beheren objecten in de openbare ruimte volgens het Informatiemodel Beheer Openbare Ruimte (IMBOR).",
+    "themaNamen": [
+        "Ruimte en infrastructuur"
+    ],
+    "zoekwoorden": [
+        "groenobjecten",
+        "verhardingen",
+        "terreindeel",
+        "asset"
+    ],
+    "eigenaar": "Product Owner van het Datateam",
+    "dataTeam": "Beheer Openbare Ruimte",
+    "contactEmailAdres": "data.datateambeeldschoon@amsterdam.nl",
+    "businessDataSteward": "",
+    "taal": "Nederlands",
+    "vertrouwelijkheidsniveau": "Open",
+    "privacyniveau": "Niet persoonlijk identificeerbaar",
+    "geoData": "Ja",
+    "geoCoördinaatreferentiesysteem": "RD",
+    "ververstermijn": "Dagelijks",
+    "bewaartermijn": "36",
+    "startDatumContract": "2024-08-05",
+    "updateDatumContract": "2025-08-19 09:20:11",
+    "aanmaakDatumContract": "2025-03-24 13:28:28",
+    "amsterdamSchemaDatasetVerwijzing": {
+        "datasetName": "objectenopenbareruimte",
+        "scope": "OPENBAAR",
+        "tables": [
+            "verhardingen_V1",
+            "groenobjecten_V1",
+            "terreindeel_V1"
+        ]
+    },
+    "distributietype": [
+        "API",
+        "Bestand"
+    ],
+    "api": [
+        {
+            "type": "REST",
+            "link": "https://api.data.amsterdam.nl/v1/objectenopenbareruimte/"
+        },
+        {
+            "type": "WMS",
+            "link": "https://map.data.amsterdam.nl/maps/bomen?REQUEST=GetCapabilities&VERSION=1.1.0&SERVICE=wms"
+        },
+        {
+            "type": "WFS",
+            "link": "https://api.data.amsterdam.nl/v1/wfs/objectenopenbareruimte/"
+        }
+    ],
+    "bestanden": [
+        {
+            "bestandstype": "csv",
+            "bestandLink": "https://download.link/file.csv"
+        }
+    ]
+}

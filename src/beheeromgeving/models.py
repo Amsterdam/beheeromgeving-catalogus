@@ -152,7 +152,7 @@ class Product(models.Model):
             is_geo=self.is_geo,
             crs=self.crs,
             schema_url=self.schema_url,
-            contracts=[c.to_domain() for c in self.contracts.all()],
+            contracts=[c.to_domain() for c in self.contracts.order_by("id")],
             themes=self.themes,
             last_updated=self.last_updated,
             has_personal_data=self.has_personal_data,
@@ -162,7 +162,7 @@ class Product(models.Model):
             owner=self.owner,
             contact_email=self.contact_email,
             data_steward=self.data_steward,
-            services=[s.to_domain() for s in self.services.all()],
+            services=[s.to_domain() for s in self.services.order_by("id")],
             sources=[s.id for s in self.sources.all()],
             sinks=[s.id for s in self.sinks.all()],
         )
@@ -182,6 +182,7 @@ class Product(models.Model):
         for contract in product.contracts or []:
             DataContract.from_domain(contract, instance.id)
 
+        instance.refresh_from_db()
         return instance.to_domain()
 
 
@@ -281,7 +282,7 @@ class DataContract(models.Model):
             confidentiality=self.confidentiality,
             start_date=self.start_date,
             retainment_period=self.retainment_period,
-            distributions=[d.to_domain() for d in self.distributions.all()],
+            distributions=[d.to_domain() for d in self.distributions.order_by("id")],
         )
 
     @classmethod
@@ -289,18 +290,19 @@ class DataContract(models.Model):
         instance, _created = cls.objects.filter(pk=contract.id).update_or_create(
             defaults={**contract.items(), "product_id": product_id}
         )
-        instance.save()
-        # Replace all distributions.
-        instance.distributions.all().delete()
+        # Handle distributions, they may potentially all be deleted:
+        to_delete = instance.distributions.all()
         for distribution in contract.distributions or []:
-            Distribution.from_domain(distribution, instance.id)
-
+            distro_id = Distribution.from_domain(distribution, instance.id)
+            # Exclude the distribution that still exists.
+            to_delete = to_delete.exclude(pk=distro_id)
+        to_delete.delete()
         return instance.to_domain()
 
 
 class Team(models.Model):
-    name = models.CharField(_("Name"), max_length=64, unique=True)
-    description = models.CharField(_("Description"), max_length=512, blank=True)
+    name = models.CharField(_("Name"), max_length=128, unique=True)
+    description = models.CharField(_("Description"), max_length=512, blank=True, null=True)
     acronym = models.CharField(_("Acronym"), max_length=10, unique=True)
     po_name = models.CharField(_("Product Owner Name"), max_length=64)
     po_email = models.CharField(
@@ -314,7 +316,7 @@ class Team(models.Model):
     def __str__(self):
         return f"{self.name} ({self.acronym})"
 
-    def to_domain(self):
+    def to_domain(self) -> DomainTeam:
         return DomainTeam(
             id=self.id,
             name=self.name,
@@ -327,7 +329,7 @@ class Team(models.Model):
         )
 
     @classmethod
-    def from_domain(cls, team: DomainTeam):
+    def from_domain(cls, team: DomainTeam) -> Team:
         instance, _created = cls.objects.filter(pk=team.id).update_or_create(defaults=team.items())
         return instance.to_domain()
 
@@ -382,7 +384,9 @@ class Distribution(models.Model):
 
     @classmethod
     def from_domain(cls, distribution: objects.Distribution, contract_id: int):
-        instance = cls.objects.create(**distribution.items(), contract_id=contract_id)
+        instance, _created = cls.objects.filter(pk=distribution.id).update_or_create(
+            defaults={**distribution.items(), "contract_id": contract_id}
+        )
         return instance.id
 
 
