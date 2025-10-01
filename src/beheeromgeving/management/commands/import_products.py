@@ -199,15 +199,18 @@ class Command(BaseCommand):
         )
 
     def create_distributions(self, product: dict, new_product, new_contract, services, team):
+        distributions = []
         for distribution in product["distributietype"]:
             if distribution == "API":
                 for service in services:
                     d = Distribution(access_service_id=service.id, type=enums.DistributionType.API)
-                    self.service.create_distribution(
-                        product_id=new_product.id,
-                        contract_id=new_contract.id,
-                        data=d.model_dump(),
-                        scopes=[team.scope],
+                    distributions.append(
+                        self.service.create_distribution(
+                            product_id=new_product.id,
+                            contract_id=new_contract.id,
+                            data=d.model_dump(),
+                            scopes=[team.scope],
+                        )
                     )
             elif distribution == "Bestand":
                 for file in product["bestanden"]:
@@ -216,9 +219,12 @@ class Command(BaseCommand):
                         format=file["bestandstype"][:10],
                         refresh_period=new_product.refresh_period,
                     )
-                    self.service.create_distribution(
-                        product_id=new_product.id,
-                        contract_id=new_contract.id,
-                        data=d.model_dump(),
-                        scopes=[team.scope],
+                    distributions.append(
+                        self.service.create_distribution(
+                            product_id=new_product.id,
+                            contract_id=new_contract.id,
+                            data=d.model_dump(),
+                            scopes=[team.scope],
+                        )
                     )
+        return distributions
