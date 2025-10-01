@@ -38,5 +38,8 @@ RUN pip install setuptools  # workaround for missing pkg_resources in openteleme
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
+# Give beheeromgeving the same UID as github actions runner.
+USER root
+RUN usermod --uid 1001 beheeromgeving
 USER beheeromgeving
 CMD ["uwsgi"]
