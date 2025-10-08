@@ -31,7 +31,7 @@ class ProductService(AbstractService):
         existing_product = self.get_product(product_id)
         existing_product.update_from_dict(data)
         self._persist(existing_product)
-        return existing_product.id
+        return existing_product
 
     @authorize.is_team_member
     def delete_product(self, *, product_id: int, **kwargs) -> None:
