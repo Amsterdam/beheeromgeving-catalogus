@@ -157,6 +157,7 @@ class TestViews:
         for key, val in data.items():
             assert response.data[key] == val
             assert getattr(orm_product, key) == val
+        assert response.data["last_updated"] == orm_product.last_updated
 
     def test_contract_list(self, api_client, orm_product):
         response = api_client.get(f"/products/{orm_product.id}/contracts")
