@@ -187,6 +187,8 @@ class ProductUpdate(ModelMixin, BaseModel):
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
     owner: str | None = None
+    contact_email: str | None = None
+    data_steward: str | None = None
     services: list[DataService] | None = None
     sources: list[int] | None = None
     sinks: list[int] | None = None
