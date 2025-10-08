@@ -114,12 +114,12 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         product_dto = self._validate_dto(request.data, dto_type=dtos.ProductUpdate)
 
         # ignore contracts/service as these should be created through their own endpoint
-        self.service.update_product(
+        product = self.service.update_product(
             product_id=int(pk),
             data=product_dto.model_dump(exclude_unset=True, exclude=["contracts", "services"]),
             scopes=request.get_token_scopes,
         )
-        return Response(status=200)
+        return Response(dtos.to_response_object(product), status=200)
 
     def destroy(self, request, pk=None):
         self.service.delete_product(product_id=int(pk), scopes=request.get_token_scopes)
