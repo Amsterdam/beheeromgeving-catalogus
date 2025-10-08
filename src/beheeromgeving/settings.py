@@ -338,6 +338,11 @@ REST_FRAMEWORK = dict(
     DEFAULT_AUTHENTICATION_CLASSES=[],
 )
 
+if DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append(
+        "rest_framework.renderers.BrowsableAPIRenderer"
+    )
+
 DATAPUNT_AUTHZ = {
     # To verify JWT tokens, either the PUB_JWKS or a OAUTH_JWKS_URL needs to be set.
     "JWKS": os.getenv("PUB_JWKS"),
