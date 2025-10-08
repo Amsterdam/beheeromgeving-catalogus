@@ -117,19 +117,12 @@ class ProductService(AbstractService):
         return distribution_id
 
     def get_services(self, product_id: int) -> list[DataService]:
-        return self.repository.get(product_id).services
+        product = self.repository.get(product_id)
+        return product.services
 
     def get_service(self, product_id: int, service_id: int) -> DataService:
-        try:
-            return next(
-                service
-                for service in (self.get_services(product_id) or [])
-                if service.id == service_id
-            )
-        except StopIteration:
-            raise exceptions.ObjectDoesNotExist(
-                f"Service with id {service_id} does not exist on Product {product_id}"
-            ) from None
+        product = self.repository.get(product_id)
+        return product.get_service(service_id)
 
     @authorize.is_team_member
     def create_service(self, product_id: int, data: dict, **kwargs) -> DataService:
@@ -137,11 +130,7 @@ class ProductService(AbstractService):
             raise exceptions.IllegalOperation("IDs are assigned automatically")
 
         product = self.get_product(product_id)
-        service = DataService(**data)
-        if product.services:
-            product.services.append(service)
-        else:
-            product.services = [service]
+        product.create_service(data)
         updated_product = self._persist(product)
         return updated_product.services[-1]
 
@@ -153,27 +142,14 @@ class ProductService(AbstractService):
             raise exceptions.IllegalOperation("Cannot update service id")
 
         product = self.get_product(product_id)
-        try:
-            service = next(
-                service for service in (product.services or []) if service.id == service_id
-            )
-        except StopIteration:
-            raise exceptions.ObjectDoesNotExist(
-                f"Service with id {service_id} does not exist on Product {product_id}"
-            ) from None
-        service.update_from_dict(data)
+        service = product.update_service(service_id, data)
         self._persist(product)
         return service
 
     @authorize.is_team_member
     def delete_service(self, product_id: int, service_id: int, **kwargs) -> int:
         product = self.get_product(product_id)
-        service_ids = [s.id for s in product.services]
-        if service_id not in service_ids:
-            raise exceptions.ObjectDoesNotExist(
-                f"Service with id {service_id} does not exist on Product {product_id}"
-            ) from None
-        product.services = [service for service in product.services if service.id != service_id]
+        product.delete_service(service_id)
         self._persist(product)
         return service_id
 
