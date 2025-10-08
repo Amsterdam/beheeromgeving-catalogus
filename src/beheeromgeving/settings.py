@@ -331,15 +331,17 @@ HEALTH_CHECKS = {
 HEALTH_CHECKS_ERROR_CODE = 503
 
 REST_FRAMEWORK = dict(
-    DEFAULT_RENDERER_CLASSES=[
-        "rest_framework.renderers.JSONRenderer",
-        "rest_framework.renderers.BrowsableAPIRenderer",
-    ],
+    DEFAULT_RENDERER_CLASSES=["rest_framework.renderers.JSONRenderer"],
     UNAUTHENTICATED_USER=None,  # Avoid importing django.contrib.auth.models
     UNAUTHENTICATED_TOKEN=None,
     URL_FORMAT_OVERRIDE="_format",  # use ?_format=.. instead of ?format=..
     DEFAULT_AUTHENTICATION_CLASSES=[],
 )
+
+if DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append(
+        "rest_framework.renderers.BrowsableAPIRenderer"
+    )
 
 DATAPUNT_AUTHZ = {
     # To verify JWT tokens, either the PUB_JWKS or a OAUTH_JWKS_URL needs to be set.
