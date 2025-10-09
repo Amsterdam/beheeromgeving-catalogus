@@ -77,9 +77,12 @@ class Product(models.Model):
         help_text='De ververstermijn in de vorm {"frequency": int, "unit": periodString}, '
         'waarbij periodStr iets is als "uur", "dag", "week", "maand", "jaar"',
     )
-    has_personal_data = models.BooleanField(_("Bevat Persoonsgegevens"), default=False, null=True)
-    has_special_personal_data = models.BooleanField(
-        _("Bevat Bijzondere Persoonsgegevens"), default=False, null=True
+    privacy_level = models.CharField(
+        _("Privacyniveau"),
+        choices=enums.PrivacyLevel.choices(),
+        null=True,
+        blank=True,
+        help_text="Het privacyniveau van het product",
     )
     last_updated = models.DateTimeField(auto_now=True)
 
@@ -155,8 +158,7 @@ class Product(models.Model):
             contracts=[c.to_domain() for c in self.contracts.order_by("id")],
             themes=self.themes,
             last_updated=self.last_updated,
-            has_personal_data=self.has_personal_data,
-            has_special_personal_data=self.has_special_personal_data,
+            privacy_level=self.privacy_level,
             refresh_period=self.refresh_period,
             publication_status=self.publication_status,
             owner=self.owner,
@@ -231,9 +233,12 @@ class DataContract(models.Model):
         "omschreven en gerechtvaardigde doel. 'Welbepaald en uitdrukkelijk omschreven' houdt in "
         "dat men geen gegevens mag verzamelen zonder een precieze doelomschrijving",
     )
-    has_personal_data = models.BooleanField(_("Bevat Persoonsgegevens"), default=False, null=True)
-    has_special_personal_data = models.BooleanField(
-        _("Bevat Bijzondere Persoonsgegevens"), default=False, null=True
+    privacy_level = models.CharField(
+        _("Privacyniveau"),
+        choices=enums.PrivacyLevel.choices(),
+        null=True,
+        blank=True,
+        help_text="Het privacyniveau van het contract",
     )
     last_updated = models.DateTimeField(auto_now=True)
     confidentiality = models.CharField(
@@ -283,8 +288,7 @@ class DataContract(models.Model):
             name=self.name,
             description=self.description,
             last_updated=self.last_updated,
-            has_personal_data=self.has_personal_data,
-            has_special_personal_data=self.has_special_personal_data,
+            privacy_level=self.privacy_level,
             scope=self.scope,
             confidentiality=self.confidentiality,
             start_date=self.start_date,

@@ -130,8 +130,7 @@ class DataContract(ModelMixin, BaseModel):
     name: str | None = None
     description: str | None = None
     last_updated: datetime | None = None
-    has_personal_data: bool | None = None
-    has_special_personal_data: bool | None = None
+    privacy_level: enums.PrivacyLevel | None = None
     scope: str | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
     start_date: date | None = None
@@ -155,8 +154,7 @@ class ProductDetail(ModelMixin, BaseModel):
     contracts: list[DataContract] | None = None
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
-    has_personal_data: bool | None = None
-    has_special_personal_data: bool | None = None
+    privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
     owner: str | None = None
@@ -182,8 +180,7 @@ class ProductUpdate(ModelMixin, BaseModel):
     contracts: list[DataContract] | None = None
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
-    has_personal_data: bool | None = None
-    has_special_personal_data: bool | None = None
+    privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
     owner: str | None = None
