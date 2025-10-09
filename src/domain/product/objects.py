@@ -36,8 +36,7 @@ class DataContract(BaseObject):
     name: str | None = None
     description: str | None = None
     last_updated: datetime | None = None
-    has_personal_data: bool | None = None
-    has_special_personal_data: bool | None = None
+    privacy_level: enums.PrivacyLevel | None = None
     scope: str | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
     start_date: date | None = None
@@ -64,7 +63,7 @@ class ProductValidator:
         self.product = prod
 
     def can_create_contract(self) -> True:
-        required_fields = ["name", "type", "has_personal_data", "has_special_personal_data"]
+        required_fields = ["name", "type", "privacy_level"]
         missing_fields = [
             field for field in required_fields if getattr(self.product, field) is None
         ]
@@ -90,8 +89,7 @@ class Product(BaseObject):
     contracts: list[DataContract] = field(default_factory=list)
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
-    has_personal_data: bool | None = None
-    has_special_personal_data: bool | None = None
+    privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
     owner: str | None = None

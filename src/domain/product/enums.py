@@ -46,6 +46,12 @@ class Language(StrChoicesEnum):
     ENGLISH = "EN"
 
 
+class PrivacyLevel(StrChoicesEnum):
+    NIET_PERSOONLIJK_IDENTIFICEERBAAR = "NPI"
+    PERSOONLIJK_IDENTIFICEERBAAR = "PI"
+    BIJZONDER_IDENTIFICEERBAAR = "BI"
+
+
 class PublicationStatus(StrChoicesEnum):
     DRAFT = "D"
     IN_REVIEW = "R"
