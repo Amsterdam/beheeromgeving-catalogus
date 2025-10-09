@@ -26,6 +26,12 @@ source = ["src/api", "src/beheeromgeving","src/domain"]
 omit = ["*/migrations/*.py", "settings.py", "*/commands/import*", "wsgi.py"]
 plugins = ["django_coverage_plugin"]
 
+[tool.coverage.report]
+exclude_also = [
+    "if settings.DEBUG:",
+    'if "debug_toolbar" in settings.INSTALLED_APPS:',
+    "raise NotImplementedError"
+]
 
 # ==== black ====
 [tool.black]
