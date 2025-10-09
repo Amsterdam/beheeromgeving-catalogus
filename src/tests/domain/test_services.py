@@ -254,15 +254,10 @@ class TestProductService:
     @pytest.mark.parametrize(
         "data,missing_fields",
         [
-            ({}, r"\[name, type, has_personal_data, has_special_personal_data\]"),
-            ({"name": "Product"}, r"\[type, has_personal_data, has_special_personal_data\]"),
-            ({"type": "D"}, r"\[name, has_personal_data, has_special_personal_data\]"),
-            ({"has_personal_data": False}, r"\[name, type, has_special_personal_data\]"),
-            ({"has_special_personal_data": True}, r"\[name, type, has_personal_data\]"),
-            (
-                {"has_personal_data": True, "name": "Product", "type": "D"},
-                r"\[has_special_personal_data\]",
-            ),
+            ({}, r"\[name, type, privacy_level\]"),
+            ({"name": "Product"}, r"\[type, privacy_level\]"),
+            ({"type": "D"}, r"\[name, privacy_level\]"),
+            ({"privacy_level": "NPI"}, r"\[name, type\]"),
         ],
     )
     def test_create_contract_missing_fields(
@@ -284,13 +279,7 @@ class TestProductService:
         """Test weather a contract can be created when all necessary fields are present on the
         product."""
         product = product_service.create_product(
-            data={
-                "team_id": team.id,
-                "name": "Product",
-                "type": "D",
-                "has_personal_data": True,
-                "has_special_personal_data": False,
-            },
+            data={"team_id": team.id, "name": "Product", "type": "D", "privacy_level": "PI"},
             scopes=[team.scope],
         )
         contract = product_service.create_contract(
