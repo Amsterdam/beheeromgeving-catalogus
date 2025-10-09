@@ -174,13 +174,20 @@ class Product(models.Model):
         )
         instance.owner = product.owner
         instance.save()
+
         # Create/update services
+        to_delete = instance.services.all()
         for service in product.services or []:
-            DataService.from_domain(service, instance.id)
+            service_id = DataService.from_domain(service, instance.id)
+            to_delete = to_delete.exclude(pk=service_id)
+        to_delete.delete()
 
         # Create/update contracts
+        to_delete = instance.contracts.all()
         for contract in product.contracts or []:
-            DataContract.from_domain(contract, instance.id)
+            contract = DataContract.from_domain(contract, instance.id)
+            to_delete = to_delete.exclude(pk=contract.id)
+        to_delete.delete()
 
         instance.refresh_from_db()
         return instance.to_domain()
@@ -415,6 +422,7 @@ class DataService(models.Model):
 
     @classmethod
     def from_domain(cls, service: objects.DataService, product_id: int):
-        cls.objects.filter(pk=service.id).update_or_create(
+        instance, _created = cls.objects.filter(pk=service.id).update_or_create(
             defaults={**service.items(), "product_id": product_id}
         )
+        return instance.id

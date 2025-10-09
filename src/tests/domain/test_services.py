@@ -580,12 +580,21 @@ class TestProductService:
             scopes=[team.scope],
         )
 
-    def test_delete_service(self, product_service: ProductService, product: Product, team: Team):
+    def test_delete_service(self, product_service, product: Product, team: Team):
+        product.contracts = []
         product_service.delete_service(
             product_id=product.id, service_id=product.services[0].id, scopes=[team.scope]
         )
 
         assert len(product_service.get_services(product.id)) == 0
+
+    @pytest.mark.xfail(raises=ValidationError)
+    def test_delete_service_fails_when_distribution_accesses_it(
+        self, product_service: ProductService, product: Product, team: Team
+    ):
+        product_service.delete_service(
+            product_id=product.id, service_id=product.services[0].id, scopes=[team.scope]
+        )
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_delete_service_non_existent(

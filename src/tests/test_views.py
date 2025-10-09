@@ -219,6 +219,9 @@ class TestViews:
         )
 
         assert response.status_code == 204
+        orm_product.refresh_from_db()
+
+        assert len(orm_product.contracts.all()) == 0
 
     def test_distribution_list(self, api_client, orm_product):
         contract_id = orm_product.contracts.first().id
@@ -339,10 +342,12 @@ class TestViews:
         )
         assert response.status_code == 400
 
-    def test_service_delete(self, client_with_token, orm_product, orm_team):
+    def test_service_delete_not_allowed(self, client_with_token, orm_product, orm_team):
         service_id = orm_product.services.first().id
         response = client_with_token([orm_team.scope]).delete(
             f"/products/{orm_product.id}/services/{service_id}"
         )
 
-        assert response.status_code == 204
+        assert response.status_code == 400
+        orm_product.refresh_from_db()
+        assert len(orm_product.services.all()) == 1

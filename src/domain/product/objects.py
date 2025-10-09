@@ -42,7 +42,7 @@ class DataContract(BaseObject):
     confidentiality: enums.ConfidentialityLevel | None = None
     start_date: date | None = None
     retainment_period: int | None = None
-    distributions: list[Distribution] | None = None
+    distributions: list[Distribution] = field(default_factory=list)
 
     _skip_keys = {"contact_email", "distributions"}
 
@@ -97,9 +97,9 @@ class Product(BaseObject):
     owner: str | None = None
     contact_email: str | None = None
     data_steward: str | None = None
-    services: list[DataService] | None = None
-    sources: list[int] = None
-    sinks: list[int] = None
+    services: list[DataService] = field(default_factory=list)
+    sources: list[int] = field(default_factory=list)
+    sinks: list[int] = field(default_factory=list)
 
     _skip_keys = {"contracts", "team", "owner", "sources", "sinks", "services"}
 
@@ -118,6 +118,14 @@ class Product(BaseObject):
                 f"contract with id {contract_id} does not exist on product {self.id}"
             ) from None
 
+    def get_service(self, service_id: int):
+        try:
+            return next(service for service in self.services if service.id == service_id)
+        except StopIteration:
+            raise ObjectDoesNotExist(
+                f"service with id {service_id} does not exist on product {self.id}"
+            ) from None
+
     def update_contract(self, contract_id: int, data: dict) -> DataContract:
         contract = self.get_contract(contract_id)
         contract.update_from_dict(data)
@@ -126,6 +134,7 @@ class Product(BaseObject):
     def delete_contract(self, contract_id: int) -> int:
         self.get_contract(contract_id)  # Raise if it doesn't exist.
         self.contracts = [contract for contract in self.contracts if contract.id != contract_id]
+        return contract_id
 
     def get_distribution(self, contract_id: int, distribution_id: int):
         contract = self.get_contract(contract_id)
@@ -157,3 +166,29 @@ class Product(BaseObject):
             if distribution.id != distribution_id
         ]
         return distribution_id
+
+    def create_service(self, data: dict) -> DataService:
+        service = DataService(**data)
+        self.services.append(service)
+        return service
+
+    def update_service(self, service_id: int, data: dict) -> DataService:
+        service = self.get_service(service_id)
+        service.update_from_dict(data)
+        return service
+
+    def delete_service(self, service_id: int) -> int:
+        self.get_service(service_id)  # Raises if it doesn't exist
+        if any(
+            distribution.access_service_id == service_id
+            for contract in self.contracts
+            for distribution in contract.distributions
+        ):
+            raise ValidationError("Cannot delete service, it is still in use by distributions")
+        service_ids = [s.id for s in self.services]
+        if service_id not in service_ids:
+            raise ObjectDoesNotExist(
+                f"Service with id {service_id} does not exist on Product {self.id}"
+            ) from None
+        self.services = [service for service in self.services if service.id != service_id]
+        return service_id
