@@ -3,6 +3,52 @@
 from django.db import migrations, models
 
 
+def forward(apps, schema_editor):
+    Product = apps.get_model("beheeromgeving", "Product")
+    DataContract = apps.get_model("beheeromgeving", "DataContract")
+    for product in Product.objects.all():
+        if product.has_special_personal_data:
+            product.privacy_level = "BI"
+        elif product.has_personal_data:
+            product.privacy_level = "PI"
+        else:
+            product.privacy_level = "NPI"
+
+    for contract in DataContract.objects.all():
+        if contract.has_special_personal_data:
+            contract.privacy_level = "BI"
+        elif contract.has_personal_data:
+            contract.privacy_level = "PI"
+        else:
+            contract.privacy_level = "NPI"
+
+
+def backward(apps, schema_editor):
+    Product = apps.get_model("beheeromgeving", "Product")
+    DataContract = apps.get_model("beheeromgeving", "DataContract")
+    for product in Product.objects.all():
+        if product.privacy_level == "BI":
+            product.has_special_personal_data = True
+            product.has_personal_data = True
+        if product.privacy_level == "PI":
+            product.has_personal_data = True
+            product.has_special_personal_data = False
+        else:
+            product.has_personal_data = False
+            product.has_special_personal_data = False
+
+    for contract in DataContract.objects.all():
+        if contract.privacy_level == "BI":
+            contract.has_special_personal_data = True
+            contract.has_personal_data = True
+        if contract.privacy_level == "PI":
+            contract.has_personal_data = True
+            contract.has_special_personal_data = False
+        else:
+            contract.has_personal_data = False
+            contract.has_special_personal_data = False
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,22 +56,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="datacontract",
-            name="has_personal_data",
-        ),
-        migrations.RemoveField(
-            model_name="datacontract",
-            name="has_special_personal_data",
-        ),
-        migrations.RemoveField(
-            model_name="product",
-            name="has_personal_data",
-        ),
-        migrations.RemoveField(
-            model_name="product",
-            name="has_special_personal_data",
-        ),
         migrations.AddField(
             model_name="datacontract",
             name="privacy_level",
@@ -55,5 +85,22 @@ class Migration(migrations.Migration):
                 null=True,
                 verbose_name="Privacyniveau",
             ),
+        ),
+        migrations.RunPython(forward, backward),
+        migrations.RemoveField(
+            model_name="datacontract",
+            name="has_personal_data",
+        ),
+        migrations.RemoveField(
+            model_name="datacontract",
+            name="has_special_personal_data",
+        ),
+        migrations.RemoveField(
+            model_name="product",
+            name="has_personal_data",
+        ),
+        migrations.RemoveField(
+            model_name="product",
+            name="has_special_personal_data",
         ),
     ]
