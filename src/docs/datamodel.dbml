@@ -8,8 +8,7 @@ Table Product {
   type                      productType
   themes                    Themas[] [Note: "Array of enum not supported by dbml"]
   last_updated              datetime
-  has_personal_data         boolean
-  has_special_personal_data boolean
+  privacy_level             privacyLevel
   refresh_period            dict [Note: '{"frequency": int, "unit": periodString}']
   team                      Team [ref: > Team.id]
   publication_status        publicationStatus
@@ -33,8 +32,7 @@ Table DataContract [Note: "Datacontract"] {
   purpose                     string [note: "Doelbinding"]
   name                        string [note: "Naam van het contract"]
   description                 string
-  has_personal_data           boolean
-  has_special_personal_data   boolean
+  privacy_level               privacyLevel
   confidentiality             Vertrouwelijkheidsniveau
   retainment_period           integer [Note: 'in maanden']
   start_date                  date
@@ -50,6 +48,12 @@ enum publicationStatus {
   "approved"
   "published"
   "expired"
+}
+
+enum privacyLevel {
+  "niet_persoonlijk_identificeerbaar"
+  "persoonlijk_identificeerbaar"
+  "bijzonder_identificeerbaar"
 }
 
 Table Team {
