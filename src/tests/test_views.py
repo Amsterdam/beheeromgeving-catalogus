@@ -99,7 +99,19 @@ class TestViews:
     def test_products_list(self, api_client, orm_product):
         response = api_client.get("/products")
         assert response.status_code == 200
-        assert response.data[0]["name"] == orm_product.name
+        product = response.data[0]
+        assert product["name"] == orm_product.name
+        assert product["summary"] == {"distributions": ["F"], "services": ["REST"]}
+        for key in [
+            "description",
+            "language",
+            "owner",
+            "type",
+            "themes",
+            "last_updated",
+            "team_id",
+        ]:
+            assert key in product
 
     def test_product_detail(self, api_client, orm_product):
         response = api_client.get(f"/products/{orm_product.id}")

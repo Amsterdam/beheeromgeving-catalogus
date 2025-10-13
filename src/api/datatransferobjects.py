@@ -66,8 +66,8 @@ class Team(ModelMixin, BaseModel):
     """Used for create and detail views."""
 
     id: int | None = None
+    description: str | None = None
     name: str
-    description: str
     acronym: str
     po_name: str
     po_email: str
@@ -145,7 +145,6 @@ class ProductDetail(ModelMixin, BaseModel):
     id: int | None = None
     name: str | None = Field(None, min_length=2)
     description: str | None = None
-    team_id: int | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
     crs: enums.CoordRefSystem | None = None
@@ -196,3 +195,9 @@ class ProductList(ModelMixin, BaseModel):
     name: str | None = Field(None, min_length=2)
     description: str | None = None
     type: enums.ProductType | None = None
+    owner: str | None = None
+    themes: list[enums.Theme] | None = None
+    last_updated: datetime | None = None
+    language: enums.Language | None = None
+    summary: dict[str, list[enums.DistributionType | enums.DataServiceType | None]] | None = None
+    team_id: int
