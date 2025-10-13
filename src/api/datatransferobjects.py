@@ -62,17 +62,10 @@ class ModelMixin:
         return v
 
 
-class Team(ModelMixin, BaseModel):
-    """Detail view of the team"""
+class IdMixin:
+    """A mixin class that only adds a mandatory id field."""
 
-    description: str | None = None
     id: int
-    name: str
-    acronym: str
-    po_name: str
-    po_email: str
-    contact_email: str
-    scope: str
 
 
 class TeamCreate(ModelMixin, BaseModel):
@@ -85,6 +78,10 @@ class TeamCreate(ModelMixin, BaseModel):
     po_email: str
     contact_email: str
     scope: str
+
+
+class Team(IdMixin, TeamCreate):
+    """Team Detail view"""
 
 
 class TeamPartial(ModelMixin, BaseModel):
@@ -105,30 +102,18 @@ class TeamList(ModelMixin, BaseModel):
     acronym: str
 
 
-class DataService(ModelMixin, BaseModel):
-    id: int
-    type: enums.DataServiceType | None = None
-    endpoint_url: str | None = None
-
-
 class DataServiceCreateOrUpdate(ModelMixin, BaseModel):
     type: enums.DataServiceType | None = None
     endpoint_url: str | None = None
 
 
+class DataService(IdMixin, DataServiceCreateOrUpdate):
+    """DataService detail view"""
+
+
 class RefreshPeriod(ModelMixin, BaseModel):
     frequency: int
     unit: enums.TimeUnit
-
-
-class Distribution(ModelMixin, BaseModel):
-    id: int
-    access_service_id: int | None = None
-    access_url: str | None = None
-    download_url: str | None = None
-    format: str | None = None
-    type: enums.DistributionType | None = None
-    refresh_period: RefreshPeriod | None = None  # Hoort volgens DCAT op Dataset
 
 
 class DistributionCreateOrUpdate(ModelMixin, BaseModel):
@@ -140,26 +125,15 @@ class DistributionCreateOrUpdate(ModelMixin, BaseModel):
     refresh_period: RefreshPeriod | None = None  # Hoort volgens DCAT op Dataset
 
 
+class Distribution(IdMixin, DistributionCreateOrUpdate):
+    """Distribution detail view"""
+
+
 class DataContractList(ModelMixin, BaseModel):
     id: int
     publication_status: enums.PublicationStatus | None = None
     name: str | None = None
     description: str | None = None
-
-
-class DataContract(ModelMixin, BaseModel):
-    id: int
-    publication_status: enums.PublicationStatus | None = None
-    purpose: str | None = None
-    name: str | None = None
-    description: str | None = None
-    last_updated: datetime | None = None
-    privacy_level: enums.PrivacyLevel | None = None
-    scope: str | None = None
-    confidentiality: enums.ConfidentialityLevel | None = None
-    start_date: date | None = None
-    retainment_period: int | None = None
-    distributions: list[Distribution] | None = None
 
 
 class DataContractCreateOrUpdate(ModelMixin, BaseModel):
@@ -176,30 +150,8 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     distributions: list[Distribution] | None = None
 
 
-class ProductDetail(ModelMixin, BaseModel):
-    """Used for get/create."""
-
-    team_id: int
-    id: int
-    name: str | None = Field(None, min_length=2)
-    description: str | None = None
-    language: enums.Language | None = None
-    is_geo: bool | None = None
-    crs: enums.CoordRefSystem | None = None
-    schema_url: str | None = None
-    type: enums.ProductType | None = None
-    contracts: list[DataContract] | None = None
-    themes: list[enums.Theme] | None = None
-    last_updated: datetime | None = None
-    privacy_level: enums.PrivacyLevel | None = None
-    refresh_period: RefreshPeriod | None = None
-    publication_status: enums.PublicationStatus | None = None
-    owner: str | None = None
-    contact_email: str | None = None
-    data_steward: str | None = None
-    services: list[DataService] | None = None
-    sources: list[int] | None = None
-    sinks: list[int] | None = None
+class DataContract(IdMixin, DataContractCreateOrUpdate):
+    """DataContract detail view"""
 
 
 class ProductCreate(ModelMixin, BaseModel):
@@ -223,6 +175,10 @@ class ProductCreate(ModelMixin, BaseModel):
     services: list[DataService] | None = None
     sources: list[int] | None = None
     sinks: list[int] | None = None
+
+
+class ProductDetail(IdMixin, ProductCreate):
+    """Product detail view"""
 
 
 class ProductUpdate(ModelMixin, BaseModel):
