@@ -358,3 +358,42 @@ class TestViews:
         assert response.status_code == 400
         orm_product.refresh_from_db()
         assert len(orm_product.services.all()) == 1
+
+    def test_me_with_scopes(self, client_with_token, orm_product, orm_team, orm_other_team):
+        response = client_with_token([orm_team.scope]).get("/me")
+
+        assert response.status_code == 200
+        # team
+        assert len(response.data["teams"]) == 1
+        assert response.data["teams"][0]["name"] == orm_team.name
+        assert "acronym" in response.data["teams"][0]
+        # product
+        assert len(response.data["products"]) == 1
+        assert response.data["products"][0]["name"] == orm_product.name
+        for key in [
+            "team_id",
+            "id",
+            "type",
+            "privacy_level",
+            "last_updated",
+            "publication_status",
+            "contracts",
+        ]:
+            assert key in response.data["products"][0]
+        # contract
+        assert len(response.data["products"][0]["contracts"]) == 1
+        for key in [
+            "id",
+            "name",
+            "privacy_level",
+            "confidentiality",
+            "last_updated",
+            "publication_status",
+        ]:
+            assert key in response.data["products"][0]["contracts"][0]
+
+    def test_me_without_scopes(self, client_with_token, orm_product, orm_team, orm_other_team):
+        response = client_with_token([]).get("/me")
+
+        assert response.status_code == 200
+        assert response.data == {"teams": [], "products": []}
