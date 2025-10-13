@@ -106,7 +106,12 @@ class TeamList(ModelMixin, BaseModel):
 
 
 class DataService(ModelMixin, BaseModel):
-    id: int | None = None
+    id: int
+    type: enums.DataServiceType | None = None
+    endpoint_url: str | None = None
+
+
+class DataServiceCreateOrUpdate(ModelMixin, BaseModel):
     type: enums.DataServiceType | None = None
     endpoint_url: str | None = None
 
@@ -117,7 +122,16 @@ class RefreshPeriod(ModelMixin, BaseModel):
 
 
 class Distribution(ModelMixin, BaseModel):
-    id: int | None = None
+    id: int
+    access_service_id: int | None = None
+    access_url: str | None = None
+    download_url: str | None = None
+    format: str | None = None
+    type: enums.DistributionType | None = None
+    refresh_period: RefreshPeriod | None = None  # Hoort volgens DCAT op Dataset
+
+
+class DistributionCreateOrUpdate(ModelMixin, BaseModel):
     access_service_id: int | None = None
     access_url: str | None = None
     download_url: str | None = None
@@ -127,16 +141,28 @@ class Distribution(ModelMixin, BaseModel):
 
 
 class DataContractList(ModelMixin, BaseModel):
-    id: int | None = None
+    id: int
     publication_status: enums.PublicationStatus | None = None
     name: str | None = None
     description: str | None = None
 
 
 class DataContract(ModelMixin, BaseModel):
-    """Used for create/partial update."""
+    id: int
+    publication_status: enums.PublicationStatus | None = None
+    purpose: str | None = None
+    name: str | None = None
+    description: str | None = None
+    last_updated: datetime | None = None
+    privacy_level: enums.PrivacyLevel | None = None
+    scope: str | None = None
+    confidentiality: enums.ConfidentialityLevel | None = None
+    start_date: date | None = None
+    retainment_period: int | None = None
+    distributions: list[Distribution] | None = None
 
-    id: int | None = None
+
+class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     publication_status: enums.PublicationStatus | None = None
     purpose: str | None = None
     name: str | None = None
@@ -154,7 +180,30 @@ class ProductDetail(ModelMixin, BaseModel):
     """Used for get/create."""
 
     team_id: int
-    id: int | None = None
+    id: int
+    name: str | None = Field(None, min_length=2)
+    description: str | None = None
+    language: enums.Language | None = None
+    is_geo: bool | None = None
+    crs: enums.CoordRefSystem | None = None
+    schema_url: str | None = None
+    type: enums.ProductType | None = None
+    contracts: list[DataContract] | None = None
+    themes: list[enums.Theme] | None = None
+    last_updated: datetime | None = None
+    privacy_level: enums.PrivacyLevel | None = None
+    refresh_period: RefreshPeriod | None = None
+    publication_status: enums.PublicationStatus | None = None
+    owner: str | None = None
+    contact_email: str | None = None
+    data_steward: str | None = None
+    services: list[DataService] | None = None
+    sources: list[int] | None = None
+    sinks: list[int] | None = None
+
+
+class ProductCreate(ModelMixin, BaseModel):
+    team_id: int
     name: str | None = Field(None, min_length=2)
     description: str | None = None
     language: enums.Language | None = None
@@ -179,7 +228,6 @@ class ProductDetail(ModelMixin, BaseModel):
 class ProductUpdate(ModelMixin, BaseModel):
     """Used for partial update"""
 
-    id: int | None = None
     team_id: int | None = None
     name: str | None = Field(None, min_length=2)
     description: str | None = None
@@ -203,7 +251,7 @@ class ProductUpdate(ModelMixin, BaseModel):
 
 
 class ProductList(ModelMixin, BaseModel):
-    id: int | None = None
+    id: int
     name: str | None = Field(None, min_length=2)
     description: str | None = None
     type: enums.ProductType | None = None

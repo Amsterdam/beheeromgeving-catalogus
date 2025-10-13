@@ -1,7 +1,7 @@
 import pytest
 from django.conf import settings
 
-from domain.exceptions import IllegalOperation, NotAuthorized, ObjectDoesNotExist, ValidationError
+from domain.exceptions import NotAuthorized, ObjectDoesNotExist, ValidationError
 from domain.product import DataContract, DataService, Product, ProductService
 from domain.team import Team, TeamService
 
@@ -150,11 +150,6 @@ class TestProductService:
         data = {"type": "D", "publication_status": "D", "team_id": team.id}
         product_service.create_product(data=data, scopes=[other_team.scope])
 
-    @pytest.mark.xfail(raises=IllegalOperation)
-    def test_create_product_with_id(self, product_service: ProductService, team: Team):
-        data = {"id": 1337, "type": "D", "publication_status": "D", "team_id": team.id}
-        product_service.create_product(data=data, scopes=[team.scope])
-
     def test_update_product(self, product_service: ProductService, product: Product, team: Team):
         data = {"description": "a fancy product"}
         product_service.update_product(product_id=product.id, data=data, scopes=[team.scope])
@@ -167,14 +162,6 @@ class TestProductService:
     def test_update_product_non_existent(self, product_service: ProductService, team: Team):
         data = {"description": "a fancy product"}
         product_service.update_product(product_id=1337, data=data, scopes=[team.scope])
-
-    @pytest.mark.xfail(raises=IllegalOperation)
-    def test_update_product_cannot_update_id(
-        self, product_service: ProductService, product: Product, team: Team
-    ):
-        product_service.update_product(
-            product_id=product.id, data={"id": 1337}, scopes=[team.scope]
-        )
 
     def test_delete_product(self, product_service: ProductService, product: Product, team: Team):
         product_service.delete_product(product_id=product.id, scopes=[team.scope])
@@ -269,14 +256,6 @@ class TestProductService:
         )
         assert contract.publication_status == "D"
 
-    @pytest.mark.xfail(raises=IllegalOperation)
-    def test_create_contract_with_id(
-        self, product_service: ProductService, product: Product, team: Team
-    ):
-        product_service.create_contract(
-            product_id=product.id, data={"id": 2, "publication_status": "D"}, scopes=[team.scope]
-        )
-
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_contract_non_existent_product(
         self, product_service: ProductService, team: Team
@@ -295,17 +274,6 @@ class TestProductService:
 
         assert len(product_service.get_contracts(product.id)) == 1
         assert result.name == "behoud bomen"
-
-    @pytest.mark.xfail(raises=IllegalOperation)
-    def test_update_contract_with_id(
-        self, product_service: ProductService, product: Product, team: Team
-    ):
-        product_service.update_contract(
-            product_id=product.id,
-            contract_id=product.contracts[0].id,
-            data={"id": 2},
-            scopes=[team.scope],
-        )
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_update_contract_other_product(
@@ -501,14 +469,6 @@ class TestProductService:
         assert isinstance(result, DataService)
         assert len(product_service.get_services(product.id)) == 2
 
-    @pytest.mark.xfail(raises=IllegalOperation)
-    def test_create_service_with_id(
-        self, product_service: ProductService, product: Product, team: Team
-    ):
-        product_service.create_service(
-            product_id=product.id, data={"id": 2, "type": "WMS"}, scopes=[team.scope]
-        )
-
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_service_non_existent_product(
         self, product_service: ProductService, team: Team
@@ -525,17 +485,6 @@ class TestProductService:
 
         assert len(product_service.get_services(product.id)) == 1
         assert result.type == "WMS"
-
-    @pytest.mark.xfail(raises=IllegalOperation)
-    def test_update_service_with_id(
-        self, product_service: ProductService, product: Product, team: Team
-    ):
-        product_service.update_service(
-            product_id=product.id,
-            service_id=product.services[0].id,
-            data={"id": 2},
-            scopes=[team.scope],
-        )
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_update_service_other_product(

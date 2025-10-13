@@ -6,10 +6,10 @@ from django.core.management import BaseCommand
 from unidecode import unidecode
 
 from api.datatransferobjects import (
-    DataContract,
-    DataService,
-    Distribution,
-    ProductDetail,
+    DataContractCreateOrUpdate,
+    DataServiceCreateOrUpdate,
+    DistributionCreateOrUpdate,
+    ProductCreate,
     RefreshPeriod,
 )
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
@@ -123,7 +123,7 @@ class Command(BaseCommand):
             "persoonlijk identificeerbaar": "PERSOONLIJK_IDENTIFICEERBAAR",
             "bijzonder identificeerbaar": "BIJZONDER_IDENTIFICEERBAAR",
         }
-        p = ProductDetail(
+        p = ProductCreate(
             team_id=team.id,
             name=product["naam"],
             description=product["beschrijving"],
@@ -160,7 +160,7 @@ class Command(BaseCommand):
     def create_services(self, product, new_product, team):
         services = []
         for service in product["api"]:
-            s = DataService(
+            s = DataServiceCreateOrUpdate(
                 type=enums.DataServiceType[service["type"].split(" ")[0].upper()],
                 endpoint_url=service["link"],
             )
@@ -181,7 +181,7 @@ class Command(BaseCommand):
             "Intern": enums.ConfidentialityLevel.INTERN,
             "Vertrouwelijk": enums.ConfidentialityLevel.VERTROUWELIJK,
         }
-        c = DataContract(
+        c = DataContractCreateOrUpdate(
             publication_status=enums.PublicationStatus.PUBLISHED,
             purpose=product_dict["doelbinding"],
             name=f"{product_dict["naam"]} {product_dict["vertrouwelijkheidsniveau"]}"[:64],
@@ -205,7 +205,9 @@ class Command(BaseCommand):
         for distribution in product["distributietype"]:
             if distribution == "API":
                 for service in services:
-                    d = Distribution(access_service_id=service.id, type=enums.DistributionType.API)
+                    d = DistributionCreateOrUpdate(
+                        access_service_id=service.id, type=enums.DistributionType.API
+                    )
                     distributions.append(
                         self.service.create_distribution(
                             product_id=new_product.id,
@@ -216,7 +218,7 @@ class Command(BaseCommand):
                     )
             elif distribution == "Bestand":
                 for file in product["bestanden"]:
-                    d = Distribution(
+                    d = DistributionCreateOrUpdate(
                         download_url=file["bestandLink"],
                         format=file["bestandstype"][:10],
                         type=enums.DistributionType.FILE,
