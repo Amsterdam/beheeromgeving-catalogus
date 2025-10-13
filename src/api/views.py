@@ -45,7 +45,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
         authorize.set_auth_service(auth_service)
         self.service = TeamService(repo=TeamRepository())
 
-    def _validate_dto(self, data, dto_model=dtos.Team):
+    def _validate_dto(self, data, dto_model=dtos.TeamCreate):
         # Raises if data is invalid
         return dto_model(**data)
 

@@ -63,9 +63,21 @@ class ModelMixin:
 
 
 class Team(ModelMixin, BaseModel):
-    """Used for create and detail views."""
+    """Detail view of the team"""
 
-    id: int | None = None
+    description: str | None = None
+    id: int
+    name: str
+    acronym: str
+    po_name: str
+    po_email: str
+    contact_email: str
+    scope: str
+
+
+class TeamCreate(ModelMixin, BaseModel):
+    """Create view of the team"""
+
     description: str | None = None
     name: str
     acronym: str
@@ -88,7 +100,7 @@ class TeamPartial(ModelMixin, BaseModel):
 
 
 class TeamList(ModelMixin, BaseModel):
-    id: int | None = None
+    id: int
     name: str
     acronym: str
 

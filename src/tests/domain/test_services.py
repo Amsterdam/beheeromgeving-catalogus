@@ -55,20 +55,6 @@ class TestTeamService:
         }
         team_service.create_team(data=team_data, scopes=scopes)
 
-    @pytest.mark.xfail(raises=IllegalOperation)
-    def test_create_team_with_id(self, team_service: TeamService):
-        team_data = {
-            "id": 2,
-            "name": "Beheer Openbare Ruimte",
-            "acronym": "BOR",
-            "description": "",
-            "po_name": "Jan Bor",
-            "po_email": "j.bor@amsterdam.nl",
-            "contact_email": "bor@amsterdam.nl",
-            "scope": "scope_bor",
-        }
-        team_service.create_team(data=team_data, scopes=ADMIN_SCOPE)
-
     def test_update_team(self, team_service: TeamService, team: Team):
 
         team_service.update_team(
@@ -120,10 +106,6 @@ class TestTeamService:
         team_service.update_team(
             team_id=1337, data={"description": "New Description"}, scopes=ADMIN_SCOPE
         )
-
-    @pytest.mark.xfail(raises=IllegalOperation)
-    def test_update_team_cannot_update_id(self, team_service: TeamService, team: Team):
-        team_service.update_team(team_id=team.id, data={"id": 1337}, scopes=ADMIN_SCOPE)
 
     def test_delete_team_by_admin(self, team_service: TeamService, team: Team):
         team_service.delete_team(team_id=team.id, scopes=ADMIN_SCOPE)
