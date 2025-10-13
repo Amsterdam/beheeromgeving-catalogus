@@ -3,17 +3,13 @@ from django.conf.urls.static import static
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from api.views import (
-    ProductViewSet,
-    TeamViewSet,
-    health,
-)
+from api.views import ProductViewSet, TeamViewSet, health, me
 
 router = DefaultRouter(trailing_slash=False)
 router.register(r"teams", TeamViewSet, basename="teams")
 router.register(r"products", ProductViewSet, basename="products")
 
-urlpatterns = [path("pulse", health)] + router.urls
+urlpatterns = [path("pulse", health), path("me", me)] + router.urls
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
