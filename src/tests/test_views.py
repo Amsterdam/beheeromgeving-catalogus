@@ -128,7 +128,6 @@ class TestViews:
     @pytest.mark.parametrize(
         "data",
         [
-            {"id": 1337},  # Cannot set id
             {"refresh_period": 2},  # Wrong type
         ],
     )
@@ -210,7 +209,6 @@ class TestViews:
     @pytest.mark.parametrize(
         "data",
         [
-            {"id": 1337},  # Cannot set id
             {"name": 2},  # Wrong type
             {"distributions": [{"type": 3}]},  # Wrong type on subfield
         ],
@@ -341,7 +339,6 @@ class TestViews:
     @pytest.mark.parametrize(
         "data",
         [
-            {"id": 1337},  # Cannot set id
             {"type": "API"},  # Wrong type
         ],
     )

@@ -1,4 +1,3 @@
-from domain import exceptions
 from domain.auth import authorize
 from domain.base import AbstractRepository, AbstractService
 from domain.product import DataContract, DataService, Distribution, Product
@@ -18,16 +17,11 @@ class ProductService(AbstractService):
 
     @authorize.is_team_member
     def create_product(self, *, data: dict, **kwargs) -> Product:
-        if data.get("id"):
-            raise exceptions.IllegalOperation("IDs are assigned automatically")
         product = Product(**data)
         return self._persist(product)
 
     @authorize.is_team_member
     def update_product(self, *, product_id: int, data: dict, **kwargs) -> Product:
-        if data.get("id", product_id) != product_id:
-            raise exceptions.IllegalOperation("Cannot update product id")
-
         existing_product = self.get_product(product_id)
         existing_product.update_from_dict(data)
         return self._persist(existing_product)
@@ -45,9 +39,6 @@ class ProductService(AbstractService):
 
     @authorize.is_team_member
     def create_contract(self, product_id: int, data: dict, **kwargs) -> DataContract:
-        if data.get("id"):
-            raise exceptions.IllegalOperation("IDs are assigned automatically")
-
         product = self.get_product(product_id)
         contract = DataContract(**data)
         product.create_contract(contract)
@@ -58,9 +49,6 @@ class ProductService(AbstractService):
     def update_contract(
         self, product_id: int, contract_id: int, data: dict, **kwargs
     ) -> DataContract:
-        if data.get("id", contract_id) != contract_id:
-            raise exceptions.IllegalOperation("Cannot update contract id")
-
         product = self.get_product(product_id)
         contract = product.update_contract(contract_id, data)
         self._persist(product)
@@ -86,9 +74,6 @@ class ProductService(AbstractService):
     def create_distribution(
         self, *, product_id: int, contract_id: int, data: dict, **kwargs
     ) -> Distribution:
-        if data.get("id"):
-            raise exceptions.IllegalOperation("IDs are assigned automatically")
-
         product = self.get_product(product_id)
         distribution = Distribution(**data)
         product.add_distribution_to_contract(contract_id, distribution)
@@ -100,8 +85,6 @@ class ProductService(AbstractService):
     def update_distribution(
         self, *, product_id: int, contract_id: int, distribution_id: int, data: dict, **kwargs
     ) -> Distribution:
-        if data.get("id"):
-            raise exceptions.IllegalOperation("IDs are assigned automatically")
         product = self.repository.get(product_id)
         distribution = product.update_distribution(contract_id, distribution_id, data)
         self._persist(product)
@@ -126,9 +109,6 @@ class ProductService(AbstractService):
 
     @authorize.is_team_member
     def create_service(self, product_id: int, data: dict, **kwargs) -> DataService:
-        if data.get("id"):
-            raise exceptions.IllegalOperation("IDs are assigned automatically")
-
         product = self.get_product(product_id)
         product.create_service(data)
         updated_product = self._persist(product)
@@ -138,9 +118,6 @@ class ProductService(AbstractService):
     def update_service(
         self, product_id: int, service_id: int, data: dict, **kwargs
     ) -> DataService:
-        if data.get("id", service_id) != service_id:
-            raise exceptions.IllegalOperation("Cannot update service id")
-
         product = self.get_product(product_id)
         service = product.update_service(service_id, data)
         self._persist(product)

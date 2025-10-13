@@ -62,10 +62,15 @@ class ModelMixin:
         return v
 
 
-class Team(ModelMixin, BaseModel):
-    """Used for create and detail views."""
+class IdMixin:
+    """A mixin class that only adds a mandatory id field."""
 
-    id: int | None = None
+    id: int
+
+
+class TeamCreate(ModelMixin, BaseModel):
+    """Create view of the team"""
+
     description: str | None = None
     name: str
     acronym: str
@@ -73,6 +78,10 @@ class Team(ModelMixin, BaseModel):
     po_email: str
     contact_email: str
     scope: str
+
+
+class Team(IdMixin, TeamCreate):
+    """Team Detail view"""
 
 
 class TeamPartial(ModelMixin, BaseModel):
@@ -88,15 +97,18 @@ class TeamPartial(ModelMixin, BaseModel):
 
 
 class TeamList(ModelMixin, BaseModel):
-    id: int | None = None
+    id: int
     name: str
     acronym: str
 
 
-class DataService(ModelMixin, BaseModel):
-    id: int | None = None
+class DataServiceCreateOrUpdate(ModelMixin, BaseModel):
     type: enums.DataServiceType | None = None
     endpoint_url: str | None = None
+
+
+class DataService(IdMixin, DataServiceCreateOrUpdate):
+    """DataService detail view"""
 
 
 class RefreshPeriod(ModelMixin, BaseModel):
@@ -104,8 +116,7 @@ class RefreshPeriod(ModelMixin, BaseModel):
     unit: enums.TimeUnit
 
 
-class Distribution(ModelMixin, BaseModel):
-    id: int | None = None
+class DistributionCreateOrUpdate(ModelMixin, BaseModel):
     access_service_id: int | None = None
     access_url: str | None = None
     download_url: str | None = None
@@ -114,17 +125,18 @@ class Distribution(ModelMixin, BaseModel):
     refresh_period: RefreshPeriod | None = None  # Hoort volgens DCAT op Dataset
 
 
+class Distribution(IdMixin, DistributionCreateOrUpdate):
+    """Distribution detail view"""
+
+
 class DataContractList(ModelMixin, BaseModel):
-    id: int | None = None
+    id: int
     publication_status: enums.PublicationStatus | None = None
     name: str | None = None
     description: str | None = None
 
 
-class DataContract(ModelMixin, BaseModel):
-    """Used for create/partial update."""
-
-    id: int | None = None
+class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     publication_status: enums.PublicationStatus | None = None
     purpose: str | None = None
     name: str | None = None
@@ -138,11 +150,12 @@ class DataContract(ModelMixin, BaseModel):
     distributions: list[Distribution] | None = None
 
 
-class ProductDetail(ModelMixin, BaseModel):
-    """Used for get/create."""
+class DataContract(IdMixin, DataContractCreateOrUpdate):
+    """DataContract detail view"""
 
+
+class ProductCreate(ModelMixin, BaseModel):
     team_id: int
-    id: int | None = None
     name: str | None = Field(None, min_length=2)
     description: str | None = None
     language: enums.Language | None = None
@@ -164,10 +177,13 @@ class ProductDetail(ModelMixin, BaseModel):
     sinks: list[int] | None = None
 
 
+class ProductDetail(IdMixin, ProductCreate):
+    """Product detail view"""
+
+
 class ProductUpdate(ModelMixin, BaseModel):
     """Used for partial update"""
 
-    id: int | None = None
     team_id: int | None = None
     name: str | None = Field(None, min_length=2)
     description: str | None = None
@@ -191,7 +207,7 @@ class ProductUpdate(ModelMixin, BaseModel):
 
 
 class ProductList(ModelMixin, BaseModel):
-    id: int | None = None
+    id: int
     name: str | None = Field(None, min_length=2)
     description: str | None = None
     type: enums.ProductType | None = None

@@ -45,7 +45,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
         authorize.set_auth_service(auth_service)
         self.service = TeamService(repo=TeamRepository())
 
-    def _validate_dto(self, data, dto_model=dtos.Team):
+    def _validate_dto(self, data, dto_model=dtos.TeamCreate):
         # Raises if data is invalid
         return dto_model(**data)
 
@@ -88,7 +88,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         authorize.set_auth_service(auth_service)
         self.service = ProductService(repo=ProductRepository())
 
-    def _validate_dto(self, data, dto_type=dtos.ProductDetail):
+    def _validate_dto(self, data, dto_type=dtos.ProductCreate):
         # Raises if data is invalid
         return dto_type(**data)
 
@@ -133,7 +133,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @contracts_list.mapping.post
     def create_contract(self, request, pk=None):
-        contract_dto = self._validate_dto(request.data, dtos.DataContract)
+        contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
         contract = self.service.create_contract(
             product_id=int(pk), data=contract_dto.model_dump(), scopes=request.get_token_scopes
         )
@@ -153,7 +153,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @contract_detail.mapping.patch
     def update_contract(self, request, pk=None, contract_id=None):
-        contract_dto = self._validate_dto(request.data, dtos.DataContract)
+        contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
         contract = self.service.update_contract(
             product_id=int(pk),
             contract_id=int(contract_id),
@@ -185,7 +185,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @distributions_list.mapping.post
     def create_distribution(self, request, pk=None, contract_id=None):
-        distribution_dto = self._validate_dto(request.data, dto_type=dtos.Distribution)
+        distribution_dto = self._validate_dto(
+            request.data, dto_type=dtos.DistributionCreateOrUpdate
+        )
         distribution = self.service.create_distribution(
             product_id=int(pk),
             contract_id=int(contract_id),
@@ -210,7 +212,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @distribution_detail.mapping.patch
     def update_distribution(self, request, pk=None, contract_id=None, distribution_id=None):
-        distribution_dto = self._validate_dto(request.data, dtos.Distribution)
+        distribution_dto = self._validate_dto(request.data, dtos.DistributionCreateOrUpdate)
         distribution = self.service.update_distribution(
             product_id=int(pk),
             contract_id=int(contract_id),
@@ -239,7 +241,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @services_list.mapping.post
     def create_service(self, request, pk=None):
-        service_dto = self._validate_dto(request.data, dtos.DataService)
+        service_dto = self._validate_dto(request.data, dtos.DataServiceCreateOrUpdate)
         service = self.service.create_service(
             product_id=int(pk),
             data=service_dto.model_dump(),
@@ -261,7 +263,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @service_detail.mapping.patch
     def update_service(self, request, pk=None, service_id=None):
-        service_dto = self._validate_dto(request.data, dtos.DataService)
+        service_dto = self._validate_dto(request.data, dtos.DataServiceCreateOrUpdate)
         service = self.service.update_service(
             product_id=int(pk),
             service_id=int(service_id),
