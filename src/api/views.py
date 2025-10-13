@@ -279,3 +279,17 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             product_id=int(pk), service_id=int(service_id), scopes=request.get_token_scopes
         )
         return Response(status=204)
+
+
+@api_view(["GET"])
+def me(request):
+    team_service = TeamService(repo=TeamRepository())
+    product_service = ProductService(repo=ProductRepository())
+    scopes = request.get_token_scopes
+    teams = team_service.get_teams_from_scopes(scopes)
+    products = product_service.get_products(teams=teams)
+    data = {
+        "teams": dtos.to_response_object(teams, dto_type="me"),
+        "products": dtos.to_response_object(products, dto_type="me"),
+    }
+    return Response(data, status=200)

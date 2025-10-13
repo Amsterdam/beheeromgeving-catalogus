@@ -7,10 +7,12 @@ from domain.product import enums, objects
 from domain.team import Team as DomainTeam
 
 
-def to_response_object(obj: objects.BaseObject | list[objects.BaseObject]) -> dict:
+def to_response_object(
+    obj: objects.BaseObject | list[objects.BaseObject], dto_type: str | None = None
+) -> dict | list[dict]:
     if isinstance(obj, list):
-        return [to_dto(el, dto_type="list").model_dump() for el in obj]
-    return to_dto(obj).model_dump()
+        return [to_dto(el, dto_type=dto_type or "list").model_dump() for el in obj]
+    return to_dto(obj, dto_type=dto_type or "detail").model_dump()
 
 
 def to_dto(domain_object: objects.BaseObject, dto_type: str = "detail") -> dict:
@@ -18,6 +20,7 @@ def to_dto(domain_object: objects.BaseObject, dto_type: str = "detail") -> dict:
         DomainTeam: {
             "detail": Team,
             "list": TeamList,
+            "me": TeamList,
         },
         objects.DataContract: {
             "detail": DataContract,
@@ -26,6 +29,7 @@ def to_dto(domain_object: objects.BaseObject, dto_type: str = "detail") -> dict:
         objects.Product: {
             "detail": ProductDetail,
             "list": ProductList,
+            "me": MyProduct,
         },
         objects.DataService: {
             "detail": DataService,
@@ -152,6 +156,26 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
 
 class DataContract(IdMixin, DataContractCreateOrUpdate):
     """DataContract detail view"""
+
+
+class MyContract(ModelMixin, BaseModel):
+    id: int
+    name: str | None = None
+    privacy_level: enums.PrivacyLevel | None = None
+    confidentiality: enums.ConfidentialityLevel | None = None
+    last_updated: datetime | None = None
+    publication_status: enums.PublicationStatus | None = None
+
+
+class MyProduct(ModelMixin, BaseModel):
+    team_id: int
+    id: int
+    name: str | None = None
+    type: enums.ProductType | None = None
+    privacy_level: enums.PrivacyLevel | None = None
+    last_updated: datetime | None = None
+    publication_status: enums.PublicationStatus | None = None
+    contracts: list[MyContract]
 
 
 class ProductCreate(ModelMixin, BaseModel):

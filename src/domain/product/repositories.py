@@ -19,7 +19,11 @@ class ProductRepository(AbstractRepository):
             raise exceptions.ObjectDoesNotExist from e
 
     def list(self, **kwargs) -> list[Product]:
-        return list(self._products.values())
+        products = list(self._products.values())
+        if kwargs.get("teams") is not None:
+            team_ids = [team.id for team in kwargs["teams"]]
+            products = [product for product in products if product.team_id in team_ids]
+        return products
 
     def save(self, product: Product) -> Product:
         try:
