@@ -219,6 +219,7 @@ class Command(BaseCommand):
                     d = Distribution(
                         download_url=file["bestandLink"],
                         format=file["bestandstype"][:10],
+                        type=enums.DistributionType.FILE,
                         refresh_period=new_product.refresh_period,
                     )
                     distributions.append(
