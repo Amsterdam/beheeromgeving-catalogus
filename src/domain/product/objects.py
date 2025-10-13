@@ -190,3 +190,15 @@ class Product(BaseObject):
             ) from None
         self.services = [service for service in self.services if service.id != service_id]
         return service_id
+
+    @property
+    def summary(self):
+        return {
+            "services": [service.type for service in self.services],
+            "distributions": [
+                distribution.type
+                for contract in self.contracts
+                for distribution in contract.distributions
+                if distribution.type != enums.DistributionType.API
+            ],
+        }
