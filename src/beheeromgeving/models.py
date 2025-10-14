@@ -159,7 +159,11 @@ class Product(models.Model):
             themes=self.themes,
             last_updated=self.last_updated,
             privacy_level=self.privacy_level,
-            refresh_period=self.refresh_period,
+            refresh_period=(
+                objects.RefreshPeriod.from_string(self.refresh_period)
+                if self.refresh_period
+                else None
+            ),
             publication_status=self.publication_status,
             owner=self.owner,
             contact_email=self.contact_email,
@@ -175,6 +179,9 @@ class Product(models.Model):
             defaults=product.items()
         )
         instance.owner = product.owner
+        instance.refresh_period = (
+            product.refresh_period.to_string if product.refresh_period is not None else None
+        )
         instance.save()
 
         # Create/update services
@@ -390,7 +397,11 @@ class Distribution(models.Model):
             download_url=self.download_url,
             format=self.format,
             type=self.type,
-            refresh_period=self.refresh_period,
+            refresh_period=(
+                objects.RefreshPeriod.from_string(self.refresh_period)
+                if self.refresh_period
+                else None
+            ),
         )
 
     @classmethod
@@ -398,6 +409,10 @@ class Distribution(models.Model):
         instance, _created = cls.objects.filter(pk=distribution.id).update_or_create(
             defaults={**distribution.items(), "contract_id": contract_id}
         )
+        instance.refresh_period = (
+            distribution.refresh_period.to_string if distribution.refresh_period else None
+        )
+        instance.save()
         return instance.id
 
 
