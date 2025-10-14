@@ -1,6 +1,6 @@
 from domain.auth import authorize
 from domain.base import AbstractRepository, AbstractService
-from domain.product import DataContract, DataService, Distribution, Product
+from domain.product import DataContract, DataService, Distribution, Product, RefreshPeriod
 
 
 class ProductService(AbstractService):
@@ -17,12 +17,18 @@ class ProductService(AbstractService):
 
     @authorize.is_team_member
     def create_product(self, *, data: dict, **kwargs) -> Product:
-        product = Product(**data)
+        refresh_period = data.pop("refresh_period", None)
+        product = Product(
+            **data,
+            refresh_period=(RefreshPeriod.from_dict(refresh_period) if refresh_period else None),
+        )
         return self._persist(product)
 
     @authorize.is_team_member
     def update_product(self, *, product_id: int, data: dict, **kwargs) -> Product:
         existing_product = self.get_product(product_id)
+        if data.get("refresh_period"):
+            data["refresh_period"] = RefreshPeriod.from_dict(data["refresh_period"])
         existing_product.update_from_dict(data)
         return self._persist(existing_product)
 
@@ -75,7 +81,11 @@ class ProductService(AbstractService):
         self, *, product_id: int, contract_id: int, data: dict, **kwargs
     ) -> Distribution:
         product = self.get_product(product_id)
-        distribution = Distribution(**data)
+        refresh_period = data.pop("refresh_period", None)
+        distribution = Distribution(
+            **data,
+            refresh_period=(RefreshPeriod.from_dict(refresh_period) if refresh_period else None),
+        )
         product.add_distribution_to_contract(contract_id, distribution)
         self._persist(product)
         updated_product = self.get_product(product_id)

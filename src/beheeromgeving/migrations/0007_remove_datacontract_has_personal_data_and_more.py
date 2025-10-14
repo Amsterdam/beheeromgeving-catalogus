@@ -13,6 +13,7 @@ def forward(apps, schema_editor):
             product.privacy_level = "PI"
         else:
             product.privacy_level = "NPI"
+        product.save()
 
     for contract in DataContract.objects.all():
         if contract.has_special_personal_data:
@@ -21,6 +22,7 @@ def forward(apps, schema_editor):
             contract.privacy_level = "PI"
         else:
             contract.privacy_level = "NPI"
+        contract.save()
 
 
 def backward(apps, schema_editor):
@@ -36,6 +38,7 @@ def backward(apps, schema_editor):
         else:
             product.has_personal_data = False
             product.has_special_personal_data = False
+        product.save()
 
     for contract in DataContract.objects.all():
         if contract.privacy_level == "BI":
@@ -47,6 +50,7 @@ def backward(apps, schema_editor):
         else:
             contract.has_personal_data = False
             contract.has_special_personal_data = False
+        contract.save()
 
 
 class Migration(migrations.Migration):

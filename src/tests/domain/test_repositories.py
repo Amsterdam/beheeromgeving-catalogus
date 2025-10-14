@@ -9,6 +9,7 @@ from domain.product import (
     Distribution,
     Product,
     ProductRepository,
+    RefreshPeriod,
 )
 from domain.team import Team, TeamRepository
 
@@ -153,7 +154,7 @@ class TestProductRepository:
                 id=product.contracts[0].distributions[0].id,
                 type="A",
                 access_service_id=product.services[0].id,
-                refresh_period="hourly",
+                refresh_period=RefreshPeriod.from_dict({"frequency": 1, "unit": "HOUR"}),
             ),
             Distribution(type="D", access_url="https://bomen.amsterdam.nl/dashboard"),
             Distribution(
@@ -168,6 +169,7 @@ class TestProductRepository:
         assert len(distributions) == 3
         assert distributions[0].type == "A"
         assert distributions[0].access_service == orm_product.services.first()
+        assert distributions[0].refresh_period == "1.HOUR"
 
         assert distributions[1].type == "D"
         assert distributions[1].access_url == "https://bomen.amsterdam.nl/dashboard"

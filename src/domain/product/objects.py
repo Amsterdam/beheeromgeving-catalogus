@@ -6,6 +6,30 @@ from domain.exceptions import ObjectDoesNotExist, ValidationError
 from domain.product import enums
 
 
+@dataclass
+class RefreshPeriod:
+    frequency: int
+    unit: enums.TimeUnit
+
+    @property
+    def to_string(self):
+        return f"{self.frequency}.{self.unit.value}"
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        frequency = data["frequency"]
+        unit = enums.TimeUnit[data["unit"]]
+        return cls(frequency=frequency, unit=unit)
+
+    @classmethod
+    def from_string(cls, str_value):
+        try:
+            frequency, unit = str_value.split(".")
+            return cls(frequency, enums.TimeUnit[unit])
+        except KeyError:
+            return None
+
+
 @dataclass(kw_only=True)
 class DataService(BaseObject):
     id: int | None = None
@@ -23,9 +47,9 @@ class Distribution(BaseObject):
     download_url: str | None = None
     format: str | None = None
     type: enums.DistributionType | None = None
-    refresh_period: str | None = None  # Hoort volgens DCAT op Dataset
+    refresh_period: RefreshPeriod | None = None
 
-    _skip_keys = set()
+    _skip_keys = {"refresh_period"}
 
 
 @dataclass(kw_only=True)
@@ -50,12 +74,6 @@ class DataContract(BaseObject):
         self.distributions = [
             Distribution(**distribution) for distribution in data.get("distribution", [])
         ]
-
-
-@dataclass
-class RefreshPeriod:
-    frequency: int
-    unit: enums.TimeUnit
 
 
 class ProductValidator:
@@ -99,7 +117,7 @@ class Product(BaseObject):
     sources: list[int] = field(default_factory=list)
     sinks: list[int] = field(default_factory=list)
 
-    _skip_keys = {"contracts", "team", "owner", "sources", "sinks", "services"}
+    _skip_keys = {"contracts", "team", "owner", "refresh_period", "sources", "sinks", "services"}
 
     def __post_init__(self):
         self.validate = ProductValidator(self)
@@ -192,13 +210,14 @@ class Product(BaseObject):
         return service_id
 
     @property
-    def summary(self):
+    def summary(self) -> dict[str, list[enums.StrEnum]]:
         return {
-            "services": [service.type for service in self.services],
+            "services": [service.type for service in self.services if service.type is not None],
             "distributions": [
                 distribution.type
                 for contract in self.contracts
                 for distribution in contract.distributions
                 if distribution.type != enums.DistributionType.API
+                and distribution.type is not None
             ],
         }
