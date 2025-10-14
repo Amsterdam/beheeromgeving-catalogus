@@ -55,7 +55,7 @@ def orm_product(orm_team) -> Product:
         type="D",
         themes=["NM"],
         privacy_level="NPI",
-        refresh_period={"frequency": 3, "unit": "MONTH"},
+        refresh_period="3.MONTH",
         publication_status="D",
     )
 

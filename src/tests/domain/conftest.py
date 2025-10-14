@@ -3,7 +3,14 @@ from datetime import datetime
 import pytest
 
 from domain.auth import AuthorizationService, authorize
-from domain.product import DataContract, DataService, Distribution, Product, ProductService
+from domain.product import (
+    DataContract,
+    DataService,
+    Distribution,
+    Product,
+    ProductService,
+    RefreshPeriod,
+)
 from domain.team import Team, TeamService
 from tests.domain.utils import DummyAuthRepo, DummyRepository
 
@@ -50,7 +57,7 @@ def product(team: Team) -> Product:
         themes=["NM"],
         data_steward="meneerboom@amsterdam.nl",
         privacy_level="NPI",
-        refresh_period="3 maanden",
+        refresh_period=RefreshPeriod.from_dict({"frequency": 3, "unit": "MONTH"}),
         last_updated=datetime.fromisoformat("2025-09-04T11:25:05+00"),
         publication_status="D",
         services=[
