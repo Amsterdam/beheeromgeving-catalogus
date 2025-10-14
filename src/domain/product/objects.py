@@ -23,8 +23,11 @@ class RefreshPeriod:
 
     @classmethod
     def from_string(cls, str_value):
-        frequency, unit = str_value.split(".")
-        return cls(frequency, enums.TimeUnit[unit])
+        try:
+            frequency, unit = str_value.split(".")
+            return cls(frequency, enums.TimeUnit[unit])
+        except KeyError:
+            return None
 
 
 @dataclass(kw_only=True)
