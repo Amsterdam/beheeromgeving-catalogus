@@ -240,4 +240,6 @@ class ProductList(ModelMixin, BaseModel):
     last_updated: datetime | None = None
     language: enums.Language | None = None
     summary: dict[str, list[enums.DistributionType | enums.DataServiceType | None]] | None = None
+    publication_status: enums.PublicationStatus | None
+    contract_count: int
     team_id: int
