@@ -221,3 +221,7 @@ class Product(BaseObject):
                 and distribution.type is not None
             ],
         }
+
+    @property
+    def contract_count(self) -> int:
+        return len(self.contracts)

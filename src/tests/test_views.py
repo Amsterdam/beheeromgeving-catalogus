@@ -110,6 +110,8 @@ class TestViews:
             "themes",
             "last_updated",
             "team_id",
+            "contract_count",
+            "publication_status",
         ]:
             assert key in product
 
