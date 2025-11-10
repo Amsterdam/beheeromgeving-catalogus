@@ -137,7 +137,7 @@ class TestProductService:
         product_service.get_product(1337)  # non-existent
 
     def test_create_product(self, product_service: ProductService, team: Team):
-        data = {"type": "D", "publication_status": "D", "team_id": team.id}
+        data = {"type": "D", "team_id": team.id}
         result = product_service.create_product(data=data, scopes=[team.scope])
 
         assert len(product_service.get_products()) == 2  # service initialized with 1 product
@@ -245,7 +245,7 @@ class TestProductService:
     def test_create_contract_no_missing_fields(
         self, auth_service, product_service: ProductService, team: Team
     ):
-        """Test weather a contract can be created when all necessary fields are present on the
+        """Test whether a contract can be created when all necessary fields are present on the
         product."""
         product = product_service.create_product(
             data={"team_id": team.id, "name": "Product", "type": "D", "privacy_level": "PI"},
@@ -311,6 +311,50 @@ class TestProductService:
         product_service.delete_contract(
             product_id=1337, contract_id=product.contracts[0].id, scopes=[team.scope]
         )
+
+    @pytest.mark.parametrize(
+        "data,updated_status",
+        [
+            ({"publication_status": "P"}, "P"),
+            ({"publication_status": "D"}, "D"),
+        ],
+    )
+    def test_update_product_publication(
+        self, data, updated_status, product_service: ProductService, product: Product, team: Team
+    ):
+        """Test to see if a product's publication status is updated accordingly."""
+        product_service.update_publication_status(
+            product_id=product.id, data=data, scopes=[team.scope]
+        )
+
+        result = product_service.get_publication_status(product.id)
+        assert result == updated_status
+
+    def test_update_product_publication_missing_fields(
+        self, product_service: ProductService, team
+    ):
+        """Test to see if a product's publication status cannot be updated to published
+        when the product is missing necessary fields."""
+
+        data = {
+            "name": "Product",
+            "description": "Description of product",
+            "language": "NL",
+            "is_geo": True,
+            "crs": "RD",
+            "themes": ["NM"],
+            "privacy_level": "NPI",
+        }
+        missing_fields = r"\[schema_url, refresh_period, contact_email\]"
+        product_missing_fields = product_service.create_product(
+            data={"team_id": team.id, **data}, scopes=[team.scope]
+        )
+        with pytest.raises(ValidationError, match=missing_fields):
+            product_service.update_publication_status(
+                product_id=product_missing_fields.id,
+                data={"publication_status": "P"},
+                scopes=[team.scope],
+            )
 
     def test_get_distributions(self, product_service: ProductService, product: Product):
         result = product_service.get_distributions(

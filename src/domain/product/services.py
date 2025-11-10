@@ -1,6 +1,13 @@
 from domain.auth import authorize
 from domain.base import AbstractRepository, AbstractService
-from domain.product import DataContract, DataService, Distribution, Product, RefreshPeriod
+from domain.product import (
+    DataContract,
+    DataService,
+    Distribution,
+    Product,
+    RefreshPeriod,
+    enums,
+)
 
 
 class ProductService(AbstractService):
@@ -21,6 +28,7 @@ class ProductService(AbstractService):
         product = Product(
             **data,
             refresh_period=(RefreshPeriod.from_dict(refresh_period) if refresh_period else None),
+            publication_status=enums.PublicationStatus.DRAFT,
         )
         return self._persist(product)
 
@@ -65,6 +73,16 @@ class ProductService(AbstractService):
         product = self.get_product(product_id)
         product.delete_contract(contract_id)
         self._persist(product)
+
+    def get_publication_status(self, product_id: int) -> str:
+        product = self.repository.get(product_id)
+        return product.publication_status
+
+    @authorize.is_team_member
+    def update_publication_status(self, product_id: int, data: dict, **kwargs) -> Product:
+        existing_product = self.repository.get(product_id)
+        existing_product.update_state(data)
+        return self._persist(existing_product)
 
     def get_distributions(self, product_id: int, contract_id: int) -> list[Distribution]:
         product = self.repository.get(product_id)

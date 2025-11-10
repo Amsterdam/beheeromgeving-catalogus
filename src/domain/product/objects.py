@@ -30,6 +30,11 @@ class RefreshPeriod:
             return None
 
 
+@dataclass
+class PublicationStatus:
+    publication_status: enums.PublicationStatus
+
+
 @dataclass(kw_only=True)
 class DataService(BaseObject):
     id: int | None = None
@@ -81,7 +86,11 @@ class ProductValidator:
         self.product = prod
 
     def can_create_contract(self) -> True:
-        required_fields = ["name", "type", "privacy_level"]
+        required_fields = [
+            "name",
+            "type",
+            "privacy_level",
+        ]
         missing_fields = [
             field for field in required_fields if getattr(self.product, field) is None
         ]
@@ -90,6 +99,35 @@ class ProductValidator:
                 "Cannot create contract, product is missing the following fields:"
                 f"[{", ".join(missing_fields)}]"
             )
+        return True
+
+    def can_change_publication_status(self, data: dict) -> True:
+        required_fields = [
+            "name",
+            "description",
+            "team_id",
+            "language",
+            "is_geo",
+            "crs",
+            "schema_url",
+            "themes",
+            "privacy_level",
+            "refresh_period",
+            "contact_email",
+        ]
+        missing_fields = [
+            field for field in required_fields if getattr(self.product, field) is None
+        ]
+        if (
+            data.get("publication_status") == "P"
+            and missing_fields
+            and self.product.publication_status != enums.PublicationStatus.PUBLISHED
+        ):
+            raise ValidationError(
+                "Cannot update publication status, product is missing the following fields:"
+                f"[{", ".join(missing_fields)}]"
+            )
+
         return True
 
 
@@ -141,6 +179,11 @@ class Product(BaseObject):
             raise ObjectDoesNotExist(
                 f"service with id {service_id} does not exist on product {self.id}"
             ) from None
+
+    def update_state(self, data: dict):
+        if self.publication_status and self.validate.can_change_publication_status(data):
+            self.update_from_dict(data)
+        return self
 
     def update_contract(self, contract_id: int, data: dict) -> DataContract:
         contract = self.get_contract(contract_id)

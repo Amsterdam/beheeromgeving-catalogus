@@ -150,7 +150,6 @@ class TestViews:
             {"schema_url": "https://schemas.data.amsterdam.nl/datasets/new_url"},
             {"type": "I"},
             {"privacy_level": "PI"},
-            {"publication_status": "P"},
             {"owner": "New Owner"},
             {"contact_email": "newmail@contact.nl"},
             {"data_steward": "newmail@steward.nl"},
@@ -179,6 +178,25 @@ class TestViews:
         assert orm_product.refresh_period == "2.MONTH"  # DB stores in this way.
         assert response.data["refresh_period"] == data["refresh_period"]
         assert response.data["last_updated"] == orm_product.last_updated
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {"publication_status": "D"},
+            {"publication_status": "P"},
+        ],
+    )
+    def test_set_state_product(self, client_with_token, orm_product, orm_team, data):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/set_state",
+            data=data,
+        )
+        assert response.status_code == 200
+        orm_product.refresh_from_db()
+        for key, val in data.items():
+            assert response.data["publication_status"] == val
+            assert getattr(orm_product, key) == val
+        assert response.data["publication_status"] == orm_product.publication_status
 
     def test_contract_list(self, api_client, orm_product):
         response = api_client.get(f"/products/{orm_product.id}/contracts")

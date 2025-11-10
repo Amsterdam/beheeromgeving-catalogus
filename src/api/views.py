@@ -112,8 +112,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     def partial_update(self, request, pk=None):
         product_dto = self._validate_dto(request.data, dto_type=dtos.ProductUpdate)
-
-        # ignore contracts/service as these should be created through their own endpoint
+        # ignore contracts/service as these should be updated through their own endpoint
         product = self.service.update_product(
             product_id=int(pk),
             data=product_dto.model_dump(exclude_unset=True, exclude=["contracts", "services"]),
@@ -124,6 +123,25 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def destroy(self, request, pk=None):
         self.service.delete_product(product_id=int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
+
+    @action(detail=True, methods=["get"], url_path="set_state", url_name="publication_status")
+    def product_publication_status(self, _request, pk=None):
+        product = self.service.get_product(int(pk))
+        data = dtos.to_response_object(product)
+        return Response(data, status=200)
+
+    @product_publication_status.mapping.patch
+    def set_state(self, request, pk=None):
+        product = self.service.get_product(int(pk))
+        state_dto = self._validate_dto(request.data, dto_type=dtos.SetState)
+
+        updated_product = self.service.update_publication_status(
+            product_id=product.id,
+            data=state_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(updated_product)
+        return Response(data, status=200)
 
     @action(detail=True, methods=["get"], url_path="contracts", url_name="contracts-list")
     def contracts_list(self, _request, pk=None):
@@ -274,7 +292,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(data, status=200)
 
     @service_detail.mapping.delete
-    def delete_servie(self, request, pk=None, service_id=None):
+    def delete_service(self, request, pk=None, service_id=None):
         self.service.delete_service(
             product_id=int(pk), service_id=int(service_id), scopes=request.get_token_scopes
         )
