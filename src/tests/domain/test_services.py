@@ -275,6 +275,20 @@ class TestProductService:
         assert len(product_service.get_contracts(product.id)) == 1
         assert result.name == "behoud bomen"
 
+    def test_update_contract_keep_distributions_intact(
+        self, product_service: ProductService, product: Product, team: Team
+    ):
+        """Ensure that an update to the contract keeps distributions intact."""
+        current_distributions = product.contracts[0].distributions
+        result = product_service.update_contract(
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            data={"retainment_period": 1000},
+            scopes=[team.scope],
+        )
+
+        assert result.distributions == current_distributions
+
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_update_contract_other_product(
         self, product_service: ProductService, product: Product, team: Team

@@ -69,12 +69,6 @@ class DataContract(BaseObject):
 
     _skip_keys = {"contact_email", "distributions"}
 
-    def update_from_dict(self, data):
-        super().update_from_dict(data)
-        self.distributions = [
-            Distribution(**distribution) for distribution in data.get("distribution", [])
-        ]
-
 
 class ProductValidator:
     def __init__(self, prod: "Product"):
