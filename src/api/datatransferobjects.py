@@ -39,9 +39,6 @@ def to_dto(domain_object: objects.BaseObject, dto_type: str = "detail") -> dict:
             "detail": Distribution,
             "list": Distribution,
         },
-        objects.PublicationStatus: {
-            "detail": SetState,
-        },
     }
     dto_model = OBJECT_MAPPING[type(domain_object)][dto_type]
     return dto_model.model_validate(domain_object)
@@ -124,7 +121,7 @@ class RefreshPeriod(ModelMixin, BaseModel):
 
 
 class SetState(ModelMixin, BaseModel):
-    publication_status: enums.PublicationStatus | None = None
+    publication_status: enums.PublicationStatus
 
 
 class DistributionCreateOrUpdate(ModelMixin, BaseModel):

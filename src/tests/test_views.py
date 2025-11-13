@@ -188,14 +188,13 @@ class TestViews:
     )
     def test_set_state_product(self, client_with_token, orm_product, orm_team, data):
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/set_state",
+            f"/products/{orm_product.id}/set-state",
             data=data,
         )
         assert response.status_code == 200
         orm_product.refresh_from_db()
-        for key, val in data.items():
-            assert response.data["publication_status"] == val
-            assert getattr(orm_product, key) == val
+
+        assert orm_product.publication_status == data["publication_status"]
         assert response.data["publication_status"] == orm_product.publication_status
 
     def test_contract_list(self, api_client, orm_product):

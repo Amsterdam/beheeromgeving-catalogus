@@ -124,7 +124,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         self.service.delete_product(product_id=int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
 
-    @action(detail=True, methods=["get"], url_path="set_state", url_name="publication_status")
+    @action(detail=True, methods=["post"], url_path="set-state", url_name="publication_status")
     def product_publication_status(self, _request, pk=None):
         product = self.service.get_product(int(pk))
         data = dtos.to_response_object(product)
@@ -132,11 +132,10 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @product_publication_status.mapping.patch
     def set_state(self, request, pk=None):
-        product = self.service.get_product(int(pk))
         state_dto = self._validate_dto(request.data, dto_type=dtos.SetState)
 
         updated_product = self.service.update_publication_status(
-            product_id=product.id,
+            product_id=int(pk),
             data=state_dto.model_dump(exclude_unset=True),
             scopes=request.get_token_scopes,
         )

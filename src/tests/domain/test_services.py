@@ -323,12 +323,11 @@ class TestProductService:
         self, data, updated_status, product_service: ProductService, product: Product, team: Team
     ):
         """Test to see if a product's publication status is updated accordingly."""
-        product_service.update_publication_status(
+        result = product_service.update_publication_status(
             product_id=product.id, data=data, scopes=[team.scope]
         )
 
-        result = product_service.get_publication_status(product.id)
-        assert result == updated_status
+        assert result.publication_status == updated_status
 
     def test_update_product_publication_missing_fields(
         self, product_service: ProductService, team
@@ -355,6 +354,34 @@ class TestProductService:
                 data={"publication_status": "P"},
                 scopes=[team.scope],
             )
+
+    def test_allow_status_when_missing_fields(self, product_service: ProductService, team):
+        """Test to see if a product's publication status can be updated to draft
+        when the product is missing necessary fields."""
+
+        data = {
+            "name": "Product",
+            "description": "Description of product",
+            "language": "NL",
+            "is_geo": True,
+            "crs": "RD",
+            "themes": ["NM"],
+            "privacy_level": "NPI",
+        }
+        product_missing_fields = product_service.create_product(
+            data={"team_id": team.id, **data}, scopes=[team.scope]
+        )
+
+        try:
+            updated_product = product_service.update_publication_status(
+                product_id=product_missing_fields.id,
+                data={"publication_status": "D"},
+                scopes=[team.scope],
+            )
+        except ValidationError:
+            pytest.fail("ValidationError raised when updating status with missing fields")
+
+        assert updated_product.publication_status == "D"
 
     def test_get_distributions(self, product_service: ProductService, product: Product):
         result = product_service.get_distributions(

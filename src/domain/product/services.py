@@ -74,10 +74,6 @@ class ProductService(AbstractService):
         product.delete_contract(contract_id)
         self._persist(product)
 
-    def get_publication_status(self, product_id: int) -> str:
-        product = self.repository.get(product_id)
-        return product.publication_status
-
     @authorize.is_team_member
     def update_publication_status(self, product_id: int, data: dict, **kwargs) -> Product:
         existing_product = self.repository.get(product_id)

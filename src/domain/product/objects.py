@@ -30,11 +30,6 @@ class RefreshPeriod:
             return None
 
 
-@dataclass
-class PublicationStatus:
-    publication_status: enums.PublicationStatus
-
-
 @dataclass(kw_only=True)
 class DataService(BaseObject):
     id: int | None = None
@@ -181,7 +176,7 @@ class Product(BaseObject):
             ) from None
 
     def update_state(self, data: dict):
-        if self.publication_status and self.validate.can_change_publication_status(data):
+        if self.validate.can_change_publication_status(data):
             self.update_from_dict(data)
         return self
 
