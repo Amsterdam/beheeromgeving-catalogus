@@ -51,6 +51,7 @@ def orm_product(orm_team) -> Product:
         data_steward="meneerboom@amsterdam.nl",
         language="NL",
         is_geo=True,
+        crs="RD",
         schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
         type="D",
         themes=["NM"],

@@ -120,6 +120,10 @@ class RefreshPeriod(ModelMixin, BaseModel):
     unit: enums.TimeUnit
 
 
+class SetState(ModelMixin, BaseModel):
+    publication_status: enums.PublicationStatus
+
+
 class DistributionCreateOrUpdate(ModelMixin, BaseModel):
     access_service_id: int | None = None
     access_url: str | None = None
@@ -192,7 +196,6 @@ class ProductCreate(ModelMixin, BaseModel):
     last_updated: datetime | None = None
     privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
-    publication_status: enums.PublicationStatus | None = None
     owner: str | None = None
     contact_email: str | None = None
     data_steward: str | None = None
@@ -203,6 +206,8 @@ class ProductCreate(ModelMixin, BaseModel):
 
 class ProductDetail(IdMixin, ProductCreate):
     """Product detail view"""
+
+    publication_status: enums.PublicationStatus
 
 
 class ProductUpdate(ModelMixin, BaseModel):
@@ -221,7 +226,6 @@ class ProductUpdate(ModelMixin, BaseModel):
     last_updated: datetime | None = None
     privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
-    publication_status: enums.PublicationStatus | None = None
     owner: str | None = None
     contact_email: str | None = None
     data_steward: str | None = None
