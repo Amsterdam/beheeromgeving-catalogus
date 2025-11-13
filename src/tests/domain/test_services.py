@@ -372,14 +372,12 @@ class TestProductService:
             data={"team_id": team.id, **data}, scopes=[team.scope]
         )
 
-        try:
-            updated_product = product_service.update_publication_status(
-                product_id=product_missing_fields.id,
-                data={"publication_status": "D"},
-                scopes=[team.scope],
-            )
-        except ValidationError:
-            pytest.fail("ValidationError raised when updating status with missing fields")
+        # This should not fail
+        updated_product = product_service.update_publication_status(
+            product_id=product_missing_fields.id,
+            data={"publication_status": "D"},
+            scopes=[team.scope],
+        )
 
         assert updated_product.publication_status == "D"
 

@@ -125,12 +125,6 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(status=204)
 
     @action(detail=True, methods=["post"], url_path="set-state", url_name="publication_status")
-    def product_publication_status(self, _request, pk=None):
-        product = self.service.get_product(int(pk))
-        data = dtos.to_response_object(product)
-        return Response(data, status=200)
-
-    @product_publication_status.mapping.patch
     def set_state(self, request, pk=None):
         state_dto = self._validate_dto(request.data, dto_type=dtos.SetState)
 

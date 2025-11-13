@@ -187,7 +187,7 @@ class TestViews:
         ],
     )
     def test_set_state_product(self, client_with_token, orm_product, orm_team, data):
-        response = client_with_token([orm_team.scope]).patch(
+        response = client_with_token([orm_team.scope]).post(
             f"/products/{orm_product.id}/set-state",
             data=data,
         )
