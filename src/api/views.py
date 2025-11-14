@@ -92,9 +92,13 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         # Raises if data is invalid
         return dto_type(**data)
 
-    def list(self, _request):
-        products = self.service.get_products()
-        data = dtos.to_response_object(products)
+    def list(self, request):
+        if name := request.query_params.get("name"):
+            product = self.service.get_product_by_name(name)
+            data = dtos.to_response_object(product)
+        else:
+            products = self.service.get_products()
+            data = dtos.to_response_object(products)
         return Response(data, status=200)
 
     def retrieve(self, _request, pk=None):

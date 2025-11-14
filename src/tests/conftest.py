@@ -45,7 +45,7 @@ def orm_other_team() -> Team:
 @pytest.fixture()
 def orm_product(orm_team) -> Product:
     product = Product.objects.create(
-        name="bomen",
+        name="Bomen",
         description="bomen in Amsterdam",
         team=orm_team,
         data_steward="meneerboom@amsterdam.nl",

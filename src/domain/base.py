@@ -27,6 +27,10 @@ class AbstractRepository[T](abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def get_by_name(self, str) -> T:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def list(self) -> list[T]:
         raise NotImplementedError
 

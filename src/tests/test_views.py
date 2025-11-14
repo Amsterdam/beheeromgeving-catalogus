@@ -115,10 +115,27 @@ class TestViews:
         ]:
             assert key in product
 
+    def test_product_list_query_by_name(self, api_client, orm_product):
+        """Assert we can query the products based on name.
+
+        This name can be snakecased with a version suffix."""
+        response = api_client.get("/products?name=bomen_v1")
+        assert response.status_code == 200
+        product = response.data
+        assert product["name"] == orm_product.name
+        # check a property that is only in detail view, as this should return a ProductDetail.
+        assert product["privacy_level"] == orm_product.privacy_level
+
+    def test_product_list_query_by_name_404(self, api_client, orm_product):
+        """Assert query by name returns 404 when we cannot find the product."""
+        response = api_client.get("/products?name=fietspaaltjes_v1")
+        assert response.status_code == 404
+        assert response.data == "Product with name fietspaaltjes_v1 does not exist."
+
     def test_product_detail(self, api_client, orm_product):
         response = api_client.get(f"/products/{orm_product.id}")
         assert response.status_code == 200
-        assert response.data["name"] == "bomen"
+        assert response.data["name"] == orm_product.name
 
     def test_product_create(self, client_with_token, orm_team):
         response = client_with_token([orm_team.scope]).post(
