@@ -293,6 +293,14 @@ class TestViews:
         )
         assert response.status_code == 201
 
+    def test_distribution_create_empty(self, client_with_token, orm_product, orm_team):
+        contract_id = orm_product.contracts.first().id
+        data = {}
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+        )
+        assert response.status_code == 201
+
     def test_distribution_create_not_allowed(self, client_with_token, orm_product, orm_other_team):
         contract_id = orm_product.contracts.first().id
         data = {"format": "TEST", "type": "F"}
@@ -356,6 +364,13 @@ class TestViews:
         response = client_with_token([orm_team.scope]).post(
             f"/products/{orm_product.id}/services",
             data={"type": "REST", "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2"},
+        )
+        assert response.status_code == 201
+
+    def test_service_create_empty(self, client_with_token, orm_product, orm_team):
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/services",
+            data={},
         )
         assert response.status_code == 201
 
