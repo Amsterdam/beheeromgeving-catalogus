@@ -88,6 +88,7 @@ def product(team: Team) -> Product:
                         download_url="https://bomen.amsterdam.nl/beheer.csv",
                         format="csv",
                         type="F",
+                        filename="beheer.csv",
                     ),
                 ],
             )

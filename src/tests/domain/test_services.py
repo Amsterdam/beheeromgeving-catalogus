@@ -420,7 +420,7 @@ class TestProductService:
     def test_create_distribution(
         self, product_service: ProductService, product: Product, team: Team
     ):
-        data = {"format": "TEST", "type": "F"}
+        data = {"format": "TEST", "type": "F", "filename": "file.test"}
         distribution = product_service.create_distribution(
             product_id=product.id,
             contract_id=product.contracts[0].id,
@@ -432,6 +432,7 @@ class TestProductService:
             contract_id=product.contracts[0].id, distribution_id=distribution.id
         )
         assert saved_distribution.format == "TEST"
+        assert saved_distribution.filename == "file.test"
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_distribution_not_allowed(
