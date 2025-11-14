@@ -376,7 +376,13 @@ class Distribution(models.Model):
         null=True,
         help_text="Het bestandsformaat: CSV, CAD, etc.",
     )
-
+    filename = models.CharField(
+        _("Bestandsnaam"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="De naam van het bestand.",
+    )
     type = models.CharField(choices=enums.DistributionType.choices(), null=True, blank=True)
     refresh_period = models.CharField(
         _("Ververstermijn"),
