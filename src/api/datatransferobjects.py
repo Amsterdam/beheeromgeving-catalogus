@@ -129,6 +129,7 @@ class DistributionCreateOrUpdate(ModelMixin, BaseModel):
     access_url: str | None = None
     download_url: str | None = None
     format: str | None = None
+    filename: str | None = None
     type: enums.DistributionType | None = None
     refresh_period: RefreshPeriod | None = None  # Hoort volgens DCAT op Dataset
 
