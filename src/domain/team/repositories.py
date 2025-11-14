@@ -18,6 +18,17 @@ class TeamRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Team with id {team_id} does not exist") from e
 
+    def get_by_name(self, name: str) -> Team:
+        try:
+            normalized_name = name.replace("_", " ").lower()
+            return next(
+                team
+                for team in self._teams.values()
+                if normalized_name.startswith(team.name.lower())
+            )
+        except StopIteration as e:
+            raise exceptions.ObjectDoesNotExist(f"Team with name {name} does not exist") from e
+
     def list(self) -> list[Team]:
         return list(self._teams.values())
 

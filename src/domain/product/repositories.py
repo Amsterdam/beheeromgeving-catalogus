@@ -18,6 +18,17 @@ class ProductRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist from e
 
+    def get_by_name(self, name: str) -> Product:
+        try:
+            normalized_name = name.replace("_", " ").lower()
+            return next(
+                product
+                for product in self._products.values()
+                if normalized_name.startswith(product.name.lower())
+            )
+        except StopIteration as e:
+            raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.") from e
+
     def list(self, **kwargs) -> list[Product]:
         products = list(self._products.values())
         if kwargs.get("teams") is not None:

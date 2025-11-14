@@ -48,6 +48,17 @@ class DummyRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object with id {id} does not exist") from e
 
+    def get_by_name(self, name):
+        try:
+            normalized_name = name.replace("_", " ").lower()
+            return next(
+                item
+                for item in self._items.values()
+                if normalized_name.startswith(item.name.lower())
+            )
+        except StopIteration as e:
+            raise exceptions.ObjectDoesNotExist(f"Object with name {name} does not exist") from e
+
     def list(self):
         return list(self._items.values())
 
