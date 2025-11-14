@@ -377,7 +377,7 @@ class Distribution(models.Model):
         help_text="Het bestandsformaat: CSV, CAD, etc.",
     )
 
-    type = models.CharField(choices=enums.DistributionType.choices(), null=True)
+    type = models.CharField(choices=enums.DistributionType.choices(), null=True, blank=True)
     refresh_period = models.CharField(
         _("Ververstermijn"),
         max_length=64,
@@ -425,7 +425,7 @@ class DataService(models.Model):
         blank=True,
         null=True,
     )
-    endpoint_url = models.URLField(_("API Link (Intern)"))
+    endpoint_url = models.URLField(_("API Link (Intern)"), null=True, blank=True)
     product: Product = models.ForeignKey(
         "Product",
         on_delete=models.CASCADE,
