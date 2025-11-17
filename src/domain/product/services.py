@@ -22,6 +22,9 @@ class ProductService(AbstractService):
     def get_product(self, product_id: int) -> Product:
         return self.repository.get(product_id)
 
+    def get_product_by_name(self, name: str) -> Product:
+        return self.repository.get_by_name(name)
+
     @authorize.is_team_member
     def create_product(self, *, data: dict, **kwargs) -> Product:
         refresh_period = data.pop("refresh_period", None)
