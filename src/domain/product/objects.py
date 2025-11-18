@@ -57,7 +57,7 @@ class ContractValidator:
     def __init__(self, datacontract: "DataContract"):
         self.contract = datacontract
 
-    def can_change_publication_status(self, data: dict) -> True:
+    def get_missing_fields(self) -> list[str]:
         required_fields = [
             "name",
             "description",
@@ -68,9 +68,10 @@ class ContractValidator:
             "start_date",
             "scope",
         ]
-        missing_fields = [
-            field for field in required_fields if getattr(self.contract, field) is None
-        ]
+        return [field for field in required_fields if getattr(self.contract, field) is None]
+
+    def can_change_publication_status(self, data: dict) -> True:
+        missing_fields = self.get_missing_fields()
         if (
             data.get("publication_status") == "P"
             and missing_fields
@@ -104,6 +105,10 @@ class DataContract(BaseObject):
     def __post_init__(self):
         self.validate = ContractValidator(self)
 
+    @property
+    def missing_fields(self) -> list[str]:
+        return self.validate.get_missing_fields()
+
 
 class ProductValidator:
     def __init__(self, prod: "Product"):
@@ -125,7 +130,7 @@ class ProductValidator:
             )
         return True
 
-    def can_change_publication_status(self, data: dict) -> True:
+    def get_missing_fields(self) -> list[str]:
         required_fields = [
             "name",
             "description",
@@ -139,9 +144,10 @@ class ProductValidator:
             "refresh_period",
             "contact_email",
         ]
-        missing_fields = [
-            field for field in required_fields if getattr(self.product, field) is None
-        ]
+        return [field for field in required_fields if getattr(self.product, field) is None]
+
+    def can_change_publication_status(self, data: dict) -> True:
+        missing_fields = self.get_missing_fields()
         if (
             data.get("publication_status") == "P"
             and missing_fields
@@ -298,3 +304,7 @@ class Product(BaseObject):
     @property
     def contract_count(self) -> int:
         return len(self.contracts)
+
+    @property
+    def missing_fields(self) -> list[str]:
+        return self.validate.get_missing_fields()
