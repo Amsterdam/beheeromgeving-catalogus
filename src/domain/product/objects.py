@@ -53,6 +53,37 @@ class Distribution(BaseObject):
     _skip_keys = {"refresh_period"}
 
 
+class ContractValidator:
+    def __init__(self, datacontract: "DataContract"):
+        self.contract = datacontract
+
+    def can_change_publication_status(self, data: dict) -> True:
+        required_fields = [
+            "name",
+            "description",
+            "purpose",
+            "confidentiality",
+            "privacy_level",
+            "retainment_period",
+            "start_date",
+            "scope",
+        ]
+        missing_fields = [
+            field for field in required_fields if getattr(self.contract, field) is None
+        ]
+        if (
+            data.get("publication_status") == "P"
+            and missing_fields
+            and self.contract.publication_status != enums.PublicationStatus.PUBLISHED
+        ):
+            raise ValidationError(
+                "Cannot update publication status, contract is missing the following fields:"
+                f"[{", ".join(missing_fields)}]"
+            )
+
+        return True
+
+
 @dataclass(kw_only=True)
 class DataContract(BaseObject):
     id: int | None = None
@@ -69,6 +100,9 @@ class DataContract(BaseObject):
     distributions: list[Distribution] = field(default_factory=list)
 
     _skip_keys = {"contact_email", "distributions"}
+
+    def __post_init__(self):
+        self.validate = ContractValidator(self)
 
 
 class ProductValidator:
@@ -178,6 +212,12 @@ class Product(BaseObject):
     def update_contract(self, contract_id: int, data: dict) -> DataContract:
         contract = self.get_contract(contract_id)
         contract.update_from_dict(data)
+        return contract
+
+    def update_contract_state(self, contract_id: int, data: dict) -> DataContract:
+        contract = self.get_contract(contract_id)
+        if contract.validate.can_change_publication_status(data):
+            contract.update_from_dict(data)
         return contract
 
     def delete_contract(self, contract_id: int) -> int:

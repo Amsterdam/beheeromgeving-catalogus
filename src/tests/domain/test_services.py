@@ -214,7 +214,7 @@ class TestProductService:
 
     def test_create_contract(self, product_service: ProductService, product: Product, team: Team):
         contract = product_service.create_contract(
-            product_id=product.id, data={"publication_status": "D"}, scopes=[team.scope]
+            product_id=product.id, data={"purpose": "onderhoud van bomen"}, scopes=[team.scope]
         )
 
         assert isinstance(contract, DataContract)
@@ -239,7 +239,7 @@ class TestProductService:
         )
         with pytest.raises(ValidationError, match=missing_fields):
             product_service.create_contract(
-                product_id=product.id, data={"publication_status": "D"}, scopes=[team.scope]
+                product_id=product.id, data={"purpose": "onderhoud van bomen"}, scopes=[team.scope]
             )
 
     def test_create_contract_no_missing_fields(
@@ -252,9 +252,9 @@ class TestProductService:
             scopes=[team.scope],
         )
         contract = product_service.create_contract(
-            product_id=product.id, data={"publication_status": "D"}, scopes=[team.scope]
+            product_id=product.id, data={"purpose": "onderhoud van bomen"}, scopes=[team.scope]
         )
-        assert contract.publication_status == "D"
+        assert contract.purpose == "onderhoud van bomen"
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_contract_non_existent_product(
@@ -343,6 +343,26 @@ class TestProductService:
 
         assert result.publication_status == updated_status
 
+    @pytest.mark.parametrize(
+        "data,updated_status",
+        [
+            ({"publication_status": "P"}, "P"),
+            ({"publication_status": "D"}, "D"),
+        ],
+    )
+    def test_update_contract_publication(
+        self, data, updated_status, product_service: ProductService, product: Product, team: Team
+    ):
+        result = product_service.update_contract_publication_status(
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            data=data,
+            scopes=[team.scope],
+        )
+
+        assert len(product_service.get_contracts(product.id)) == 1
+        assert result.publication_status == updated_status
+
     def test_update_product_publication_missing_fields(
         self, product_service: ProductService, team
     ):
@@ -365,6 +385,36 @@ class TestProductService:
         with pytest.raises(ValidationError, match=missing_fields):
             product_service.update_publication_status(
                 product_id=product_missing_fields.id,
+                data={"publication_status": "P"},
+                scopes=[team.scope],
+            )
+
+    def test_update_contract_publication_missing_fields(
+        self, product_service: ProductService, team: Team
+    ):
+        """Test to see if a contract's publication status cannot be updated to published
+        when the contract is missing necessary fields."""
+        data = {
+            "purpose": "onderhoud van bomen",
+            "name": "beheer bomen",
+            "privacy_level": "NPI",
+            "scope": "scope_bomen_beheer",
+            "start_date": "2025-01-01",
+            "retainment_period": 12,
+        }
+        missing_fields = r"\[description, confidentiality\]"
+
+        new_product = product_service.create_product(
+            data={"team_id": team.id, "name": "Product", "type": "D", "privacy_level": "PI"},
+            scopes=[team.scope],
+        )
+        contract_missing_fields = product_service.create_contract(
+            product_id=new_product.id, data=data, scopes=[team.scope]
+        )
+        with pytest.raises(ValidationError, match=missing_fields):
+            product_service.update_contract_publication_status(
+                product_id=new_product.id,
+                contract_id=contract_missing_fields.id,
                 data={"publication_status": "P"},
                 scopes=[team.scope],
             )
@@ -394,6 +444,38 @@ class TestProductService:
         )
 
         assert updated_product.publication_status == "D"
+
+    def test_allow_contract_status_when_missing_fields(
+        self, product_service: ProductService, team
+    ):
+        """Test to see if a contract's publication status can be updated to another
+        status when the contract is missing necessary fields."""
+
+        data = {
+            "purpose": "onderhoud van bomen",
+            "name": "beheer bomen",
+            "privacy_level": "NPI",
+            "scope": "scope_bomen_beheer",
+            "start_date": "2025-01-01",
+            "retainment_period": 12,
+        }
+        new_product = product_service.create_product(
+            data={"team_id": team.id, "name": "Product", "type": "D", "privacy_level": "PI"},
+            scopes=[team.scope],
+        )
+        contract_missing_fields = product_service.create_contract(
+            product_id=new_product.id, data=data, scopes=[team.scope]
+        )
+
+        # This should not fail
+        updated_contract = product_service.update_contract_publication_status(
+            product_id=new_product.id,
+            contract_id=contract_missing_fields.id,
+            data={"publication_status": "R"},
+            scopes=[team.scope],
+        )
+
+        assert updated_contract.publication_status == "R"
 
     def test_get_distributions(self, product_service: ProductService, product: Product):
         result = product_service.get_distributions(

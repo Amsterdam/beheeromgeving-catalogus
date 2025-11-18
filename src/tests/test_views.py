@@ -216,6 +216,26 @@ class TestViews:
         assert orm_product.publication_status == data["publication_status"]
         assert response.data["publication_status"] == orm_product.publication_status
 
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {"publication_status": "D"},
+            {"publication_status": "P"},
+        ],
+    )
+    def test_set_state_contract(self, client_with_token, orm_product, orm_team, data):
+        contract_id = orm_product.contracts.first().id
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/set-state", data=data
+        )
+        assert response.status_code == 200
+        orm_product.refresh_from_db()
+
+        assert orm_product.contracts.first().publication_status == data["publication_status"]
+        assert (
+            response.data["publication_status"] == orm_product.contracts.first().publication_status
+        )
+
     def test_contract_list(self, api_client, orm_product):
         response = api_client.get(f"/products/{orm_product.id}/contracts")
 
