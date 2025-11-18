@@ -411,8 +411,6 @@ class TestProductService:
         contract_missing_fields = product_service.create_contract(
             product_id=new_product.id, data=data, scopes=[team.scope]
         )
-        print("contract_missing_fields: ")
-        print(contract_missing_fields)
         with pytest.raises(ValidationError, match=missing_fields):
             product_service.update_contract_publication_status(
                 product_id=new_product.id,
@@ -450,8 +448,8 @@ class TestProductService:
     def test_allow_contract_status_when_missing_fields(
         self, product_service: ProductService, team
     ):
-        """Test to see if a contract's publication status can be updated to draft
-        when the contract is missing necessary fields."""
+        """Test to see if a contract's publication status can be updated to another
+        status when the contract is missing necessary fields."""
 
         data = {
             "purpose": "onderhoud van bomen",
@@ -473,11 +471,11 @@ class TestProductService:
         updated_contract = product_service.update_contract_publication_status(
             product_id=new_product.id,
             contract_id=contract_missing_fields.id,
-            data={"publication_status": "D"},
+            data={"publication_status": "R"},
             scopes=[team.scope],
         )
 
-        assert updated_contract.publication_status == "D"
+        assert updated_contract.publication_status == "R"
 
     def test_get_distributions(self, product_service: ProductService, product: Product):
         result = product_service.get_distributions(

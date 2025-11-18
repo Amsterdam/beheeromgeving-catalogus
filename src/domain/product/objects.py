@@ -53,8 +53,8 @@ class Distribution(BaseObject):
 
 
 class ContractValidator:
-    def __init__(self, contr: "DataContract"):
-        self.contract = contr
+    def __init__(self, datacontract: "DataContract"):
+        self.contract = datacontract
 
     def can_change_publication_status(self, data: dict) -> True:
         required_fields = [
@@ -99,6 +99,9 @@ class DataContract(BaseObject):
     distributions: list[Distribution] = field(default_factory=list)
 
     _skip_keys = {"contact_email", "distributions"}
+
+    def __post_init__(self):
+        self.validate = ContractValidator(self)
 
 
 class ProductValidator:
