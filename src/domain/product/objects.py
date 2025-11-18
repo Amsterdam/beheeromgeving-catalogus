@@ -57,7 +57,7 @@ class ContractValidator:
     def __init__(self, datacontract: "DataContract"):
         self.contract = datacontract
 
-    def can_change_publication_status(self, data: dict) -> True:
+    def get_missing_fields(self) -> list:
         required_fields = [
             "name",
             "description",
@@ -71,6 +71,10 @@ class ContractValidator:
         missing_fields = [
             field for field in required_fields if getattr(self.contract, field) is None
         ]
+
+        return missing_fields
+
+    def can_change_publication_status(self, data: dict, missing_fields: list) -> True:
         if (
             data.get("publication_status") == "P"
             and missing_fields
@@ -104,6 +108,12 @@ class DataContract(BaseObject):
     def __post_init__(self):
         self.validate = ContractValidator(self)
 
+    @property
+    def missing_fields(self) -> list:
+        missing_fields = self.validate.get_missing_fields()
+
+        return missing_fields
+
 
 class ProductValidator:
     def __init__(self, prod: "Product"):
@@ -125,7 +135,7 @@ class ProductValidator:
             )
         return True
 
-    def can_change_publication_status(self, data: dict) -> True:
+    def get_missing_fields(self) -> list:
         required_fields = [
             "name",
             "description",
@@ -142,6 +152,10 @@ class ProductValidator:
         missing_fields = [
             field for field in required_fields if getattr(self.product, field) is None
         ]
+
+        return missing_fields
+
+    def can_change_publication_status(self, data: dict, missing_fields: list) -> True:
         if (
             data.get("publication_status") == "P"
             and missing_fields
@@ -205,7 +219,8 @@ class Product(BaseObject):
             ) from None
 
     def update_state(self, data: dict):
-        if self.validate.can_change_publication_status(data):
+        missing_fields = self.validate.get_missing_fields()
+        if self.validate.can_change_publication_status(data, missing_fields):
             self.update_from_dict(data)
         return self
 
@@ -216,7 +231,8 @@ class Product(BaseObject):
 
     def update_contract_state(self, contract_id: int, data: dict) -> DataContract:
         contract = self.get_contract(contract_id)
-        if contract.validate.can_change_publication_status(data):
+        missing_fields = contract.validate.get_missing_fields()
+        if contract.validate.can_change_publication_status(data, missing_fields):
             contract.update_from_dict(data)
         return contract
 
@@ -298,3 +314,9 @@ class Product(BaseObject):
     @property
     def contract_count(self) -> int:
         return len(self.contracts)
+
+    @property
+    def missing_fields(self) -> list:
+        missing_fields = self.validate.get_missing_fields()
+
+        return missing_fields

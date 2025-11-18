@@ -136,6 +136,7 @@ class TestViews:
         response = api_client.get(f"/products/{orm_product.id}")
         assert response.status_code == 200
         assert response.data["name"] == orm_product.name
+        assert response.data["missing_fields"] == []
 
     def test_product_create(self, client_with_token, orm_team):
         response = client_with_token([orm_team.scope]).post(
@@ -241,6 +242,14 @@ class TestViews:
 
         assert response.status_code == 200
         assert len(response.data) == 1
+
+    def test_contract_detail(self, api_client, orm_product):
+        contract_id = orm_product.contracts.first().id
+        response = api_client.get(f"/products/{orm_product.id}/contracts/{contract_id}")
+
+        assert response.status_code == 200
+        assert response.data["name"] == orm_product.contracts.first().name
+        assert response.data["missing_fields"] == []
 
     def test_contract_create(self, client_with_token, orm_product, orm_team):
         response = client_with_token([orm_team.scope]).post(
