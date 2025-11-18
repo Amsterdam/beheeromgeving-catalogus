@@ -215,7 +215,6 @@ class Product(BaseObject):
 
     def update_contract_state(self, contract_id: int, data: dict) -> DataContract:
         contract = self.get_contract(contract_id)
-        contract.validate = ContractValidator(contract)
         if contract.validate.can_change_publication_status(data):
             contract.update_from_dict(data)
         return contract
