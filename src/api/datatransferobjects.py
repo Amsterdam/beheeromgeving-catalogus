@@ -145,7 +145,6 @@ class DataContractList(ModelMixin, BaseModel):
 
 
 class DataContractCreateOrUpdate(ModelMixin, BaseModel):
-    publication_status: enums.PublicationStatus | None = None
     purpose: str | None = None
     name: str | None = None
     description: str | None = None
@@ -160,6 +159,8 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
 
 class DataContract(IdMixin, DataContractCreateOrUpdate):
     """DataContract detail view"""
+
+    publication_status: enums.PublicationStatus
 
 
 class MyContract(ModelMixin, BaseModel):

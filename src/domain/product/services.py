@@ -54,7 +54,10 @@ class ProductService(AbstractService):
     @authorize.is_team_member
     def create_contract(self, product_id: int, data: dict, **kwargs) -> DataContract:
         product = self.get_product(product_id)
-        contract = DataContract(**data)
+        contract = DataContract(
+            **data,
+            publication_status=enums.PublicationStatus.DRAFT,
+        )
         product.create_contract(contract)
         updated_product = self._persist(product)
         return updated_product.contracts[-1]
@@ -67,6 +70,15 @@ class ProductService(AbstractService):
         contract = product.update_contract(contract_id, data)
         self._persist(product)
         return contract
+
+    @authorize.is_team_member
+    def update_contract_publication_status(
+        self, product_id: int, contract_id: int, data: dict, **kwargs
+    ) -> DataContract:
+        product = self.get_product(product_id)
+        updated_contract = product.update_contract_state(contract_id, data)
+        self._persist(product)
+        return updated_contract
 
     @authorize.is_team_member
     def delete_contract(self, product_id: int, contract_id: int, **kwargs):

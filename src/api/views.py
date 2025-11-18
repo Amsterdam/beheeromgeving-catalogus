@@ -174,6 +174,24 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="contracts/(?P<contract_id>[^/.]+)/set-state",
+        url_name="contract_publication_status",
+    )
+    def set_state_contract(self, request, pk=None, contract_id=None):
+        state_dto = self._validate_dto(request.data, dto_type=dtos.SetState)
+
+        updated_contract = self.service.update_contract_publication_status(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            data=state_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(updated_contract)
+        return Response(data, status=200)
+
     @contract_detail.mapping.delete
     def delete_contract(self, request, pk=None, contract_id=None):
         self.service.delete_contract(
