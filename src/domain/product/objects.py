@@ -110,9 +110,7 @@ class DataContract(BaseObject):
 
     @property
     def missing_fields(self) -> list:
-        missing_fields = self.validate.get_missing_fields()
-
-        return missing_fields
+        return self.validate.get_missing_fields()
 
 
 class ProductValidator:
@@ -317,6 +315,4 @@ class Product(BaseObject):
 
     @property
     def missing_fields(self) -> list:
-        missing_fields = self.validate.get_missing_fields()
-
-        return missing_fields
+        return self.validate.get_missing_fields()
