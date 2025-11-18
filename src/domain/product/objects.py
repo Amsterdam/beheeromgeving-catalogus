@@ -68,11 +68,7 @@ class ContractValidator:
             "start_date",
             "scope",
         ]
-        missing_fields = [
-            field for field in required_fields if getattr(self.contract, field) is None
-        ]
-
-        return missing_fields
+        return [field for field in required_fields if getattr(self.contract, field) is None]
 
     def can_change_publication_status(self, data: dict, missing_fields: list) -> True:
         if (
@@ -147,11 +143,7 @@ class ProductValidator:
             "refresh_period",
             "contact_email",
         ]
-        missing_fields = [
-            field for field in required_fields if getattr(self.product, field) is None
-        ]
-
-        return missing_fields
+        return [field for field in required_fields if getattr(self.product, field) is None]
 
     def can_change_publication_status(self, data: dict, missing_fields: list) -> True:
         if (
