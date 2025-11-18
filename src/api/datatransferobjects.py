@@ -162,7 +162,7 @@ class DataContract(IdMixin, DataContractCreateOrUpdate):
     """DataContract detail view"""
 
     publication_status: enums.PublicationStatus
-    missing_fields: list | None = None
+    missing_fields: list[str] | None = None
 
 
 class MyContract(ModelMixin, BaseModel):
@@ -211,7 +211,7 @@ class ProductDetail(IdMixin, ProductCreate):
     """Product detail view"""
 
     publication_status: enums.PublicationStatus
-    missing_fields: list | None = None
+    missing_fields: list[str] | None = None
 
 
 class ProductUpdate(ModelMixin, BaseModel):

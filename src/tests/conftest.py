@@ -93,6 +93,53 @@ def orm_product(orm_team) -> Product:
 
 
 @pytest.fixture()
+def orm_incomplete_product(orm_team) -> Product:
+    product = Product.objects.create(
+        name="Bomen",
+        description="bomen in Amsterdam",
+        team=orm_team,
+        data_steward="meneerboom@amsterdam.nl",
+        language="NL",
+        is_geo=True,
+        schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+        type="D",
+        themes=["NM"],
+        refresh_period="3.MONTH",
+        publication_status="D",
+    )
+
+    service = DataService.objects.create(
+        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+    )
+
+    contract = DataContract.objects.create(
+        product=product,
+        publication_status="D",
+        purpose="onderhoud van bomen",
+        name="beheer bomen",
+        description="contract voor data nodig voor het beheer van bomen",
+        privacy_level="NPI",
+        scope="scope_bomen_beheer",
+        start_date="2025-01-01",
+        retainment_period=12,
+    )
+
+    Distribution.objects.create(
+        contract=contract,
+        access_service=service,
+        type="A",
+    )
+    Distribution.objects.create(
+        contract=contract,
+        download_url="https://bomen.amsterdam.nl/beheer.csv",
+        format="csv",
+        type="F",
+    )
+
+    return product
+
+
+@pytest.fixture()
 def client_with_token(api_client):
     class Client:
         def __init__(self, scopes: list[str] | None = None):
