@@ -1,0 +1,30 @@
+meta {
+  name: set state product
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/products/2/set-state
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "publication_status": "D"
+  }
+}
+
+script:pre-request {
+  const getToken = require("./get-token");
+
+  const token = await getToken(["scope_tn1"]);
+
+  req.setHeader("Authorization", `Bearer ${token}`);
+
+}
+
+settings {
+  encodeUrl: true
+}
