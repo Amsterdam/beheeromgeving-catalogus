@@ -78,6 +78,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(status=200)
 
+    @extend_schema()
     def destroy(self, request, pk=None):
         self.service.delete_team(int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
@@ -132,6 +133,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(dtos.to_response_object(product), status=200)
 
+    @extend_schema()
     def destroy(self, request, pk=None):
         self.service.delete_product(product_id=int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
@@ -166,7 +168,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=201)
 
-    # @extend_schema(responses={200: dtos.DataContract})
+    @extend_schema(responses={200: dtos.DataContract})
     @action(
         detail=True,
         methods=["get"],
@@ -210,6 +212,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(updated_contract)
         return Response(data, status=200)
 
+    @extend_schema()
     @contract_detail.mapping.delete
     def delete_contract(self, request, pk=None, contract_id=None):
         self.service.delete_contract(
@@ -246,7 +249,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(distribution)
         return Response(data, status=201)
 
-    # @extend_schema(responses={200: dtos.Distribution})
+    @extend_schema(responses={200: dtos.Distribution})
     @action(
         detail=True,
         methods=["get"],
@@ -274,6 +277,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(distribution)
         return Response(data, status=200)
 
+    @extend_schema()
     @distribution_detail.mapping.delete
     def delete_distribution(self, request, pk=None, contract_id=None, distribution_id=None):
         self.service.delete_distribution(
@@ -303,7 +307,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(service)
         return Response(data, status=201)
 
-    # @extend_schema(responses={200: dtos.DataService})
+    @extend_schema(responses={200: dtos.DataService})
     @action(
         detail=True,
         methods=["get"],
@@ -328,6 +332,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(service)
         return Response(data, status=200)
 
+    @extend_schema()
     @service_detail.mapping.delete
     def delete_service(self, request, pk=None, service_id=None):
         self.service.delete_service(
