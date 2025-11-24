@@ -5,7 +5,7 @@ django-healthchecks == 1.5.0
 datapunt-authorization-django == 1.6.2
 djangorestframework == 3.16.1
 drf-spectacular == 0.29.0
-psycopg == 3.2.12
+psycopg == 3.2.13
 pydantic[email] == 2.12.4
 python-json-logger==4.0.0
 python-dateutil==2.9.0.post0
