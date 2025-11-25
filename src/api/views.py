@@ -342,6 +342,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(status=204)
 
 
+@extend_schema(responses={200: dtos.MeDetail})
 @api_view(["GET"])
 def me(request):
     team_service = TeamService(repo=TeamRepository())

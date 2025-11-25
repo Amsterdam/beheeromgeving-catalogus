@@ -251,3 +251,10 @@ class ProductList(ModelMixin, BaseModel):
     publication_status: enums.PublicationStatus | None
     contract_count: int
     team_id: int
+
+
+class MeDetail(BaseModel):
+    """Used for openapi spec"""
+
+    teams: list[Team]
+    products: list[MyProduct]
