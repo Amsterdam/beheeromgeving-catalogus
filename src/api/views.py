@@ -1,8 +1,9 @@
+from drf_spectacular.utils import extend_schema
 from pydantic import ValidationError
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from drf_spectacular.utils import extend_schema_view, extend_schema
+
 from api import datatransferobjects as dtos
 from domain import exceptions
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
