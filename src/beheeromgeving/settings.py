@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "beheeromgeving",
+    "drf_spectacular",
 ]
 
 APPEND_SLASH = False
@@ -331,12 +332,28 @@ HEALTH_CHECKS = {
 HEALTH_CHECKS_ERROR_CODE = 503
 
 REST_FRAMEWORK = dict(
+    DEFAULT_SCHEMA_CLASS="drf_spectacular.openapi.AutoSchema",
     DEFAULT_RENDERER_CLASSES=["rest_framework.renderers.JSONRenderer"],
     UNAUTHENTICATED_USER=None,  # Avoid importing django.contrib.auth.models
     UNAUTHENTICATED_TOKEN=None,
     URL_FORMAT_OVERRIDE="_format",  # use ?_format=.. instead of ?format=..
     DEFAULT_AUTHENTICATION_CLASSES=[],
 )
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Beheeromgeving Catalogus",
+    "DESCRIPTION": "Een overzicht van beschikbare dataproducten vanuit de Gemeente Amsterdam.",
+    "CONTACT": {"email": "datapunt@amsterdam.nl"},
+    "VERSION": "1.0.0",
+    "LICENSE": {
+        "name": "European Union Public License, version 1.2 (EUPL-1.2)",
+        "url": "https://eupl.eu/1.2/nl/",
+    },
+    "AUTHENTICATION_WHITELIST": None,
+    "PREPROCESSING_HOOKS": [
+        "api.openapi.preprocessors.preprocessing_filter_spec",
+    ],
+}
 
 if DEBUG:
     REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append(
