@@ -342,7 +342,7 @@ REST_FRAMEWORK = dict(
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Beheeromgeving Catalogus",
-    "DESCRIPTION": "Description",
+    "DESCRIPTION": "Een overzicht van beschikbare dataproducten vanuit de Gemeente Amsterdam.",
     "CONTACT": {"email": "datapunt@amsterdam.nl"},
     "VERSION": "1.0.0",
     "LICENSE": {
