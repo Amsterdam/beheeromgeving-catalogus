@@ -350,6 +350,9 @@ SPECTACULAR_SETTINGS = {
         "url": "https://eupl.eu/1.2/nl/",
     },
     "AUTHENTICATION_WHITELIST": None,
+    "PREPROCESSING_HOOKS": [
+        "api.openapi.preprocessors.preprocessing_filter_spec",
+    ],
 }
 
 if DEBUG:
