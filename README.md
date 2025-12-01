@@ -74,3 +74,17 @@ echo beheeromgeving > .python-version
 A setting that may be useful is the FEATURE_FLAG_USE_AUTH, which if set to False will
 prevent the application from doing any authorization checks. This is strictly for
 development purposes, and will always be set to True in production.
+
+## Debugging
+
+To debug a running container, run docker compose with the extra debug compose file:
+
+```
+    docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d
+```
+
+In your `.vscode` folder, copy the `launch.example.json` to `launch.json`. Ensure that the paths are matching with what you
+have (especially packages in your virtualenv).
+
+Start the debugger through the Run and Debug menu. The debugger is called "Python Debugger:
+Remote Attach". You can now add breakpoints.
