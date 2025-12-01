@@ -16,3 +16,4 @@ termcolor==3.2.0
 # Debugging
 django-debug-toolbar==6.1.0
 django-extensions==4.1
+debugpy==1.8.17
