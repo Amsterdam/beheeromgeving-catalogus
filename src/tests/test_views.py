@@ -1,5 +1,6 @@
 import pytest
 from django.conf import settings
+from pytest_django.asserts import assertNumQueries
 
 from beheeromgeving.models import Team
 
@@ -114,6 +115,32 @@ class TestViews:
             "publication_status",
         ]:
             assert key in product
+
+    def test_product_endpoint_queries_db_sparingly(self, client_with_token, orm_product, orm_team):
+        """Assert that the db is not hit repeatedly for consecutive requests.
+
+        i.e. Products are cached in the repository."""
+        api_client = client_with_token([orm_team.scope])
+        # warm up the cache in the client:
+        response = api_client.get("/products")
+        assert response.status_code == 200
+
+        # subsequent requests should hit the cache
+        with assertNumQueries(0):
+            response = api_client.get("/products")
+            assert response.status_code == 200
+
+            response = api_client.get(f"/products/{orm_product.id}")
+            assert response.status_code == 200
+
+            response = api_client.get(f"/products/{orm_product.id}/contracts")
+            assert response.status_code == 200
+
+            response = api_client.get(f"/products/{orm_product.id}/services")
+            assert response.status_code == 200
+
+            response = api_client.get(f"/products?name={orm_product.name}/services")
+            assert response.status_code == 200
 
     def test_product_list_query_by_name(self, api_client, orm_product):
         """Assert we can query the products based on name.
