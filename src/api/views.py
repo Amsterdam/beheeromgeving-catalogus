@@ -95,6 +95,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         if name := request.query_params.get("name"):
             product = product_service.get_product_by_name(name)
             data = dtos.to_response_object(product)
+        elif query := request.query_params.get("q"):
+            products = product_service.get_products(query=query)
+            data = dtos.to_response_object(products)
         else:
             products = product_service.get_products()
             data = dtos.to_response_object(products)

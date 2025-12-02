@@ -306,5 +306,19 @@ class Product(BaseObject):
         return len(self.contracts)
 
     @property
+    def search_string(self) -> str:
+        result = ""
+        if self.name:
+            result += self.name + " "
+        if self.description:
+            result += self.description + " "
+        for contract in self.contracts:
+            if contract.name:
+                result += contract.name + " "
+            if contract.description:
+                result += contract.description + " "
+        return result.lower()
+
+    @property
     def missing_fields(self) -> list[str]:
         return self.validate.get_missing_fields()
