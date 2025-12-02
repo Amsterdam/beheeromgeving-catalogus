@@ -1,0 +1,19 @@
+meta {
+  name: query products by name
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/products?name=bomen_stamgegevens_v1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  name: bomen_stamgegevens_v1
+}
+
+settings {
+  encodeUrl: true
+}
