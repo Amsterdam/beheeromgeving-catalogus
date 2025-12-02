@@ -18,6 +18,9 @@ class DummyRepository(AbstractRepository):
         for object in objects:
             self._items[object.id] = object
 
+    def refresh_from_db(self):
+        pass
+
     def _add_ids(self, object):
         """Ensure the object we save to the repository has id for itself and all its
         underlying subobjects."""
@@ -83,6 +86,9 @@ class DummyAuthRepo(AbstractAuthRepository):
             self.team_scopes[team.id] = team.scope
         for product in products:
             self.product_scopes[product.id] = self.team_scopes.get(product.team_id)
+
+    def refresh_from_db(self) -> None:
+        pass
 
     def add_object(self, object: Team | Product):
         if isinstance(object, Team):
