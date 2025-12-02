@@ -19,7 +19,10 @@ urlpatterns = [
     path("me", me),
     path(
         "schema",
-        SpectacularSwaggerView.as_view(url_name="schema-json"),
+        SpectacularSwaggerView.as_view(
+            # The urls on our live environments are available on the /catalogus/ path
+            url="/openapi.json" if settings.DEBUG else "/catalogus/openapi.json"
+        ),
         name="swagger-ui",
     ),
     path("openapi.json", SpectacularJSONAPIView.as_view(), name="schema-json"),
