@@ -10,6 +10,9 @@ class TeamRepository(AbstractRepository):
     _teams: dict[int, Team]
 
     def __init__(self):
+        self.refresh_from_db()
+
+    def refresh_from_db(self) -> None:
         self._teams = {t.id: t.to_domain() for t in orm.Team.objects.all()}
 
     def get(self, team_id: int) -> Team:

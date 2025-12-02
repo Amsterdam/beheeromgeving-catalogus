@@ -16,6 +16,9 @@ class ProductService(AbstractService):
     def __init__(self, repo: AbstractRepository[Product]):
         self.repository = repo
 
+    def refresh(self):
+        self.repository.refresh_from_db()
+
     def get_products(self, **kwargs) -> list[Product]:
         return self.repository.list(**kwargs)
 

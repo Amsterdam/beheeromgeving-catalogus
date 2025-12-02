@@ -10,6 +10,9 @@ class ProductRepository(AbstractRepository):
     _products: dict[int, Product]
 
     def __init__(self):
+        self.refresh_from_db()
+
+    def refresh_from_db(self):
         self._products = {p.id: p.to_domain() for p in orm.Product.objects.all()}
 
     def get(self, product_id: int) -> Product:

@@ -42,10 +42,18 @@ class AbstractRepository[T](abc.ABC):
     def delete(self, ref) -> int:
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def refresh_from_db(self) -> None:
+        raise NotImplementedError
+
 
 class AbstractAuthRepository(abc.ABC):
     @abc.abstractmethod
     def get_config(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def refresh_from_db(self) -> None:
         raise NotImplementedError
 
 

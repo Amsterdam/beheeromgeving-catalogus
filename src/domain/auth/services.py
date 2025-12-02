@@ -17,6 +17,9 @@ class AuthorizationService:
     def __init__(self, repo: AbstractAuthRepository):
         self.repo = repo
 
+    def refresh(self):
+        self.repo.refresh_from_db()
+
     @property
     def config(self) -> AuthorizationConfiguration:
         return self.repo.get_config()

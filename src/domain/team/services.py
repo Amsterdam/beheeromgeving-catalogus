@@ -9,6 +9,9 @@ class TeamService(AbstractService):
     def __init__(self, repo: AbstractRepository[Team], **kwargs):
         self.repository = repo
 
+    def refresh(self):
+        self.repository.refresh_from_db()
+
     def get_team(self, team_id: str) -> Team:
         return self.repository.get(team_id)
 
