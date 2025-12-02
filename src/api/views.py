@@ -1,4 +1,4 @@
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from pydantic import ValidationError
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
@@ -90,7 +90,18 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         # Raises if data is invalid
         return dto_type(**data)
 
-    @extend_schema(responses={200: dtos.ProductList})
+    @extend_schema(
+        responses={200: dtos.ProductList},
+        parameters=[
+            OpenApiParameter("name", description="Query on full product name."),
+            OpenApiParameter(
+                "q",
+                description="Query on a search string found in product name/description or "
+                "underlying contract name/description. If multiple words are entered only "
+                "one of those words needs to be present.",
+            ),
+        ],
+    )
     def list(self, request):
         if name := request.query_params.get("name"):
             product = product_service.get_product_by_name(name)
