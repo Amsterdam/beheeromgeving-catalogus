@@ -5,6 +5,9 @@ from domain import exceptions
 from domain.base import AbstractRepository
 from domain.product import Product
 
+# alias for typing
+list_ = list
+
 
 class ProductRepository(AbstractRepository):
     _products: dict[int, Product]
@@ -32,12 +35,30 @@ class ProductRepository(AbstractRepository):
         except StopIteration as e:
             raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.") from e
 
-    def list(self, **kwargs) -> list[Product]:
-        products = list(self._products.values())
+    def list(self, **kwargs) -> list_[Product]:
+        if query := kwargs.get("query"):
+            products = self.search(query)
+        else:
+            products = list_(self._products.values())
         if kwargs.get("teams") is not None:
             team_ids = [team.id for team in kwargs["teams"]]
             products = [product for product in products if product.team_id in team_ids]
         return products
+
+    def search(self, query: str) -> list_[Product]:
+        query_words = query.lower().split(" ")
+        # count how many occurences each word of the query are in the product's
+        # search fields.
+        results = {
+            p_id: sum(1 for q in query_words if q in p.search_string)
+            for p_id, p in self._products.items()
+        }
+        # sort them so the highest count appears first, and remove if count is 0.
+        return [
+            self._products[p_id]
+            for p_id, count in sorted(results.items(), key=lambda item: item[1], reverse=True)
+            if count > 0
+        ]
 
     def save(self, product: Product) -> Product:
         try:
