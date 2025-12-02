@@ -169,6 +169,60 @@ class TestViews:
         assert response.status_code == 404
         assert response.data == "Product with name fietspaaltjes_v1 does not exist."
 
+    def test_product_list_query_matches_product_name(self, orm_product, orm_product2, api_client):
+        """Assert that we can query the products on product name."""
+        response = api_client.get("/products?q=fietspaaltjes")
+        assert response.status_code == 200
+        # only product2 is returned
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == orm_product2.name
+
+    def test_product_list_query_matches_product_description(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can query the products on product description."""
+        response = api_client.get("/products?q=weg")
+        assert response.status_code == 200
+        # only product2 is returned
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == orm_product2.name
+
+    def test_product_list_query_matches_contract_name(self, orm_product, orm_product2, api_client):
+        """Assert that we can query the products on contract name."""
+        response = api_client.get("/products?q=fietspaaltjes")
+        assert response.status_code == 200
+        # only product2 is returned
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == orm_product2.name
+
+    def test_product_list_query_matches_contract_description(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can query the products on contract description."""
+        response = api_client.get("/products?q=fietspaden")
+        assert response.status_code == 200
+        # only product2 is returned
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == orm_product2.name
+
+    def test_product_list_query_matches_some_words(self, orm_product, orm_product2, api_client):
+        """Assert that a query matches on one or more words rather than all words."""
+        response = api_client.get("/products?q=fietspaaltjes bomen")
+        assert response.status_code == 200
+        # both are returned
+        assert len(response.data) == 2
+
+    def test_product_list_query_orders_by_no_of_occurences(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that the query result is ordered by number of occurences."""
+        response = api_client.get("/products?q=fietspaaltjes fietspaden bomen")
+        assert response.status_code == 200
+        # both are returned
+        assert len(response.data) == 2
+        assert response.data[0]["id"] == orm_product2.id  # fietspaaltjes, fietspaden; count: 2
+        assert response.data[1]["id"] == orm_product.id  # bomen; count: 1
+
     def test_product_detail(self, orm_product, api_client):
         response = api_client.get(f"/products/{orm_product.id}")
         assert response.status_code == 200
