@@ -1,0 +1,19 @@
+meta {
+  name: query products
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/products?q=bomen
+  body: none
+  auth: inherit
+}
+
+params:query {
+  q: bomen
+}
+
+settings {
+  encodeUrl: true
+}
