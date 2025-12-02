@@ -1,3 +1,12 @@
+"""
+Tests for the views.
+
+NB: Since the services are instantiated outside the viewsets, they will need to be
+refreshed if objects are created or altered outside the regular flow (i.e. directly through the
+django ORM models). This is done in the api_client fixture, so any time a orm_* fixture is used,
+the api_client or client_with_token fixtures need to be the last one.
+"""
+
 import pytest
 from django.conf import settings
 from pytest_django.asserts import assertNumQueries
