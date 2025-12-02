@@ -98,6 +98,56 @@ def orm_product(orm_team) -> Product:
 
 
 @pytest.fixture()
+def orm_product2(orm_team) -> Product:
+    product = Product.objects.create(
+        name="Fietspaaltjes",
+        description="fietspaaltjes op de weg in Amsterdam",
+        team=orm_team,
+        data_steward="meneerfiets@amsterdam.nl",
+        language="NL",
+        is_geo=True,
+        crs="RD",
+        schema_url="https://schemas.data.amsterdam.nl/datasets/fietspaaltjes/dataset",
+        type="D",
+        themes=["NM"],
+        privacy_level="NPI",
+        refresh_period="3.MONTH",
+        publication_status="D",
+    )
+
+    service = DataService.objects.create(
+        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+    )
+
+    contract = DataContract.objects.create(
+        product=product,
+        publication_status="D",
+        purpose="beheer van fietspaaltjes",
+        name="beheer fietspaaltjes",
+        description="contract voor data nodig voor het de fietspaaltjes op de fietspaden",
+        privacy_level="NPI",
+        scope="scope_fietspaaltjes_beheer",
+        confidentiality="I",
+        start_date="2025-01-01",
+        retainment_period=12,
+    )
+
+    Distribution.objects.create(
+        contract=contract,
+        access_service=service,
+        type="A",
+    )
+    Distribution.objects.create(
+        contract=contract,
+        download_url="https://fietspaaltjes.amsterdam.nl/beheer.csv",
+        format="csv",
+        type="F",
+    )
+
+    return product
+
+
+@pytest.fixture()
 def orm_incomplete_product(orm_team) -> Product:
     product = Product.objects.create(
         name="Bomen",
