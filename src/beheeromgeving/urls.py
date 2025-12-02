@@ -18,7 +18,7 @@ urlpatterns = [
     path("pulse", health),
     path("me", me),
     path(
-        "schema/",
+        "schema",
         SpectacularSwaggerView.as_view(url_name="schema-json"),
         name="swagger-ui",
     ),
