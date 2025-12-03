@@ -11,13 +11,11 @@ from tests.utils import build_jwt_token
 @pytest.fixture()
 def api_client() -> APIClient:
     """Return a client that has unhindered access to the API views"""
-    from api.views import auth_service, product_service, team_service
+    from api.views import initialize
 
+    initialize()
     api_client = APIClient()
     api_client.default_format = "json"  # instead of multipart
-    auth_service.refresh()
-    product_service.refresh()
-    team_service.refresh()
     return api_client
 
 
