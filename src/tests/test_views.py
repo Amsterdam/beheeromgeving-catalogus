@@ -110,7 +110,7 @@ class TestViews:
     def test_products_list(self, orm_product, api_client):
         response = api_client.get("/products")
         assert response.status_code == 200
-        product = response.data[0]
+        product = response.data["results"][0]
         assert product["name"] == orm_product.name
         assert product["summary"] == {"distributions": ["F"], "services": ["REST"]}
         for key in [
@@ -125,6 +125,30 @@ class TestViews:
             "publication_status",
         ]:
             assert key in product
+
+    @pytest.mark.parametrize(
+        "query_string,expected",
+        [
+            ("", ("http://testserver/products?page=2", None, 10)),
+            ("?page=2", ("http://testserver/products?page=3", "http://testserver/products", 10)),
+            ("?page=3", (None, "http://testserver/products?page=2", 6)),
+            ("?pagesize=13", ("http://testserver/products?page=2&pagesize=13", None, 13)),
+            ("?pagesize=13&page=2", (None, "http://testserver/products?pagesize=13", 13)),
+            ("?pagesize=50", (None, None, 26)),
+        ],
+    )
+    def test_products_list_pagination(self, many_orm_products, api_client, query_string, expected):
+        response = api_client.get(f"/products{query_string}")
+        assert response.status_code == 200
+        assert response.data["count"] == 26
+        assert response.data["next"] == expected[0]
+        assert response.data["previous"] == expected[1]
+        assert len(response.data["results"]) == expected[2]
+
+    def test_products_list_pagination_invalid_page(self, many_orm_products, api_client):
+        response = api_client.get("/products?page=5")
+        assert response.status_code == 404
+        assert response.data == "Page not found: 5. Page must be between 1 and 3 (inclusive)."
 
     def test_product_endpoint_queries_db_sparingly(self, orm_product, orm_team, client_with_token):
         """Assert that the db is not hit repeatedly for consecutive requests.
@@ -174,8 +198,8 @@ class TestViews:
         response = api_client.get("/products?q=fietspaaltjes")
         assert response.status_code == 200
         # only product2 is returned
-        assert len(response.data) == 1
-        assert response.data[0]["name"] == orm_product2.name
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product2.name
 
     def test_product_list_query_matches_product_description(
         self, orm_product, orm_product2, api_client
@@ -184,16 +208,16 @@ class TestViews:
         response = api_client.get("/products?q=weg")
         assert response.status_code == 200
         # only product2 is returned
-        assert len(response.data) == 1
-        assert response.data[0]["name"] == orm_product2.name
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product2.name
 
     def test_product_list_query_matches_contract_name(self, orm_product, orm_product2, api_client):
         """Assert that we can query the products on contract name."""
         response = api_client.get("/products?q=fietspaaltjes")
         assert response.status_code == 200
         # only product2 is returned
-        assert len(response.data) == 1
-        assert response.data[0]["name"] == orm_product2.name
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product2.name
 
     def test_product_list_query_matches_contract_description(
         self, orm_product, orm_product2, api_client
@@ -202,15 +226,15 @@ class TestViews:
         response = api_client.get("/products?q=fietspaden")
         assert response.status_code == 200
         # only product2 is returned
-        assert len(response.data) == 1
-        assert response.data[0]["name"] == orm_product2.name
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product2.name
 
     def test_product_list_query_matches_some_words(self, orm_product, orm_product2, api_client):
         """Assert that a query matches on one or more words rather than all words."""
         response = api_client.get("/products?q=fietspaaltjes bomen")
         assert response.status_code == 200
         # both are returned
-        assert len(response.data) == 2
+        assert len(response.data["results"]) == 2
 
     def test_product_list_query_orders_by_no_of_occurences(
         self, orm_product, orm_product2, api_client
@@ -219,9 +243,11 @@ class TestViews:
         response = api_client.get("/products?q=fietspaaltjes fietspaden bomen")
         assert response.status_code == 200
         # both are returned
-        assert len(response.data) == 2
-        assert response.data[0]["id"] == orm_product2.id  # fietspaaltjes, fietspaden; count: 2
-        assert response.data[1]["id"] == orm_product.id  # bomen; count: 1
+        assert len(response.data["results"]) == 2
+        assert (
+            response.data["results"][0]["id"] == orm_product2.id
+        )  # fietspaaltjes, fietspaden; count: 2
+        assert response.data["results"][1]["id"] == orm_product.id  # bomen; count: 1
 
     def test_product_detail(self, orm_product, api_client):
         response = api_client.get(f"/products/{orm_product.id}")
@@ -565,8 +591,8 @@ class TestViews:
         assert response.data["teams"][0]["name"] == orm_team.name
         assert "acronym" in response.data["teams"][0]
         # product
-        assert len(response.data["products"]) == 1
-        assert response.data["products"][0]["name"] == orm_product.name
+        assert len(response.data["products"]["results"]) == 1
+        assert response.data["products"]["results"][0]["name"] == orm_product.name
         for key in [
             "team_id",
             "id",
@@ -576,9 +602,9 @@ class TestViews:
             "publication_status",
             "contracts",
         ]:
-            assert key in response.data["products"][0]
+            assert key in response.data["products"]["results"][0]
         # contract
-        assert len(response.data["products"][0]["contracts"]) == 1
+        assert len(response.data["products"]["results"][0]["contracts"]) == 1
         for key in [
             "id",
             "name",
@@ -587,10 +613,39 @@ class TestViews:
             "last_updated",
             "publication_status",
         ]:
-            assert key in response.data["products"][0]["contracts"][0]
+            assert key in response.data["products"]["results"][0]["contracts"][0]
+
+    @pytest.mark.parametrize(
+        "query_string,expected",
+        [
+            ("", ("http://testserver/me?page=2", None, 10)),
+            ("?page=2", ("http://testserver/me?page=3", "http://testserver/me", 10)),
+            ("?pagesize=50", (None, None, 26)),
+            ("?page=2&pagesize=20", (None, "http://testserver/me?pagesize=20", 6)),
+        ],
+    )
+    def test_me_pagination(
+        self, many_orm_products, orm_team, client_with_token, query_string, expected
+    ):
+        response = client_with_token([orm_team.scope]).get(f"/me{query_string}")
+
+        assert response.status_code == 200
+        products = response.data["products"]
+        assert products["next"] == expected[0]
+        assert products["previous"] == expected[1]
+        assert len(products["results"]) == expected[2]
+
+    def test_me_pagination_invalid_page(self, many_orm_products, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get("/me?page=5")
+
+        assert response.status_code == 404
+        assert response.data == "Page not found: 5. Page must be between 1 and 3 (inclusive)."
 
     def test_me_without_scopes(self, orm_product, orm_team, orm_other_team, client_with_token):
         response = client_with_token([]).get("/me")
 
         assert response.status_code == 200
-        assert response.data == {"teams": [], "products": []}
+        assert response.data == {
+            "teams": [],
+            "products": {"count": 0, "next": None, "previous": None, "results": []},
+        }

@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from api import datatransferobjects as dtos
+from api.pagination import NotFound, Pagination
 from domain import exceptions
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
 from domain.product import ProductRepository, ProductService
@@ -32,6 +33,8 @@ class ExceptionHandlerMixin:
                 return Response(status=401, data=e.message)
             case exceptions.ObjectDoesNotExist():
                 return Response(status=404, data=e.message)
+            case NotFound():
+                return Response(status=404, data=e.detail)
             case exceptions.DomainException():
                 return Response(status=500, data=e.message)
         raise e
@@ -106,13 +109,17 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         if name := request.query_params.get("name"):
             product = product_service.get_product_by_name(name)
             data = dtos.to_response_object(product)
-        elif query := request.query_params.get("q"):
+            return Response(data, status=200)
+
+        if query := request.query_params.get("q"):
             products = product_service.get_products(query=query)
             data = dtos.to_response_object(products)
         else:
             products = product_service.get_products()
             data = dtos.to_response_object(products)
-        return Response(data, status=200)
+        pagination = Pagination()
+        paginated_data = pagination.paginate(data, request)
+        return pagination.get_paginated_response(paginated_data)
 
     @extend_schema(responses={200: dtos.ProductDetail})
     def retrieve(self, _request, pk=None):
@@ -356,8 +363,14 @@ def me(request):
     scopes = request.get_token_scopes
     teams = team_service.get_teams_from_scopes(scopes)
     products = product_service.get_products(teams=teams)
+    product_data = dtos.to_response_object(products, dto_type="me")
+    pagination = Pagination()
+    try:
+        product_data = pagination.paginate(product_data, request)
+    except NotFound as e:
+        return Response(status=404, data=e.detail)
     data = {
         "teams": dtos.to_response_object(teams, dto_type="me"),
-        "products": dtos.to_response_object(products, dto_type="me"),
+        "products": pagination.get_paginated_response_body(product_data),
     }
     return Response(data, status=200)
