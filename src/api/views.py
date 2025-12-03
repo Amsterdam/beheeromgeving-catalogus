@@ -103,6 +103,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
                 "underlying contract name/description. If multiple words are entered only "
                 "one of those words needs to be present.",
             ),
+            OpenApiParameter(
+                "page", description="Page number (1-indexed) for the paginated results.", default=1
+            ),
+            OpenApiParameter(
+                "pagesize",
+                description="Page size for the paginated results. Max = 100.",
+                default=10,
+            ),
         ],
     )
     def list(self, request):
