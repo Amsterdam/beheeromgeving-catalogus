@@ -1,0 +1,20 @@
+meta {
+  name: list products paginate
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/products?page=2&pagesize=5
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 2
+  pagesize: 5
+}
+
+settings {
+  encodeUrl: true
+}

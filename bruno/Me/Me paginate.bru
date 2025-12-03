@@ -1,0 +1,29 @@
+meta {
+  name: Me paginate
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/me?page=3&pagesize=5
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 3
+  pagesize: 5
+}
+
+script:pre-request {
+  const getToken = require("./get-token");
+
+  const token = await getToken(["scope_tn1"]);
+
+  req.setHeader("Authorization", `Bearer ${token}`);
+
+}
+
+settings {
+  encodeUrl: true
+}
