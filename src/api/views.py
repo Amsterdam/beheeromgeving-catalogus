@@ -40,15 +40,32 @@ class ExceptionHandlerMixin:
         raise e
 
 
-# Instantiate all necessary services. ViewSets are instantiated for each request,
-# so we share the same services throughout the lifecycle of the application.
-auth_service = AuthorizationService(AuthorizationRepository())
-authorize.set_auth_service(auth_service)
-product_service = ProductService(repo=ProductRepository())
-team_service = TeamService(repo=TeamRepository())
+auth_service: AuthorizationService
+product_service: ProductService
+team_service: TeamService
+is_initialized = False
+
+
+def initialize():
+    """
+    Instantiate all necessary services. ViewSets are instantiated for each request,
+    so we share the same services throughout the lifecycle of the application.
+    """
+    global auth_service, product_service, team_service
+    auth_service = AuthorizationService(AuthorizationRepository())
+    authorize.set_auth_service(auth_service)
+    product_service = ProductService(repo=ProductRepository())
+    team_service = TeamService(repo=TeamRepository())
 
 
 class TeamViewSet(ExceptionHandlerMixin, ViewSet):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        global is_initialized
+        if not is_initialized:
+            initialize()
+            is_initialized = True
+
     def _validate_dto(self, data, dto_model=dtos.TeamCreate):
         # Raises if data is invalid
         return dto_model(**data)
@@ -89,6 +106,13 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
 
 
 class ProductViewSet(ExceptionHandlerMixin, ViewSet):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        global is_initialized
+        if not is_initialized:
+            initialize()
+            is_initialized = True
+
     def _validate_dto(self, data, dto_type=dtos.ProductCreate):
         # Raises if data is invalid
         return dto_type(**data)
