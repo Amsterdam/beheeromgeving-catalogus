@@ -322,3 +322,6 @@ class Product(BaseObject):
     @property
     def missing_fields(self) -> list[str]:
         return self.validate.get_missing_fields()
+
+
+AllObjects = Product | DataContract | DataService | Distribution

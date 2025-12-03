@@ -4,8 +4,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.utils.urls import remove_query_param, replace_query_param
 
-from api import datatransferobjects as dtos
-
 
 class Pagination:
     """
@@ -17,9 +15,7 @@ class Pagination:
     DEFAULT_PAGE_SIZE = 10
     MAX_PAGE_SIZE = 100
 
-    def paginate(
-        self, objects: list[dtos.ProductList], request: Request
-    ) -> list[dtos.ProductList]:
+    def paginate(self, objects: list[dict], request: Request) -> list[dict]:
         self.request = request
         page_size = self.get_page_size(request)
 
@@ -44,7 +40,7 @@ class Pagination:
             int(request.query_params.get("pagesize", self.DEFAULT_PAGE_SIZE)), self.MAX_PAGE_SIZE
         )
 
-    def get_paginated_response_body(self, data: list[dtos.ProductList]) -> dict:
+    def get_paginated_response_body(self, data: list[dict]) -> dict:
         return {
             "count": self.page.paginator.count,
             "next": self.get_next_link(),
@@ -52,7 +48,7 @@ class Pagination:
             "results": data,
         }
 
-    def get_paginated_response(self, data: list[dtos.ProductList]) -> Response:
+    def get_paginated_response(self, data: list[dict]) -> Response:
         return Response(
             self.get_paginated_response_body(data),
         )
