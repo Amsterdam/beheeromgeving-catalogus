@@ -148,6 +148,30 @@ def orm_product2(orm_team) -> Product:
 
 
 @pytest.fixture()
+def many_orm_products(orm_team) -> list[Product]:
+    result = []
+    for letter in "abcdefghijklmnopqrstuvwxyz":
+        result.append(
+            Product.objects.create(
+                name=f"naam {letter}",
+                description=f"beschrijving {letter}",
+                team=orm_team,
+                data_steward=f"mail.{letter}@amsterdam.nl",
+                language="NL",
+                is_geo=True,
+                crs="RD",
+                schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+                type="D",
+                themes=["NM"],
+                privacy_level="NPI",
+                refresh_period="3.MONTH",
+                publication_status="D",
+            )
+        )
+    return result
+
+
+@pytest.fixture()
 def orm_incomplete_product(orm_team) -> Product:
     product = Product.objects.create(
         name="Bomen",
