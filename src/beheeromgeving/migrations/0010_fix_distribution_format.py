@@ -2,16 +2,7 @@
 
 from django.db import migrations
 
-SEPARATORS = ["_", " ", ";", ","]
-
-
-def forward(apps, schema_editor):
-    Distribution = apps.get_model("beheeromgeving", "Distribution")
-    for distribution in Distribution.objects.all():
-        for sep in SEPARATORS:
-            if distribution.format is not None and sep in distribution.format:
-                distribution.format = distribution.format.split(sep)[0]
-                distribution.save()
+from beheeromgeving.migration_utils import fix_distribution_format
 
 
 class Migration(migrations.Migration):
@@ -20,4 +11,4 @@ class Migration(migrations.Migration):
         ("beheeromgeving", "0009_distribution_filename"),
     ]
 
-    operations = [migrations.RunPython(forward, migrations.RunPython.noop)]
+    operations = [migrations.RunPython(fix_distribution_format, migrations.RunPython.noop)]
