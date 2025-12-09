@@ -498,6 +498,25 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["format"] == "TEST"
 
+    def test_distribution_patch_and_then_get(self, orm_product, orm_team, client_with_token):
+        contract_id = orm_product.contracts.first().id
+        distribution_id = orm_product.contracts.first().distributions.first().id
+        data = {
+            "format": "TEST",
+            "type": "F",
+            "filename": "test.csv",
+            "refresh_period": {"frequency": 3, "unit": "DAY"},
+        }
+        url = f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+        client_with_token([orm_team.scope]).patch(
+            url,
+            data=data,
+        )
+        response = client_with_token([]).get(url)
+        assert response.status_code == 200
+        for k, v in data.items():
+            assert response.data[k] == v
+
     def test_distribution_update_not_allowed(self, orm_product, client_with_token):
         contract_id = orm_product.contracts.first().id
         distribution_id = orm_product.contracts.first().distributions.first().id
