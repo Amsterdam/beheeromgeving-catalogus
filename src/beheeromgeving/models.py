@@ -402,6 +402,7 @@ class Distribution(models.Model):
             access_url=self.access_url,
             download_url=self.download_url,
             format=self.format,
+            filename=self.filename,
             type=self.type,
             refresh_period=(
                 objects.RefreshPeriod.from_string(self.refresh_period)
