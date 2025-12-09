@@ -5,14 +5,19 @@ meta {
 }
 
 patch {
-  url: {{baseUrl}}/products/2/contracts/2/distributions/1
+  url: {{baseUrl}}/products/49/contracts/16/distributions/24
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "refresh_period": {"frequency": 3, "unit": "WEEK"}
+    "filename": "test.csv",
+    "refresh_period": {"frequency": 1, "unit": "DAY"},
+    "type": "F",
+    "format": "CSV",
+    "download_url": "https://www.file.com/test.csv",
+    "access_url": "https://www.file.com/files"
   }
 }
 
