@@ -250,6 +250,8 @@ class Product(BaseObject):
     ) -> Distribution:
         distribution = self.get_distribution(contract_id, distribution_id)
         distribution.update_from_dict(data)
+        if refresh_period := data.get("refresh_period"):
+            distribution.refresh_period = RefreshPeriod(**refresh_period)
         return distribution
 
     def delete_distribution(self, contract_id: int, distribution_id: int) -> int:
