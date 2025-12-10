@@ -36,10 +36,18 @@ class ProductRepository(AbstractRepository):
             raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.") from e
 
     def list(self, **kwargs) -> list_[Product]:
+        filters = ("team", "theme", "confidentiality", "type")
+
         if query := kwargs.get("query"):
             products = self.search(query)
         else:
             products = list_(self._products.values())
+
+        # filter products on one of the filter attributes
+        for f in filters:
+            if value := kwargs.get(f):
+                products = self.filter(products, **{f: value})
+
         if kwargs.get("teams") is not None:
             team_ids = [team.id for team in kwargs["teams"]]
             products = [product for product in products if product.team_id in team_ids]
@@ -59,6 +67,21 @@ class ProductRepository(AbstractRepository):
             for p_id, count in sorted(results.items(), key=lambda item: item[1], reverse=True)
             if count > 0
         ]
+
+    def filter(self, products: list, **kwargs) -> list_[Product]:
+        results = []
+
+        # loop over (queried) products
+        for p in products:
+            for filter, value in kwargs.items():
+                # if multiple themes are passed, loop over themes
+                if filter == "theme" and isinstance(value, tuple):
+                    for v in value:
+                        if v in p.filter_dict.values():
+                            results.append(p)
+                elif value in p.filter_dict.values():
+                    results.append(p)
+        return results
 
     def save(self, product: Product) -> Product:
         try:

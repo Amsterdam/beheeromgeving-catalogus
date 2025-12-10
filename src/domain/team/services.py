@@ -18,6 +18,10 @@ class TeamService(AbstractService):
     def get_teams(self) -> list[Team]:
         return self.repository.list()
 
+    def get_team_by_name(self, name: str) -> Team:
+        team = self.repository.get_by_name(name)
+        return team.id
+
     def get_teams_from_scopes(self, scopes) -> list[Team]:
         all_teams = self.get_teams()
         return [team for team in all_teams if team.scope in scopes]

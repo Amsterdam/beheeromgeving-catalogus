@@ -143,12 +143,26 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             data = dtos.to_response_object(product)
             return Response(data, status=200)
 
-        if query := request.query_params.get("q"):
-            products = product_service.get_products(query=query)
-            data = dtos.to_response_object(products)
-        else:
-            products = product_service.get_products()
-            data = dtos.to_response_object(products)
+        query = request.query_params.get("q")
+        team = request.query_params.get("team")
+        # get team_id instead of team_name to filter
+        if team is not None:
+            team = team_service.get_team_by_name(team)
+        theme = request.query_params.get("theme")
+        # convert theme string to list to filter
+        if theme is not None:
+            theme = product_service.string_to_list(theme)
+        type = request.query_params.get("type")
+        confidentiality = request.query_params.get("confidentiality")
+        products = product_service.get_products(
+            query=query,
+            team=team,
+            theme=theme,
+            type=type,
+            confidentiality=confidentiality,
+        )
+
+        data = dtos.to_response_object(products)
         pagination = Pagination()
         paginated_data = pagination.paginate(data, request)
         return pagination.get_paginated_response(paginated_data)

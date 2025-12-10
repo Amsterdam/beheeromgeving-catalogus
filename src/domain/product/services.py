@@ -1,3 +1,5 @@
+import ast
+
 from domain.auth import authorize
 from domain.base import AbstractRepository, AbstractService
 from domain.product import (
@@ -27,6 +29,9 @@ class ProductService(AbstractService):
 
     def get_product_by_name(self, name: str) -> Product:
         return self.repository.get_by_name(name)
+
+    def string_to_list(self, string: str) -> list:
+        return ast.literal_eval(string)
 
     @authorize.is_team_member
     def create_product(self, *, data: dict, **kwargs) -> Product:
