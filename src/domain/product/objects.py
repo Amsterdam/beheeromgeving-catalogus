@@ -322,6 +322,21 @@ class Product(BaseObject):
         return result.lower()
 
     @property
+    def filter_dict(self) -> dict:
+        filter_dict = {}
+        if self.team_id:
+            filter_dict["team"] = self.team_id
+        if self.themes:
+            filter_dict["themes"] = self.themes
+        for contract in self.contracts:
+            if contract.confidentiality:
+                filter_dict["confidentiality"] = contract.confidentiality
+            for distribution in contract.distributions:
+                if distribution.type:
+                    filter_dict["type"] = distribution.type
+        return filter_dict
+
+    @property
     def missing_fields(self) -> list[str]:
         return self.validate.get_missing_fields()
 

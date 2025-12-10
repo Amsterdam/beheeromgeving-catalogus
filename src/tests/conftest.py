@@ -96,18 +96,18 @@ def orm_product(orm_team) -> Product:
 
 
 @pytest.fixture()
-def orm_product2(orm_team) -> Product:
+def orm_product2(orm_other_team) -> Product:
     product = Product.objects.create(
         name="Fietspaaltjes",
         description="fietspaaltjes op de weg in Amsterdam",
-        team=orm_team,
+        team=orm_other_team,
         data_steward="meneerfiets@amsterdam.nl",
         language="NL",
         is_geo=True,
         crs="RD",
         schema_url="https://schemas.data.amsterdam.nl/datasets/fietspaaltjes/dataset",
         type="D",
-        themes=["NM"],
+        themes=["MI"],
         privacy_level="NPI",
         refresh_period="3.MONTH",
         publication_status="D",
@@ -125,7 +125,7 @@ def orm_product2(orm_team) -> Product:
         description="contract voor data nodig voor het de fietspaaltjes op de fietspaden",
         privacy_level="NPI",
         scope="scope_fietspaaltjes_beheer",
-        confidentiality="I",
+        confidentiality="R",
         start_date="2025-01-01",
         retainment_period=12,
     )
@@ -139,7 +139,7 @@ def orm_product2(orm_team) -> Product:
         contract=contract,
         download_url="https://fietspaaltjes.amsterdam.nl/beheer.csv",
         format="csv",
-        type="F",
+        type="A",
     )
 
     return product
