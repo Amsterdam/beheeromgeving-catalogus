@@ -135,6 +135,10 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
                 description="Page size for the paginated results. Max = 100.",
                 default=10,
             ),
+            OpenApiParameter("team", description="Filter on team (name)."),
+            OpenApiParameter("theme", description="Filter on theme(s), comma-separated list."),
+            OpenApiParameter("confidentiality", description="Filter on confidentiality level."),
+            OpenApiParameter("type", description="Filter on distribution type."),
         ],
     )
     def list(self, request):
@@ -183,7 +187,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         product_dto = self._validate_dto(request.data)
         # ignore contracts/service as these should be created through their own endpoint
         product = product_service.create_product(
-            data=product_dto.model_dump(exclude=["contracts", "services"]),
+            data=product_dto.model_dump(exclude={"contracts", "services"}),
             scopes=request.get_token_scopes,
         )
         return Response(dtos.to_response_object(product), status=201)
@@ -194,7 +198,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         # ignore contracts/service as these should be updated through their own endpoint
         product = product_service.update_product(
             product_id=int(pk),
-            data=product_dto.model_dump(exclude_unset=True, exclude=["contracts", "services"]),
+            data=product_dto.model_dump(exclude_unset=True, exclude={"contracts", "services"}),
             scopes=request.get_token_scopes,
         )
         return Response(dtos.to_response_object(product), status=200)
@@ -219,14 +223,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(responses={200: dtos.DataContractList})
     @action(detail=True, methods=["get"], url_path="contracts", url_name="contracts-list")
-    def contracts_list(self, _request, pk=None):
+    def contracts_list(self, _request, pk: str):
         contracts = product_service.get_contracts(int(pk))
         data = dtos.to_response_object(contracts)
         return Response(data, status=200)
 
     @extend_schema(responses={201: dtos.DataContractCreateOrUpdate})
     @contracts_list.mapping.post
-    def create_contract(self, request, pk=None):
+    def create_contract(self, request, pk: str):
         contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
         contract = product_service.create_contract(
             product_id=int(pk), data=contract_dto.model_dump(), scopes=request.get_token_scopes
