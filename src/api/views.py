@@ -138,44 +138,28 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             OpenApiParameter("team", description="Filter on team (name)."),
             OpenApiParameter("theme", description="Filter on theme(s), comma-separated list."),
             OpenApiParameter("confidentiality", description="Filter on confidentiality level."),
-            OpenApiParameter("type", description="Filter on distribution type."),
+            OpenApiParameter(
+                "type", description="Filter on distribution type, comma-separated list."
+            ),
+            OpenApiParameter("language", description="Filter on language."),
         ],
     )
     def list(self, request):
-        if name := request.query_params.get("name"):
-            product = product_service.get_product_by_name(name)
+        params = self._validate_dto(request.query_params.dict(), dto_type=dtos.QueryParams)
+        if params.name:
+            product = product_service.get_product_by_name(params.name)
             data = dtos.to_response_object(product)
             return Response(data, status=200)
 
-        query = request.query_params.get("q")
-        filter = self.get_filter_from_query_params(request.query_params)
         products = product_service.get_products(
-            query=query,
-            filter=filter,
+            query=params.query,
+            filter=params.filter,
         )
 
         data = dtos.to_response_object(products)
         pagination = Pagination()
         paginated_data = pagination.paginate(data, request)
         return pagination.get_paginated_response(paginated_data)
-
-    def get_filter_from_query_params(self, query_params):
-        filter = {}
-        team = query_params.get("team")
-        # get team_id instead of team_name to filter
-        if team is not None:
-            filter["team"] = team_service.get_team_by_name(team)
-        theme = query_params.get("theme")
-        # convert theme string to list to filter
-        if theme is not None:
-            filter["themes"] = theme.split(",")
-        type = query_params.get("type")
-        if type is not None:
-            filter["type"] = type
-        confidentiality = query_params.get("confidentiality")
-        if confidentiality is not None:
-            filter["confidentiality"] = confidentiality
-        return filter
 
     @extend_schema(responses={200: dtos.ProductDetail})
     def retrieve(self, _request, pk=None):

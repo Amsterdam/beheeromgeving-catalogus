@@ -102,7 +102,7 @@ def orm_product2(orm_other_team) -> Product:
         description="fietspaaltjes op de weg in Amsterdam",
         team=orm_other_team,
         data_steward="meneerfiets@amsterdam.nl",
-        language="NL",
+        language="EN",
         is_geo=True,
         crs="RD",
         schema_url="https://schemas.data.amsterdam.nl/datasets/fietspaaltjes/dataset",
