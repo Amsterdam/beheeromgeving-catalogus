@@ -268,3 +268,30 @@ class MeDetail(BaseModel):
 
     teams: list[Team]
     products: list[MyProduct]
+
+
+class QueryParams(BaseModel):
+    name: str | None = None
+    team: int | None = None
+    theme: list[enums.Theme] | None = None
+    type: list[enums.DistributionType] | None = None
+    confidentiality: enums.ConfidentialityLevel | None = None
+    language: enums.Language | None = None
+    order: str | None = None
+    query: str | None = Field(alias="q", default=None)
+
+    @field_validator("theme", mode="before")
+    def validate_themes(cls, raw):
+        return raw.split(",")
+
+    @field_validator("type", mode="before")
+    def validate_type(cls, raw):
+        return raw.split(",")
+
+    @property
+    def filter(self) -> dict:
+        result = {}
+        for attr in ["team", "theme", "type", "confidentiality", "language"]:
+            if getattr(self, attr) is not None:
+                result[attr] = getattr(self, attr)
+        return result

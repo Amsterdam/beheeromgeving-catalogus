@@ -19,8 +19,7 @@ class TeamService(AbstractService):
         return self.repository.list()
 
     def get_team_by_name(self, name: str) -> Team:
-        team = self.repository.get_by_name(name)
-        return team.id
+        return self.repository.get_by_name(name)
 
     def get_teams_from_scopes(self, scopes) -> list[Team]:
         all_teams = self.get_teams()

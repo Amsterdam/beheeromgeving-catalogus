@@ -215,12 +215,12 @@ class TestViews:
         """Assert that no products return when there are no query and filter matches."""
         response = api_client.get("/products?q=fietspaaltjes&team=DataDiensten")
         assert response.status_code == 200
-        # only product2 is returned
+        # no product is returned
         assert len(response.data["results"]) == 0
 
     def test_product_list_filter_matches_team_name(self, orm_product, orm_product2, api_client):
         """Assert that we can filter the products on team name."""
-        response = api_client.get("/products?team=DataDiensten")
+        response = api_client.get(f"/products?team={orm_product.team.id}")
         assert response.status_code == 200
 
         # only product1 is returned
@@ -262,27 +262,44 @@ class TestViews:
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == orm_product.name
 
+    def test_product_list_filter_matches_type_multiple(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can filter the products on distribution type."""
+        response = api_client.get("/products?type=F,A")
+        assert response.status_code == 200
+        # both products are returned
+        assert len(response.data["results"]) == 2
+
+    def test_product_list_filter_matches_language(self, orm_product, orm_product2, api_client):
+        """Assert that we can filter the products on distribution type."""
+        response = api_client.get("/products?language=NL")
+        assert response.status_code == 200
+        # only product1 is returned
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product.name
+
     def test_contract_list_filter_matches_multiple_filter_params(
         self, orm_product, orm_product2, api_client
     ):
         """Assert that we can filter on multiple parameters in no particular order."""
-        response = api_client.get("/products?confidentiality=I&team=DataDiensten&type=F")
+        response = api_client.get(f"/products?confidentiality=I&team={orm_product.team.id}&type=F")
         assert response.status_code == 200
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == orm_product.name
 
     def test_contract_list_no_filter_matches(self, orm_product, orm_product2, api_client):
         """Return status code 200 if no results return when filtered on."""
-        response = api_client.get("/products?confidentiality=I&team=DataDiensten&type=A")
+        response = api_client.get(f"/products?confidentiality=I&team={orm_product.team.id}&type=A")
 
         assert response.status_code == 200
 
     def test_contract_list_non_existing_team_filter(self, orm_product, orm_product2, api_client):
         """Assert filter by team name returns 404 when we cannot find the team."""
-        response = api_client.get("/products?team=NonExistent")
+        response = api_client.get("/products?team=0")
 
-        assert response.status_code == 404
-        assert response.data == "Team with name NonExistent does not exist"
+        assert response.status_code == 200
+        assert len(response.data["results"]) == 0
 
     def test_product_list_query_matches_product_description(
         self, orm_product, orm_product2, api_client

@@ -330,19 +330,22 @@ class Product(BaseObject):
         only one needs to match.
         """
         team_id = filter.get("team")
-        if team_id and team_id != self.team_id:
+        if team_id is not None and team_id != self.team_id:
             return False
-        themes = filter.get("themes")
-        if themes and not any(theme in (self.themes or []) for theme in themes):
+        themes = filter.get("theme")
+        if themes is not None and not any(theme in (self.themes or []) for theme in themes):
+            return False
+        language = filter.get("language")
+        if language is not None and self.language != language:
             return False
         confidentiality = filter.get("confidentiality")
-        if confidentiality and not any(
+        if confidentiality is not None and not any(
             contract.confidentiality == confidentiality for contract in self.contracts
         ):
             return False
         dist_type = filter.get("type")
-        if dist_type and not any(  # noqa: SIM103
-            distribution.type == dist_type
+        if dist_type is not None and not any(  # noqa: SIM103
+            distribution.type in dist_type
             for contract in self.contracts
             for distribution in contract.distributions
         ):
