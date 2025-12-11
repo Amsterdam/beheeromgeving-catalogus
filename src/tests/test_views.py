@@ -229,7 +229,7 @@ class TestViews:
 
     def test_product_list_filter_matches_theme(self, orm_product, orm_product2, api_client):
         """Assert that we can filter the products on theme."""
-        response = api_client.get("/products?theme=['MI']")
+        response = api_client.get("/products?theme=MI")
         assert response.status_code == 200
         # only product2 is returned
         assert len(response.data["results"]) == 1
@@ -237,7 +237,7 @@ class TestViews:
 
     def test_product_list_filter_matches_themes(self, orm_product, orm_product2, api_client):
         """Assert that we can filter the products on multiple themes."""
-        response = api_client.get("/products?theme=['NM'],['MI']")
+        response = api_client.get("/products?theme=NM,MI")
         assert response.status_code == 200
         # both products are returned
         assert len(response.data["results"]) == 2
@@ -256,11 +256,11 @@ class TestViews:
 
     def test_product_list_filter_matches_type(self, orm_product, orm_product2, api_client):
         """Assert that we can filter the products on distribution type."""
-        response = api_client.get("/products?type=A")
+        response = api_client.get("/products?type=F")
         assert response.status_code == 200
-        # only product2 is returned
+        # only product1 is returned
         assert len(response.data["results"]) == 1
-        assert response.data["results"][0]["name"] == orm_product2.name
+        assert response.data["results"][0]["name"] == orm_product.name
 
     def test_contract_list_filter_matches_multiple_filter_params(
         self, orm_product, orm_product2, api_client
