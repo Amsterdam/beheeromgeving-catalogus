@@ -319,20 +319,34 @@ class Product(BaseObject):
                 result += contract.description + " "
         return result.lower()
 
-    @property
-    def filter_dict(self) -> dict:
-        filter_dict = {}
-        if self.team_id:
-            filter_dict["team"] = self.team_id
-        if self.themes:
-            filter_dict["themes"] = self.themes
-        for contract in self.contracts:
-            if contract.confidentiality:
-                filter_dict["confidentiality"] = contract.confidentiality
-            for distribution in contract.distributions:
-                if distribution.type:
-                    filter_dict["type"] = distribution.type
-        return filter_dict
+    def matches_filter(self, filter: dict) -> bool:
+        """
+        Filter on several attributes.
+
+        These attributes are mutually additive - if multiple are given, all must apply.
+        However, if multiple values are available on a product for a certain attribute,
+        only one needs to match.
+        """
+        team_id = filter.get("team")
+        if team_id and team_id != self.team_id:
+            return False
+        themes = filter.get("themes")
+        if themes and not any(theme in (self.themes or []) for theme in themes):
+            return False
+        confidentiality = filter.get("confidentiality")
+        if confidentiality and not any(
+            contract.confidentiality == confidentiality for contract in self.contracts
+        ):
+            return False
+        dist_type = filter.get("type")
+        if dist_type and not any(  # noqa: SIM103
+            distribution.type == dist_type
+            for contract in self.contracts
+            for distribution in contract.distributions
+        ):
+            return False
+
+        return True
 
     @property
     def missing_fields(self) -> list[str]:

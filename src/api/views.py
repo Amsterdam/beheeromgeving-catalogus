@@ -66,7 +66,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
             initialize()
             is_initialized = True
 
-    def _validate_dto(self, data, dto_model=dtos.TeamCreate):
+    def _validate_dto[M: dtos.BaseModel](self, data, dto_model: type[M] = dtos.TeamCreate) -> M:
         # Raises if data is invalid
         return dto_model(**data)
 
@@ -113,7 +113,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             initialize()
             is_initialized = True
 
-    def _validate_dto(self, data, dto_type=dtos.ProductCreate):
+    def _validate_dto[M: dtos.BaseModel](self, data, dto_type: type[M] = dtos.ProductCreate) -> M:
         # Raises if data is invalid
         return dto_type(**data)
 
@@ -144,28 +144,34 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             return Response(data, status=200)
 
         query = request.query_params.get("q")
-        team = request.query_params.get("team")
-        # get team_id instead of team_name to filter
-        if team is not None:
-            team = team_service.get_team_by_name(team)
-        theme = request.query_params.get("theme")
-        # convert theme string to list to filter
-        if theme is not None:
-            theme = product_service.string_to_list(theme)
-        type = request.query_params.get("type")
-        confidentiality = request.query_params.get("confidentiality")
+        filter = self.get_filter_from_query_params(request.query_params)
         products = product_service.get_products(
             query=query,
-            team=team,
-            theme=theme,
-            type=type,
-            confidentiality=confidentiality,
+            filter=filter,
         )
 
         data = dtos.to_response_object(products)
         pagination = Pagination()
         paginated_data = pagination.paginate(data, request)
         return pagination.get_paginated_response(paginated_data)
+
+    def get_filter_from_query_params(self, query_params):
+        filter = {}
+        team = query_params.get("team")
+        # get team_id instead of team_name to filter
+        if team is not None:
+            filter["team"] = team_service.get_team_by_name(team)
+        theme = query_params.get("theme")
+        # convert theme string to list to filter
+        if theme is not None:
+            filter["themes"] = theme.split(",")
+        type = query_params.get("type")
+        if type is not None:
+            filter["type"] = type
+        confidentiality = query_params.get("confidentiality")
+        if confidentiality is not None:
+            filter["confidentiality"] = confidentiality
+        return filter
 
     @extend_schema(responses={200: dtos.ProductDetail})
     def retrieve(self, _request, pk=None):

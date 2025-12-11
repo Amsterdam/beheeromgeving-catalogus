@@ -35,18 +35,13 @@ class ProductRepository(AbstractRepository):
         except StopIteration as e:
             raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.") from e
 
-    def list(self, **kwargs) -> list_[Product]:
-        filters = ("team", "theme", "confidentiality", "type")
+    def list(
+        self, *, query: str | None = None, filter: dict | None = None, **kwargs
+    ) -> list_[Product]:
+        products = self.search(query) if query is not None else list_(self._products.values())
 
-        if query := kwargs.get("query"):
-            products = self.search(query)
-        else:
-            products = list_(self._products.values())
-
-        # filter products on one of the filter attributes
-        for f in filters:
-            if value := kwargs.get(f):
-                products = self.filter(products, **{f: value})
+        if filter:
+            products = self.filter(products, filter)
 
         if kwargs.get("teams") is not None:
             team_ids = [team.id for team in kwargs["teams"]]
@@ -68,20 +63,8 @@ class ProductRepository(AbstractRepository):
             if count > 0
         ]
 
-    def filter(self, products: list, **kwargs) -> list_[Product]:
-        results = []
-
-        # loop over (queried) products
-        for p in products:
-            for filter, value in kwargs.items():
-                # if multiple themes are passed, loop over themes
-                if filter == "theme" and isinstance(value, tuple):
-                    for v in value:
-                        if v in p.filter_dict.values():
-                            results.append(p)
-                elif value in p.filter_dict.values():
-                    results.append(p)
-        return results
+    def filter(self, products: list_[Product], filter: dict) -> list_[Product]:
+        return [product for product in products if product.matches_filter(filter)]
 
     def save(self, product: Product) -> Product:
         try:
