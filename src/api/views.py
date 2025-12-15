@@ -399,11 +399,19 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 @extend_schema(responses={200: dtos.MeDetail})
 @api_view(["GET"])
 def me(request):
+    try:
+        params = dtos.QueryParams(**request.query_params.dict())
+    except ValidationError as e:
+        return Response(
+            status=400, data=e.json(include_url=False, include_input=False, include_context=False)
+        )
     team_service = TeamService(repo=TeamRepository())
     product_service = ProductService(repo=ProductRepository())
     scopes = request.get_token_scopes
     teams = team_service.get_teams_from_scopes(scopes)
-    products = product_service.get_products(teams=teams)
+    products = product_service.get_products(
+        teams=teams, order=params.order or ("last_updated", True)
+    )
     product_data = dtos.to_response_object(products, dto_type="me")
     pagination = Pagination()
     try:

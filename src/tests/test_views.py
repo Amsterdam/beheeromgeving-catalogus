@@ -279,6 +279,22 @@ class TestViews:
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == orm_product.name
 
+    @pytest.mark.parametrize(
+        "order,expected_name",
+        [
+            ("-name", "naam z"),
+            ("name", "naam a"),
+            ("last_updated", "naam m"),  # m has the earliest update date
+            ("-last_updated", "naam n"),  # n has the lastest update date
+            ("created_at", "naam m"),  # m has the earliest creation date
+            ("-created_at", "naam n"),  # n has the latest creation date
+        ],
+    )
+    def test_product_list_order(self, many_orm_products, api_client, order, expected_name):
+        response = api_client.get(f"/products?order={order}")
+        assert response.status_code == 200
+        assert response.data["results"][0]["name"] == expected_name
+
     def test_contract_list_filter_matches_multiple_filter_params(
         self, orm_product, orm_product2, api_client
     ):
@@ -768,3 +784,15 @@ class TestViews:
             "teams": [],
             "products": {"count": 0, "next": None, "previous": None, "results": []},
         }
+
+    def test_me_default_product_order(self, many_orm_products, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get("/me")
+        assert response.status_code == 200
+        products = response.data["products"]["results"]
+        assert products[0]["last_updated"] > products[1]["last_updated"]
+
+    def test_me_custom_product_order(self, many_orm_products, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get("/me?order=name")
+        assert response.status_code == 200
+        products = response.data["products"]["results"]
+        assert products[0]["name"] == "naam a"
