@@ -21,10 +21,7 @@ class ExceptionHandlerMixin:
     def handle_exception(self, e):
         match e:
             case ValidationError():
-                return Response(
-                    status=400,
-                    data=e.json(include_url=False, include_input=False, include_context=False),
-                )
+                return Response(status=400, data=str(e))
             case exceptions.ValidationError():
                 return Response(status=400, data=e.message)
             case exceptions.IllegalOperation():
@@ -142,6 +139,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
                 "type", description="Filter on distribution type, comma-separated list."
             ),
             OpenApiParameter("language", description="Filter on language."),
+            OpenApiParameter(
+                "order", description="Order products on field (prefix with '-' to reverse)."
+            ),
         ],
     )
     def list(self, request):
@@ -402,9 +402,7 @@ def me(request):
     try:
         params = dtos.QueryParams(**request.query_params.dict())
     except ValidationError as e:
-        return Response(
-            status=400, data=e.json(include_url=False, include_input=False, include_context=False)
-        )
+        return Response(status=400, data=str(e))
     team_service = TeamService(repo=TeamRepository())
     product_service = ProductService(repo=ProductRepository())
     scopes = request.get_token_scopes
