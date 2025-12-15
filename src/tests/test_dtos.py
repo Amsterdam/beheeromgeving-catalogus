@@ -35,7 +35,6 @@ class TestQueryParams:
                 },
                 None,
             ),
-            ("order=-last_updated", QueryParams(order="-last_updated"), {}, None),
             ("q=boom", QueryParams(q="boom"), {}, "boom"),
         ],
     )
@@ -45,3 +44,17 @@ class TestQueryParams:
         assert qp == expect
         assert qp.filter == expect_filter
         assert qp.query == expect_query
+
+    @pytest.mark.parametrize(
+        "query_string,expected_order",
+        [
+            ("order=last_updated", ("last_updated", False)),
+            ("order=-last_updated", ("last_updated", True)),
+            ("order=name", ("name", False)),
+            ("order=-name", ("name", True)),
+        ],
+    )
+    def test_query_param_order(self, query_string, expected_order):
+        qd = QueryDict(query_string)
+        qp = QueryParams(**qd.dict())
+        assert qp.order == expected_order

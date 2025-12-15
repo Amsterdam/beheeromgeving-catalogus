@@ -277,16 +277,30 @@ class QueryParams(BaseModel):
     type: list[enums.DistributionType] | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
     language: enums.Language | None = None
-    order: str | None = None
+    order: tuple[str, bool] | None = None
     query: str | None = Field(alias="q", default=None)
 
     @field_validator("theme", mode="before")
     def validate_themes(cls, raw):
+        if not raw:
+            return None
         return raw.split(",")
 
     @field_validator("type", mode="before")
     def validate_type(cls, raw):
+        if not raw:
+            return None
         return raw.split(",")
+
+    @field_validator("order", mode="before")
+    def validate_order(cls, raw):
+        if not raw:
+            return None
+        reversed = raw.startswith("-")
+        if reversed:
+            return raw[1:], reversed
+        else:
+            return raw, reversed
 
     @property
     def filter(self) -> dict:
