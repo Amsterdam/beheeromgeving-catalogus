@@ -233,7 +233,7 @@ class TestViews:
         assert len(response.data["results"]) == 0
 
     def test_product_list_filter_matches_team_name(self, orm_product, orm_product2, api_client):
-        """Assert that we can filter the products on team name."""
+        """Assert that we can filter the products on team id."""
         response = api_client.get(f"/products?team={orm_product.team.id}")
         assert response.status_code == 200
 
@@ -309,7 +309,7 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["results"][0]["name"] == expected_name
 
-    def test_contract_list_filter_matches_multiple_filter_params(
+    def test_product_list_filter_matches_multiple_filter_params(
         self, orm_product, orm_product2, api_client
     ):
         """Assert that we can filter on multiple parameters in no particular order."""
@@ -318,14 +318,14 @@ class TestViews:
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == orm_product.name
 
-    def test_contract_list_no_filter_matches(self, orm_product, orm_product2, api_client):
+    def test_product_list_no_filter_matches(self, orm_product, orm_product2, api_client):
         """Return status code 200 if no results return when filtered on."""
         response = api_client.get(f"/products?confidentiality=I&team={orm_product.team.id}&type=A")
 
         assert response.status_code == 200
 
-    def test_contract_list_non_existing_team_filter(self, orm_product, orm_product2, api_client):
-        """Assert filter by team name returns 404 when we cannot find the team."""
+    def test_product_list_non_existing_team_filter(self, orm_product, orm_product2, api_client):
+        """Assert filter by team id returns empty results when we cannot find the team."""
         response = api_client.get("/products?team=0")
 
         assert response.status_code == 200
