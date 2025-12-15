@@ -175,6 +175,7 @@ class Product(BaseObject):
     contracts: list[DataContract] = field(default_factory=list)
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
+    created_at: datetime | None = None
     privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
