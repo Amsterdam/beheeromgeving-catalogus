@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from datetime import date, datetime
-from typing import overload
+from typing import Literal, overload
 
 from django.db.models.manager import BaseManager
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -276,6 +276,7 @@ class QueryParams(BaseModel):
     theme: list[enums.Theme] | None = None
     type: list[enums.DistributionType] | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
+    publication_status: enums.PublicationStatus | Literal["*"] = enums.PublicationStatus.PUBLISHED
     language: enums.Language | None = None
     order: tuple[str, bool] | None = None
     query: str | None = Field(alias="q", default=None)
@@ -305,7 +306,8 @@ class QueryParams(BaseModel):
     @property
     def filter(self) -> dict:
         result = {}
-        for attr in ["team", "theme", "type", "confidentiality", "language"]:
-            if getattr(self, attr) is not None:
+        for attr in ["team", "theme", "type", "confidentiality", "language", "publication_status"]:
+            attr_value = getattr(self, attr)
+            if attr_value is not None and attr_value != "*":
                 result[attr] = getattr(self, attr)
         return result

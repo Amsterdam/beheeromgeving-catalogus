@@ -9,18 +9,31 @@ class TestQueryParams:
     @pytest.mark.parametrize(
         "query_string,expect,expect_filter,expect_query",
         [
-            ("", QueryParams(), {}, None),
-            ("name=bomen", QueryParams(name="bomen"), {}, None),
+            ("", QueryParams(), {"publication_status": enums.PublicationStatus.PUBLISHED}, None),
+            ("publication_status=*", QueryParams(publication_status="*"), {}, None),
+            (
+                "name=bomen",
+                QueryParams(name="bomen"),
+                {"publication_status": enums.PublicationStatus.PUBLISHED},
+                None,
+            ),
             (
                 "language=EN",
                 QueryParams(language="EN"),
-                {"language": enums.Language.ENGLISH},
+                {
+                    "language": enums.Language.ENGLISH,
+                    "publication_status": enums.PublicationStatus.PUBLISHED,
+                },
                 None,
             ),
             (
                 "team=1&theme=NM,B",
                 QueryParams(team=1, theme="NM,B"),
-                {"team": 1, "theme": [enums.Theme.NATUUR_EN_MILIEU, enums.Theme.BESTUUR]},
+                {
+                    "team": 1,
+                    "theme": [enums.Theme.NATUUR_EN_MILIEU, enums.Theme.BESTUUR],
+                    "publication_status": enums.PublicationStatus.PUBLISHED,
+                },
                 None,
             ),
             (
@@ -32,10 +45,16 @@ class TestQueryParams:
                 {
                     "type": [enums.DistributionType.API],
                     "confidentiality": enums.ConfidentialityLevel.OPENBAAR,
+                    "publication_status": enums.PublicationStatus.PUBLISHED,
                 },
                 None,
             ),
-            ("q=boom", QueryParams(q="boom"), {}, "boom"),
+            (
+                "q=boom",
+                QueryParams(q="boom"),
+                {"publication_status": enums.PublicationStatus.PUBLISHED},
+                "boom",
+            ),
         ],
     )
     def test_query_param_object(self, query_string, expect, expect_filter, expect_query):

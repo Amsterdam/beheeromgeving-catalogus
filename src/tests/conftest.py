@@ -61,7 +61,7 @@ def orm_product(orm_team) -> Product:
         themes=["NM"],
         privacy_level="NPI",
         refresh_period="3.MONTH",
-        publication_status="D",
+        publication_status="P",
     )
 
     service = DataService.objects.create(
@@ -111,7 +111,7 @@ def orm_product2(orm_other_team) -> Product:
         themes=["MI"],
         privacy_level="NPI",
         refresh_period="3.MONTH",
-        publication_status="D",
+        publication_status="P",
     )
 
     service = DataService.objects.create(
@@ -164,12 +164,36 @@ def many_orm_products(orm_team) -> list[Product]:
                 themes=["NM"],
                 privacy_level="NPI",
                 refresh_period="3.MONTH",
-                publication_status="D",
+                publication_status="P",
             )
         )
         Product.objects.filter(id=result[-1].id).update(
             last_updated=datetime.fromisoformat(f"2025-12-25T00:{59-index}+00:00"),
             created_at=datetime.fromisoformat(f"2025-12-25T00:{59-index}+00:00"),
+        )
+    return result
+
+
+@pytest.fixture()
+def non_published_products(orm_team) -> list[Product]:
+    result = []
+    for letter in "DRAE":
+        result.append(
+            Product.objects.create(
+                name=f"naam {letter} (non-published)",
+                description=f"beschrijving {letter} (non-published)",
+                team=orm_team,
+                data_steward=f"mail.{letter}@amsterdam.nl",
+                language="NL",
+                is_geo=True,
+                crs="RD",
+                schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+                type="D",
+                themes=["NM"],
+                privacy_level="NPI",
+                refresh_period="3.MONTH",
+                publication_status=letter,
+            )
         )
     return result
 

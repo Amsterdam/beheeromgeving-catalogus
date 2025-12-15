@@ -68,6 +68,16 @@ class TestTeamRepository:
         saved_team = repo.get(team.id)
         assert team == saved_team
 
+    def test_get_by_name(self, orm_team):
+        repo = TeamRepository()
+        result = repo.get_by_name("datadiensten")
+        assert result.id == orm_team.id
+
+    def test_get_by_name_inexistent(self, orm_team):
+        repo = TeamRepository()
+        with pytest.raises(ObjectDoesNotExist):
+            repo.get_by_name("non_existent")
+
 
 @pytest.mark.django_db
 class TestProductRepository:

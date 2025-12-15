@@ -11,7 +11,7 @@ import pytest
 from django.conf import settings
 from pytest_django.asserts import assertNumQueries
 
-from beheeromgeving.models import Team
+from beheeromgeving.models import Product, Team
 
 
 @pytest.mark.django_db
@@ -150,6 +150,20 @@ class TestViews:
         assert response.status_code == 404
         assert response.data == "Page not found: 5. Page must be between 1 and 3 (inclusive)."
 
+    def test_products_list_omits_non_published_by_default(
+        self, many_orm_products, non_published_products, api_client
+    ):
+        response = api_client.get("/products")
+        assert response.status_code == 200
+        assert response.data["count"] == 26
+
+    def test_products_list_cannot_filter_on_publication_status(
+        self, many_orm_products, non_published_products, api_client
+    ):
+        response = api_client.get("/products?publication_status=D")
+        assert response.status_code == 200
+        assert response.data["count"] == 26  # still only published products
+
     def test_product_endpoint_queries_db_sparingly(self, orm_product, orm_team, client_with_token):
         """Assert that the db is not hit repeatedly for consecutive requests.
 
@@ -203,7 +217,7 @@ class TestViews:
 
     def test_product_list_query_and_filter_matches(self, orm_product, orm_product2, api_client):
         """Assert that we can query and filter products."""
-        response = api_client.get("/products?q=fietspaaltjes&team=Beheer Openbare Ruimte")
+        response = api_client.get(f"/products?q=fietspaaltjes&team={orm_product2.team.id}")
         assert response.status_code == 200
         # only product2 is returned
         assert len(response.data["results"]) == 1
@@ -213,7 +227,7 @@ class TestViews:
         self, orm_product, orm_product2, api_client
     ):
         """Assert that no products return when there are no query and filter matches."""
-        response = api_client.get("/products?q=fietspaaltjes&team=DataDiensten")
+        response = api_client.get(f"/products?q=fietspaaltjes&team={orm_product.team.id}")
         assert response.status_code == 200
         # no product is returned
         assert len(response.data["results"]) == 0
@@ -383,6 +397,16 @@ class TestViews:
             data={"type": "D", "team_id": orm_team.id},
         )
         assert response.status_code == 201
+
+    def test_product_delete(self, orm_team, orm_product, client_with_token):
+        response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}")
+        assert response.status_code == 204
+        with pytest.raises(Product.DoesNotExist):
+            orm_product.refresh_from_db()
+
+    def test_product_delete_unauthorized(self, orm_product, client_with_token):
+        response = client_with_token([]).delete(f"/products/{orm_product.id}")
+        assert response.status_code == 401
 
     @pytest.mark.parametrize(
         "data",
@@ -673,6 +697,14 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 1
 
+    def test_service_detail(self, orm_product, api_client):
+        response = api_client.get(
+            f"/products/{orm_product.id}/services/{orm_product.services.first().id}"
+        )
+
+        assert response.status_code == 200
+        assert response.data["id"] == orm_product.services.first().id
+
     def test_service_create(self, orm_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
             f"/products/{orm_product.id}/services",
@@ -706,6 +738,23 @@ class TestViews:
             f"/products/{orm_product.id}/services/{service_id}", data=data
         )
         assert response.status_code == 400
+
+    def test_service_delete(self, orm_product, orm_team, client_with_token):
+        # first delete the distribution referencing the service:
+        contract = orm_product.contracts.first()
+        distribution_id = contract.distributions.first().id
+        client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution_id}"
+        )
+        # delete the service:
+        service_id = orm_product.services.first().id
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/services/{service_id}"
+        )
+
+        assert response.status_code == 204
+        orm_product.refresh_from_db()
+        assert len(orm_product.services.all()) == 0
 
     def test_service_delete_not_allowed(self, orm_product, orm_team, client_with_token):
         service_id = orm_product.services.first().id
@@ -796,3 +845,22 @@ class TestViews:
         assert response.status_code == 200
         products = response.data["products"]["results"]
         assert products[0]["name"] == "naam a"
+
+    def test_me_bad_request(self, many_orm_products, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get("/me?language=FR")
+        assert response.status_code == 400
+        assert "Input should be 'NL' or 'EN'" in response.data
+
+    def test_me_includes_unpublished_products_by_default(
+        self, many_orm_products, non_published_products, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).get("/me")
+        assert response.status_code == 200
+        assert response.data["products"]["count"] == 30
+
+    def test_me_can_filter_on_publication_status(
+        self, many_orm_products, non_published_products, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).get("/me?publication_status=D")
+        assert response.status_code == 200
+        assert response.data["products"]["count"] == 1

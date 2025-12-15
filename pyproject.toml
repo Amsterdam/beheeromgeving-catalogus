@@ -30,7 +30,9 @@ plugins = ["django_coverage_plugin"]
 exclude_also = [
     "if settings.DEBUG:",
     'if "debug_toolbar" in settings.INSTALLED_APPS:',
-    "raise NotImplementedError"
+    "raise NotImplementedError",
+    "raise DomainException",
+    "case exceptions.DomainException"
 ]
 
 # ==== black ====
