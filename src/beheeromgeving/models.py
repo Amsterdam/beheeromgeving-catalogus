@@ -85,6 +85,7 @@ class Product(models.Model):
         help_text="Het privacyniveau van het product",
     )
     last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     # Only for Dataproducts (type = "D")
     language = models.CharField(
@@ -158,6 +159,7 @@ class Product(models.Model):
             contracts=[c.to_domain() for c in self.contracts.order_by("id")],
             themes=self.themes,
             last_updated=self.last_updated,
+            created_at=self.created_at,
             privacy_level=self.privacy_level,
             refresh_period=(
                 objects.RefreshPeriod.from_string(self.refresh_period)
@@ -248,6 +250,8 @@ class DataContract(models.Model):
         help_text="Het privacyniveau van het contract",
     )
     last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
     confidentiality = models.CharField(
         _("Vertrouwelijkheidsniveau"),
         choices=enums.ConfidentialityLevel.choices(),
