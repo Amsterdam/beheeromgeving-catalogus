@@ -202,7 +202,7 @@ class TestViews:
         assert response.data["results"][0]["name"] == orm_product2.name
 
     def test_product_list_query_and_filter_matches(self, orm_product, orm_product2, api_client):
-        """Assert that we can query the products on product name."""
+        """Assert that we can query and filter products."""
         response = api_client.get("/products?q=fietspaaltjes&team=Beheer Openbare Ruimte")
         assert response.status_code == 200
         # only product2 is returned
@@ -212,7 +212,7 @@ class TestViews:
     def test_product_list_query_and_filter_do_not_match(
         self, orm_product, orm_product2, api_client
     ):
-        """Assert that we can query the products on product name."""
+        """Assert that no products return when there are no query and filter matches."""
         response = api_client.get("/products?q=fietspaaltjes&team=DataDiensten")
         assert response.status_code == 200
         # only product2 is returned
