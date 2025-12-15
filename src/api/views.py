@@ -154,6 +154,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         products = product_service.get_products(
             query=params.query,
             filter=params.filter,
+            order=params.order,
         )
 
         data = dtos.to_response_object(products)

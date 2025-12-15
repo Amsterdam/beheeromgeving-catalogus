@@ -61,6 +61,7 @@ def product(team: Team) -> Product:
         privacy_level="NPI",
         refresh_period=RefreshPeriod.from_dict({"frequency": 3, "unit": "MONTH"}),
         last_updated=datetime.fromisoformat("2025-09-04T11:25:05+00"),
+        created_at=datetime.fromisoformat("2025-09-04T10:25:05+00"),
         publication_status="D",
         services=[
             DataService(id=1, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen")

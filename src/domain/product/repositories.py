@@ -36,12 +36,19 @@ class ProductRepository(AbstractRepository):
             raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.") from e
 
     def list(
-        self, *, query: str | None = None, filter: dict | None = None, **kwargs
+        self,
+        *,
+        query: str | None = None,
+        filter: dict | None = None,
+        order: tuple[str, bool] | None = ("name", False),
+        **kwargs,
     ) -> list_[Product]:
+        # TODO Filter published products
         products = self.search(query) if query is not None else list_(self._products.values())
-
         if filter:
             products = self.filter(products, filter)
+        if order:
+            products = self.order(products, order)
 
         if kwargs.get("teams") is not None:
             team_ids = [team.id for team in kwargs["teams"]]
@@ -62,6 +69,14 @@ class ProductRepository(AbstractRepository):
             for p_id, count in sorted(results.items(), key=lambda item: item[1], reverse=True)
             if count > 0
         ]
+
+    def order(self, products: list_[Product], order: tuple[str, bool]) -> list_[Product]:
+        order_field, reversed = order
+
+        def lookup(product):
+            return getattr(product, order_field)
+
+        return sorted(products, key=lookup, reverse=reversed)
 
     def filter(self, products: list_[Product], filter: dict) -> list_[Product]:
         return [product for product in products if product.matches_filter(filter)]

@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 
 from beheeromgeving.models import Product as ORMProduct
@@ -177,3 +179,27 @@ class TestProductRepository:
         assert distributions[2].type == "F"
         assert distributions[2].format == "txt"
         assert distributions[2].download_url == "https://bomen.amsterdam.nl/bomen.txt"
+
+    @pytest.mark.parametrize(
+        "order,expect_value",
+        [
+            (("name", False), "naam a"),
+            (("name", True), "naam z"),
+            (
+                ("last_updated", False),
+                datetime(2025, 12, 25, 0, 34, tzinfo=UTC),
+            ),
+            (("last_updated", True), datetime(2025, 12, 25, 0, 59, tzinfo=UTC)),
+            (("created_at", False), datetime(2025, 12, 25, 0, 34, tzinfo=UTC)),
+            (("created_at", True), datetime(2025, 12, 25, 0, 59, tzinfo=UTC)),
+        ],
+    )
+    def test_order_products_list(self, many_orm_products: list[ORMProduct], order, expect_value):
+        repo = ProductRepository()
+        products = repo.list(order=order)
+        assert getattr(products[0], order[0]) == expect_value
+
+    def test_default_order_products_list(self, many_orm_products):
+        repo = ProductRepository()
+        products = repo.list()
+        assert products[0].name == "naam a"

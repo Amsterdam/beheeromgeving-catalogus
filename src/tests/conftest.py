@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -148,7 +149,7 @@ def orm_product2(orm_other_team) -> Product:
 @pytest.fixture()
 def many_orm_products(orm_team) -> list[Product]:
     result = []
-    for letter in "abcdefghijklmnopqrstuvwxyz":
+    for index, letter in enumerate("nopqrstuvwxyzabcdefghijklm"):
         result.append(
             Product.objects.create(
                 name=f"naam {letter}",
@@ -165,6 +166,10 @@ def many_orm_products(orm_team) -> list[Product]:
                 refresh_period="3.MONTH",
                 publication_status="D",
             )
+        )
+        Product.objects.filter(id=result[-1].id).update(
+            last_updated=datetime.fromisoformat(f"2025-12-25T00:{59-index}+00:00"),
+            created_at=datetime.fromisoformat(f"2025-12-25T00:{59-index}+00:00"),
         )
     return result
 
