@@ -9,6 +9,7 @@ omit =
     settings.py
     */commands/import*
     wsgi.py
+    */openapi/preprocessors.py
 plugins =
     django_coverage_plugin
 
@@ -18,3 +19,5 @@ exclude_also =
     if "debug_toolbar" in settings.INSTALLED_APPS:
     if settings.DEBUG:
     raise NotImplementedError
+    raise DomainException
+    case exceptions.DomainException

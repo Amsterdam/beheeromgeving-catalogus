@@ -43,7 +43,6 @@ class ProductRepository(AbstractRepository):
         order: tuple[str, bool] | None = ("name", False),
         **kwargs,
     ) -> list_[Product]:
-        # TODO Filter published products
         products = self.search(query) if query is not None else list_(self._products.values())
         if filter:
             products = self.filter(products, filter)

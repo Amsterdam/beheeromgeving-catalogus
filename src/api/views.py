@@ -145,7 +145,10 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         ],
     )
     def list(self, request):
-        params = self._validate_dto(request.query_params.dict(), dto_type=dtos.QueryParams)
+        params = self._validate_dto(
+            data={**request.query_params.dict(), "publication_status": "P"},
+            dto_type=dtos.QueryParams,
+        )
         if params.name:
             product = product_service.get_product_by_name(params.name)
             data = dtos.to_response_object(product)
@@ -400,7 +403,10 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 @api_view(["GET"])
 def me(request):
     try:
-        params = dtos.QueryParams(**request.query_params.dict())
+        query_params = request.query_params.dict()
+        if "publication_status" not in query_params:
+            query_params["publication_status"] = "*"
+        params = dtos.QueryParams(**query_params)
     except ValidationError as e:
         return Response(status=400, data=str(e))
     team_service = TeamService(repo=TeamRepository())
@@ -408,7 +414,7 @@ def me(request):
     scopes = request.get_token_scopes
     teams = team_service.get_teams_from_scopes(scopes)
     products = product_service.get_products(
-        teams=teams, order=params.order or ("last_updated", True)
+        teams=teams, filter=params.filter, order=params.order or ("last_updated", True)
     )
     product_data = dtos.to_response_object(products, dto_type="me")
     pagination = Pagination()

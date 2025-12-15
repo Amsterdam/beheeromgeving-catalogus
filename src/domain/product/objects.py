@@ -339,6 +339,9 @@ class Product(BaseObject):
         language = filter.get("language")
         if language is not None and self.language != language:
             return False
+        publication_status = filter.get("publication_status")
+        if publication_status is not None and self.publication_status != publication_status:
+            return False
         confidentiality = filter.get("confidentiality")
         if confidentiality is not None and not any(
             contract.confidentiality == confidentiality for contract in self.contracts
