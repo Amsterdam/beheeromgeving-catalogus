@@ -1,0 +1,19 @@
+meta {
+  name: filter products on team
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/products?team=DataDiensten
+  body: none
+  auth: inherit
+}
+
+params:query {
+  team: DataDiensten
+}
+
+settings {
+  encodeUrl: true
+}

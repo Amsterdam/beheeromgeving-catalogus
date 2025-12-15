@@ -1,0 +1,19 @@
+meta {
+  name: filter products on distribution type
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/products?type=A
+  body: none
+  auth: inherit
+}
+
+params:query {
+  type: A
+}
+
+settings {
+  encodeUrl: true
+}
