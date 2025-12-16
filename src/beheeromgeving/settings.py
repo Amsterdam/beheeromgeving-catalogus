@@ -365,6 +365,7 @@ DATAPUNT_AUTHZ = {
     "JWKS": os.getenv("PUB_JWKS"),
     "JWKS_URL": os.getenv("OAUTH_JWKS_URL"),
     "JWKS_URLS": env.list("OAUTH_JWKS_URLS", default=[]),  # To support both keyclock and Entra ID
+    "CHECK_CLAIMS": env.dict("OAUTH_CHECK_CLAIMS", default={}),
     # "ALWAYS_OK": True if DEBUG else False,
     "ALWAYS_OK": False,
     "MIN_INTERVAL_KEYSET_UPDATE": 30 * 60,  # 30 minutes
