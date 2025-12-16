@@ -1,7 +1,12 @@
 import pytest
 from django.apps import apps
 
-from beheeromgeving.migration_utils import SEPARATORS, fix_distribution_format
+from beheeromgeving.migration_utils import (
+    SEPARATORS,
+    fix_distribution_format,
+    revert_team_scopes,
+    update_team_scopes,
+)
 from beheeromgeving.models import Distribution
 
 
@@ -22,3 +27,15 @@ class TestMigrationUtils:
         for distribution in orm_distributions:
             distribution.refresh_from_db()
             assert distribution.format == "CSV"
+
+    def test_migration_0012(self, orm_team, orm_other_team):
+        update_team_scopes(apps, None)
+        for team in [orm_team, orm_other_team]:
+            team.refresh_from_db()
+            assert team.scope == f"publisher.{team.acronym}"
+
+    def test_migration_0012_revert(self, orm_team, orm_other_team):
+        revert_team_scopes(apps, None)
+        for team in [orm_team, orm_other_team]:
+            team.refresh_from_db()
+            assert team.scope == f"publisher-p-{team.acronym.lower()}"
