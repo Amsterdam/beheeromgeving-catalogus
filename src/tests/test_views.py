@@ -153,16 +153,22 @@ class TestViews:
     def test_products_list_omits_non_published_by_default(
         self, many_orm_products, non_published_products, api_client
     ):
+        """
+        Changed to allow data amsterdam to continue working on the cms
+        """
         response = api_client.get("/products")
         assert response.status_code == 200
-        assert response.data["count"] == 26
+        assert response.data["count"] == 30
 
     def test_products_list_cannot_filter_on_publication_status(
         self, many_orm_products, non_published_products, api_client
     ):
+        """
+        Changed to allow data amsterdam to continue working on the cms
+        """
         response = api_client.get("/products?publication_status=D")
         assert response.status_code == 200
-        assert response.data["count"] == 26  # still only published products
+        assert response.data["count"] == 30
 
     def test_product_endpoint_queries_db_sparingly(self, orm_product, orm_team, client_with_token):
         """Assert that the db is not hit repeatedly for consecutive requests.

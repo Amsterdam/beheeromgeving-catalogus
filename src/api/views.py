@@ -146,7 +146,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     )
     def list(self, request):
         params = self._validate_dto(
-            data={**request.query_params.dict(), "publication_status": "P"},
+            data={**request.query_params.dict(), "publication_status": "*"},
             dto_type=dtos.QueryParams,
         )
         if params.name:
