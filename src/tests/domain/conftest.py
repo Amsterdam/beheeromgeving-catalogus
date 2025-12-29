@@ -58,7 +58,6 @@ def product(team: Team) -> Product:
         type="D",
         themes=["NM"],
         data_steward="meneerboom@amsterdam.nl",
-        privacy_level="NPI",
         refresh_period=RefreshPeriod.from_dict({"frequency": 3, "unit": "MONTH"}),
         last_updated=datetime.fromisoformat("2025-09-04T11:25:05+00"),
         created_at=datetime.fromisoformat("2025-09-04T10:25:05+00"),

@@ -59,7 +59,6 @@ def orm_product(orm_team) -> Product:
         schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
         type="D",
         themes=["NM"],
-        privacy_level="NPI",
         refresh_period="3.MONTH",
         publication_status="P",
     )
@@ -109,7 +108,6 @@ def orm_product2(orm_other_team) -> Product:
         schema_url="https://schemas.data.amsterdam.nl/datasets/fietspaaltjes/dataset",
         type="D",
         themes=["MI"],
-        privacy_level="NPI",
         refresh_period="3.MONTH",
         publication_status="P",
     )
@@ -162,7 +160,6 @@ def many_orm_products(orm_team) -> list[Product]:
                 schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
                 type="D",
                 themes=["NM"],
-                privacy_level="NPI",
                 refresh_period="3.MONTH",
                 publication_status="P",
             )
@@ -190,7 +187,6 @@ def non_published_products(orm_team) -> list[Product]:
                 schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
                 type="D",
                 themes=["NM"],
-                privacy_level="NPI",
                 refresh_period="3.MONTH",
                 publication_status=letter,
             )

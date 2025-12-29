@@ -205,7 +205,7 @@ class TestViews:
         product = response.data
         assert product["name"] == orm_product.name
         # check a property that is only in detail view, as this should return a ProductDetail.
-        assert product["privacy_level"] == orm_product.privacy_level
+        assert product["crs"] == orm_product.crs
 
     def test_product_list_query_by_name_404(self, api_client, orm_product):
         """Assert query by name returns 404 when we cannot find the product."""
@@ -395,7 +395,7 @@ class TestViews:
         response = api_client.get(f"/products/{orm_incomplete_product.id}")
         assert response.status_code == 200
         assert response.data["name"] == orm_incomplete_product.name
-        assert response.data["missing_fields"] == ["crs", "privacy_level"]
+        assert response.data["missing_fields"] == ["crs"]
 
     def test_product_create(self, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
@@ -438,7 +438,6 @@ class TestViews:
             {"crs": "RD"},
             {"schema_url": "https://schemas.data.amsterdam.nl/datasets/new_url"},
             {"type": "I"},
-            {"privacy_level": "PI"},
             {"owner": "New Owner"},
             {"contact_email": "newmail@contact.nl"},
             {"data_steward": "newmail@steward.nl"},
@@ -557,7 +556,6 @@ class TestViews:
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/contracts/{contract_id}", data=data
         )
-        print(response.data)
         assert response.status_code == 200
 
     @pytest.mark.parametrize(
@@ -787,7 +785,6 @@ class TestViews:
             "team_id",
             "id",
             "type",
-            "privacy_level",
             "last_updated",
             "publication_status",
             "contracts",
