@@ -118,11 +118,6 @@ class Command(BaseCommand):
             )
         except KeyError:
             refresh_period = None
-        PRIVACY_LEVELS = {
-            "niet persoonlijk identificeerbaar": "NIET_PERSOONLIJK_IDENTIFICEERBAAR",
-            "persoonlijk identificeerbaar": "PERSOONLIJK_IDENTIFICEERBAAR",
-            "bijzonder identificeerbaar": "BIJZONDER_IDENTIFICEERBAAR",
-        }
         p = ProductCreate(
             team_id=team.id,
             name=product["naam"],
@@ -145,7 +140,6 @@ class Command(BaseCommand):
                 enums.Theme[unidecode("_".join(theme.upper().split(" ")))]
                 for theme in product["themaNamen"]
             ],
-            privacy_level=enums.PrivacyLevel[PRIVACY_LEVELS[product["privacyniveau"].lower()]],
             publication_status=enums.PublicationStatus.PUBLISHED,
             refresh_period=refresh_period,
             owner=(
@@ -181,12 +175,19 @@ class Command(BaseCommand):
             "Intern": enums.ConfidentialityLevel.INTERN,
             "Vertrouwelijk": enums.ConfidentialityLevel.VERTROUWELIJK,
         }
+        PRIVACY_LEVELS = {
+            "niet persoonlijk identificeerbaar": "NIET_PERSOONLIJK_IDENTIFICEERBAAR",
+            "persoonlijk identificeerbaar": "PERSOONLIJK_IDENTIFICEERBAAR",
+            "bijzonder identificeerbaar": "BIJZONDER_IDENTIFICEERBAAR",
+        }
         c = DataContractCreateOrUpdate(
             publication_status=enums.PublicationStatus.PUBLISHED,
             purpose=product_dict["doelbinding"],
             name=f"{product_dict["naam"]} {product_dict["vertrouwelijkheidsniveau"]}"[:64],
             description=product_dict["beschrijving"],
-            privacy_level=created_product.privacy_level,
+            privacy_level=enums.PrivacyLevel[
+                PRIVACY_LEVELS[product_dict["privacyniveau"].lower()]
+            ],
             scope=(
                 product_dict["amsterdamSchemaVerwijzing"]["scope"]
                 if product_dict.get("amsterdamSchemaVerwijzing")
