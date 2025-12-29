@@ -223,10 +223,9 @@ class TestProductService:
     @pytest.mark.parametrize(
         "data,missing_fields",
         [
-            ({}, r"\[name, type, privacy_level\]"),
-            ({"name": "Product"}, r"\[type, privacy_level\]"),
-            ({"type": "D"}, r"\[name, privacy_level\]"),
-            ({"privacy_level": "NPI"}, r"\[name, type\]"),
+            ({}, r"\[name, type\]"),
+            ({"name": "Product"}, r"\[type\]"),
+            ({"type": "D"}, r"\[name\]"),
         ],
     )
     def test_create_contract_missing_fields(
@@ -248,7 +247,7 @@ class TestProductService:
         """Test whether a contract can be created when all necessary fields are present on the
         product."""
         product = product_service.create_product(
-            data={"team_id": team.id, "name": "Product", "type": "D", "privacy_level": "PI"},
+            data={"team_id": team.id, "name": "Product", "type": "D"},
             scopes=[team.scope],
         )
         contract = product_service.create_contract(
@@ -376,7 +375,6 @@ class TestProductService:
             "is_geo": True,
             "crs": "RD",
             "themes": ["NM"],
-            "privacy_level": "NPI",
         }
         missing_fields = r"\[schema_url, refresh_period, contact_email\]"
         product_missing_fields = product_service.create_product(
@@ -405,7 +403,7 @@ class TestProductService:
         missing_fields = r"\[description, confidentiality\]"
 
         new_product = product_service.create_product(
-            data={"team_id": team.id, "name": "Product", "type": "D", "privacy_level": "PI"},
+            data={"team_id": team.id, "name": "Product", "type": "D"},
             scopes=[team.scope],
         )
         contract_missing_fields = product_service.create_contract(
@@ -430,7 +428,6 @@ class TestProductService:
             "is_geo": True,
             "crs": "RD",
             "themes": ["NM"],
-            "privacy_level": "NPI",
         }
         product_missing_fields = product_service.create_product(
             data={"team_id": team.id, **data}, scopes=[team.scope]
@@ -460,7 +457,7 @@ class TestProductService:
             "retainment_period": 12,
         }
         new_product = product_service.create_product(
-            data={"team_id": team.id, "name": "Product", "type": "D", "privacy_level": "PI"},
+            data={"team_id": team.id, "name": "Product", "type": "D"},
             scopes=[team.scope],
         )
         contract_missing_fields = product_service.create_contract(
