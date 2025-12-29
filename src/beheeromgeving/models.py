@@ -77,13 +77,6 @@ class Product(models.Model):
         help_text='De ververstermijn in de vorm {"frequency": int, "unit": periodString}, '
         'waarbij periodStr iets is als "uur", "dag", "week", "maand", "jaar"',
     )
-    privacy_level = models.CharField(
-        _("Privacyniveau"),
-        choices=enums.PrivacyLevel.choices(),
-        null=True,
-        blank=True,
-        help_text="Het privacyniveau van het product",
-    )
     last_updated = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -160,7 +153,6 @@ class Product(models.Model):
             themes=self.themes,
             last_updated=self.last_updated,
             created_at=self.created_at,
-            privacy_level=self.privacy_level,
             refresh_period=(
                 objects.RefreshPeriod.from_string(self.refresh_period)
                 if self.refresh_period
