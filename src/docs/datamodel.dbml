@@ -8,7 +8,6 @@ Table Product {
   type                      productType
   themes                    Themas[] [Note: "Array of enum not supported by dbml"]
   last_updated              datetime
-  privacy_level             privacyLevel
   refresh_period            dict [Note: '{"frequency": int, "unit": periodString}']
   team                      Team [ref: > Team.id]
   publication_status        publicationStatus
