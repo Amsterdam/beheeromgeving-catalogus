@@ -189,7 +189,6 @@ class MyProduct(ModelMixin, BaseModel):
     id: int
     name: str | None = None
     type: enums.ProductType | None = None
-    privacy_level: enums.PrivacyLevel | None = None
     last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
     contracts: list[MyContract]
@@ -207,7 +206,6 @@ class ProductCreate(ModelMixin, BaseModel):
     contracts: list[DataContract] | None = None
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
-    privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
     owner: str | None = None
     contact_email: str | None = None
@@ -238,7 +236,6 @@ class ProductUpdate(ModelMixin, BaseModel):
     contracts: list[DataContract] | None = None
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
-    privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
     owner: str | None = None
     contact_email: str | None = None

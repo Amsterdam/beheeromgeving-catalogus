@@ -70,7 +70,7 @@ class ContractValidator:
         ]
         return [field for field in required_fields if getattr(self.contract, field) is None]
 
-    def can_change_publication_status(self, data: dict) -> True:
+    def can_change_publication_status(self, data: dict) -> bool:
         missing_fields = self.get_missing_fields()
         if (
             data.get("publication_status") == "P"
@@ -114,11 +114,10 @@ class ProductValidator:
     def __init__(self, prod: "Product"):
         self.product = prod
 
-    def can_create_contract(self) -> True:
+    def can_create_contract(self) -> bool:
         required_fields = [
             "name",
             "type",
-            "privacy_level",
         ]
         missing_fields = [
             field for field in required_fields if getattr(self.product, field) is None
@@ -140,7 +139,6 @@ class ProductValidator:
             "crs",
             "schema_url",
             "themes",
-            "privacy_level",
             "refresh_period",
             "contact_email",
         ]
@@ -176,7 +174,6 @@ class Product(BaseObject):
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
     created_at: datetime | None = None
-    privacy_level: enums.PrivacyLevel | None = None
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
     owner: str | None = None
