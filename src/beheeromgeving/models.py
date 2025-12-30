@@ -279,6 +279,13 @@ class DataContract(models.Model):
         null=True,
         help_text="Verwijzing naar een scope beschreven in Amsterdam Schema.",
     )
+    tables = ArrayField(
+        models.CharField(_("Tabellen"), max_length=64),
+        null=True,
+        blank=True,
+        help_text="De ids van de tabellen binnen de dataset die onder dit contract vallen. "
+        "Laat leeg om alle tabellen op te nemen.",
+    )
 
     def __str__(self):
         return self.name or str(self.id)
