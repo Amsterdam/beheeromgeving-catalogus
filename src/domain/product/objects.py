@@ -99,6 +99,7 @@ class DataContract(BaseObject):
     start_date: date | None = None
     retainment_period: int | None = None
     distributions: list[Distribution] = field(default_factory=list)
+    tables: list[str] | None = None
 
     _skip_keys = {"contact_email", "distributions"}
 

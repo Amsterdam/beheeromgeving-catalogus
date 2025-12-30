@@ -304,6 +304,7 @@ class DataContract(models.Model):
             start_date=self.start_date,
             retainment_period=self.retainment_period,
             distributions=[d.to_domain() for d in self.distributions.order_by("id")],
+            tables=self.tables,
         )
 
     @classmethod
