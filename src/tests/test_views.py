@@ -7,6 +7,8 @@ django ORM models). This is done in the api_client fixture, so any time a orm_* 
 the api_client or client_with_token fixtures need to be the last one.
 """
 
+from datetime import datetime
+
 import pytest
 from django.conf import settings
 from pytest_django.asserts import assertNumQueries
@@ -542,13 +544,12 @@ class TestViews:
             {"purpose": "New Purpose"},
             {"description": "New Description"},
             {"privacy_level": "BI"},
-            {"publication_status": "P"},
-            {"contact_email": "new@email.address"},
-            {"data_steward": "Someone Else"},
             {"scope": "another_scope"},
             {"confidentiality": "V"},
             {"start_date": "2025-02-02"},
             {"retainment_period": 100},
+            {"tables": ["stamgegevens", "takgegevens"]},
+            {"tables": None},
         ],
     )
     def test_contract_update(self, orm_product, orm_team, data, client_with_token):
@@ -557,6 +558,12 @@ class TestViews:
             f"/products/{orm_product.id}/contracts/{contract_id}", data=data
         )
         assert response.status_code == 200
+        for key, value in data.items():
+            response_value = response.data.get(key)
+            assert (
+                response_value == value
+                or response_value == datetime.strptime(value, "%Y-%m-%d").date()  # noqa: DTZ007
+            )
 
     @pytest.mark.parametrize(
         "data",

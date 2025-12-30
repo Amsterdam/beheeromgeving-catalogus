@@ -166,6 +166,7 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     start_date: date | None = None
     retainment_period: int | None = None
     distributions: list[Distribution] | None = None
+    tables: list[str] | None = None
 
 
 class DataContract(IdMixin, DataContractCreateOrUpdate):
