@@ -261,11 +261,18 @@ class ProductList(ModelMixin, BaseModel):
     team_id: int
 
 
+class PaginatedResponse[T](BaseModel):
+    count: int
+    next: str | None
+    previous: str | None
+    results: list[T]
+
+
 class MeDetail(BaseModel):
     """Used for openapi spec"""
 
     teams: list[Team]
-    products: list[MyProduct]
+    products: PaginatedResponse[MyProduct]
 
 
 class QueryParams(BaseModel):

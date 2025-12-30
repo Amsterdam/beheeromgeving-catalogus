@@ -115,7 +115,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return dto_type(**data)
 
     @extend_schema(
-        responses={200: dtos.ProductList},
+        responses={200: dtos.PaginatedResponse[dtos.ProductList]},
         parameters=[
             OpenApiParameter("name", description="Query on full product name."),
             OpenApiParameter(
@@ -170,7 +170,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         product = product_service.get_product(int(pk))
         return Response(dtos.to_response_object(product), status=200)
 
-    @extend_schema(responses={200: dtos.ProductCreate})
+    @extend_schema(request=dtos.ProductCreate, responses={200: dtos.ProductDetail})
     def create(self, request):
         product_dto = self._validate_dto(request.data)
         # ignore contracts/service as these should be created through their own endpoint
@@ -180,7 +180,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(dtos.to_response_object(product), status=201)
 
-    @extend_schema(responses={200: dtos.ProductUpdate})
+    @extend_schema(request=dtos.ProductUpdate, responses={200: dtos.ProductDetail})
     def partial_update(self, request, pk=None):
         product_dto = self._validate_dto(request.data, dto_type=dtos.ProductUpdate)
         # ignore contracts/service as these should be updated through their own endpoint
@@ -196,7 +196,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         product_service.delete_product(product_id=int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
 
-    @extend_schema(responses={200: dtos.SetState})
+    @extend_schema(request=dtos.SetState, responses={200: dtos.ProductDetail})
     @action(detail=True, methods=["post"], url_path="set-state", url_name="publication_status")
     def set_state(self, request, pk=None):
         state_dto = self._validate_dto(request.data, dto_type=dtos.SetState)
@@ -209,14 +209,17 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(updated_product)
         return Response(data, status=200)
 
-    @extend_schema(responses={200: dtos.DataContractList})
+    @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataContractList]})
     @action(detail=True, methods=["get"], url_path="contracts", url_name="contracts-list")
     def contracts_list(self, _request, pk: str):
         contracts = product_service.get_contracts(int(pk))
         data = dtos.to_response_object(contracts)
         return Response(data, status=200)
 
-    @extend_schema(responses={201: dtos.DataContractCreateOrUpdate})
+    @extend_schema(
+        request=dtos.DataContractCreateOrUpdate,
+        responses={201: dtos.DataContract},
+    )
     @contracts_list.mapping.post
     def create_contract(self, request, pk: str):
         contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
@@ -238,7 +241,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
-    @extend_schema(responses={200: dtos.DataContractCreateOrUpdate})
+    @extend_schema(request=dtos.DataContractCreateOrUpdate, responses={200: dtos.DataContract})
     @contract_detail.mapping.patch
     def update_contract(self, request, pk=None, contract_id=None):
         contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
@@ -251,7 +254,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
-    @extend_schema(responses={200: dtos.SetState})
+    @extend_schema(request=dtos.SetState, responses={200: dtos.DataContract})
     @action(
         detail=True,
         methods=["post"],
@@ -278,7 +281,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(status=204)
 
-    @extend_schema(responses={200: dtos.Distribution})
+    @extend_schema(responses={200: dtos.PaginatedResponse[dtos.Distribution]})
     @action(
         detail=True,
         methods=["get"],
@@ -292,7 +295,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(distributions)
         return Response(data, status=200)
 
-    @extend_schema(responses={201: dtos.DistributionCreateOrUpdate})
+    @extend_schema(request=dtos.DistributionCreateOrUpdate, responses={201: dtos.Distribution})
     @distributions_list.mapping.post
     def create_distribution(self, request, pk=None, contract_id=None):
         distribution_dto = self._validate_dto(
@@ -321,7 +324,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(distribution)
         return Response(data, status=200)
 
-    @extend_schema(responses={200: dtos.DistributionCreateOrUpdate})
+    @extend_schema(request=dtos.DistributionCreateOrUpdate, responses={200: dtos.Distribution})
     @distribution_detail.mapping.patch
     def update_distribution(self, request, pk=None, contract_id=None, distribution_id=None):
         distribution_dto = self._validate_dto(request.data, dtos.DistributionCreateOrUpdate)
@@ -346,14 +349,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(status=204)
 
-    @extend_schema(responses={200: dtos.DataService})
+    @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataService]})
     @action(detail=True, methods=["get"], url_path="services", url_name="services-list")
     def services_list(self, _request, pk=None):
         services = product_service.get_services(int(pk))
         data = dtos.to_response_object(services)
         return Response(data, status=200)
 
-    @extend_schema(responses={201: dtos.DataServiceCreateOrUpdate})
+    @extend_schema(request=dtos.DataServiceCreateOrUpdate, responses={201: dtos.DataService})
     @services_list.mapping.post
     def create_service(self, request, pk=None):
         service_dto = self._validate_dto(request.data, dtos.DataServiceCreateOrUpdate)
@@ -377,7 +380,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(service)
         return Response(data, status=200)
 
-    @extend_schema(responses={200: dtos.DataServiceCreateOrUpdate})
+    @extend_schema(request=dtos.DataServiceCreateOrUpdate, responses={200: dtos.DataService})
     @service_detail.mapping.patch
     def update_service(self, request, pk=None, service_id=None):
         service_dto = self._validate_dto(request.data, dtos.DataServiceCreateOrUpdate)
