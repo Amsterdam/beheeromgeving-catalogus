@@ -45,12 +45,12 @@ services:
       INITIALIZE_DB: "${INITIALIZE_DB:-true}"
       FEATURE_FLAG_USE_AUTH: "${FEATURE_FLAG_USE_AUTH:-true}"
     command: >
-      /bin/bash -c "sh /app/initialize_db.sh
+      /bin/bash -c "sh /app/src/initialize_db.sh
       && uv run uwsgi --py-auto-reload=1 --enable-threads --lazy-apps --buffer-size=65535"
     develop:
       watch:
         - action: sync
           path: /src
-          target: /app
+          target: /app/src
         - action: rebuild
           path: /pyproject.toml
