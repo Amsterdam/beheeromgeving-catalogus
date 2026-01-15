@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --all-groups
-COPY /src /app
+COPY /src /app/src
 COPY /tests /app/tests
 
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -27,7 +27,7 @@ FROM ghcr.io/astral-sh/uv:0.9-python3.14-trixie-slim
 RUN groupadd --system --gid 999  catalogus  && useradd --system --gid 999 \
     --uid 1001 --create-home catalogus
 RUN apt update && apt install --no-install-recommends -y \
-    curl \
+curl \
     libpq5
 
 WORKDIR /app
@@ -38,10 +38,11 @@ COPY --from=builder --chown=catalogus:catalogus /app /app
 ENV DJANGO_SETTINGS_MODULE=beheeromgeving.settings \
     DJANGO_DEBUG=false \
     UWSGI_HTTP_SOCKET=:8000 \
-    UWSGI_MODULE=catalogus.wsgi \
+    UWSGI_MODULE=beheeromgeving.wsgi \
     UWSGI_CALLABLE=application \
     UWSGI_MASTER=1
-RUN uv run manage.py collectstatic --noinput
+
+RUN uv run --no-build --no-project src/manage.py collectstatic --noinput
 ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT []
 EXPOSE 8000
