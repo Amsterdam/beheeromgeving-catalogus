@@ -10,15 +10,11 @@ RUN apt update && apt install --no-install-recommends -y \
 WORKDIR /app
 COPY ./pyproject.toml ./uv.lock ./
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project --all-groups
+RUN uv sync --frozen --no-install-project --all-groups
 COPY /src /app/src
 COPY /tests /app/tests
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --all-groups
+RUN uv sync --frozen --all-groups
 
 # Start runtime image,
 FROM ghcr.io/astral-sh/uv:0.9-python3.14-trixie-slim
@@ -34,6 +30,7 @@ WORKDIR /app
 # Copy python build artifacts from builder image
 RUN chown catalogus:catalogus /app
 COPY --from=builder --chown=catalogus:catalogus /app /app
+USER catalogus
 # Have some defaults so the container is easier to start
 ENV DJANGO_SETTINGS_MODULE=beheeromgeving.settings \
     DJANGO_DEBUG=false \
@@ -42,10 +39,9 @@ ENV DJANGO_SETTINGS_MODULE=beheeromgeving.settings \
     UWSGI_CALLABLE=application \
     UWSGI_MASTER=1
 
-RUN uv run --no-build --no-project src/manage.py collectstatic --noinput
+RUN uv run src/manage.py collectstatic --noinput
 ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT []
 EXPOSE 8000
 
-USER catalogus
 CMD ["uv", "run","uwsgi"]
