@@ -13,17 +13,12 @@ dependencies = [
     "datapunt-authorization-django==1.6.2",
     "django==5.2.9",
     "django-cors-headers==4.9.0",
-    "django-coverage-plugin==3.2.0",
     "django-environ==0.12.0",
     "django-healthchecks==1.5.0",
     "djangorestframework==3.16.1",
     "drf-spectacular==0.29.0",
-    "pre-commit>=4.5.1",
     "psycopg==3.3.2",
     "pydantic[email]==2.12.5",
-    "pytest==9.0.2",
-    "pytest-cov==7.0.0",
-    "pytest-django==4.11.1",
     "python-dateutil==2.9.0.post0",
     "python-json-logger==4.0.0",
     "python-owasp-zap-v2-4==0.1.0",
@@ -34,6 +29,24 @@ dependencies = [
     "uwsgi-readiness-check==0.2.0",
     "uwsgitop==0.12",
     "whitenoise==6.11.0",
+]
+
+[dependency-groups]
+dev = [
+    "black==25.12.0",
+    "debugpy==1.8.19",
+    "django-coverage-plugin==3.2.0",
+    "django-debug-toolbar==6.1.0",
+    "django-extensions==4.1",
+    "pre-commit==4.5.1",
+    "pytest==9.0.2",
+    "pytest-cov==7.0.0",
+    "pytest-django==4.11.1",
+    "pytest-sugar==1.1.1",
+    "requests-mock==1.12.1",
+    "ruff==0.14.10",
+    "termcolor==3.3.0",
+    "ty>=0.0.12",
 ]
 
 [build-system]
@@ -159,42 +172,3 @@ max-complexity = 10
 [tool.mypy]
 disable_error_code = ["import-untyped"]
 exclude = ["src/beheeromgeving/migrations", "settings.py"]
-
-[dependency-groups]
-dev = [
-    "azure-identity==1.25.1",
-    "azure-monitor-opentelemetry==1.6.10",
-    "black==25.12.0",
-    "datapunt-authorization-django==1.6.2",
-    "debugpy==1.8.19",
-    "django==5.2.9",
-    "django-cors-headers==4.9.0",
-    "django-coverage-plugin==3.2.0",
-    "django-debug-toolbar==6.1.0",
-    "django-environ==0.12.0",
-    "django-extensions==4.1",
-    "django-healthchecks==1.5.0",
-    "djangorestframework==3.16.1",
-    "drf-spectacular==0.29.0",
-    "pip-tools==7.5.2",
-    "pre-commit==4.5.1",
-    "psycopg==3.3.2",
-    "pur==7.3.3",
-    "pydantic[email]==2.12.5",
-    "pytest==9.0.2",
-    "pytest-cov==7.0.0",
-    "pytest-django==4.11.1",
-    "pytest-sugar==1.1.1",
-    "python-dateutil==2.9.0.post0",
-    "python-json-logger==4.0.0",
-    "python-owasp-zap-v2-4==0.1.0",
-    "requests==2.32.5",
-    "requests-mock==1.12.1",
-    "ruff==0.14.10",
-    "termcolor==3.3.0",
-    "ty>=0.0.12",
-    "unidecode==1.4.0",
-    "uwsgi-readiness-check==0.2.0",
-    "uwsgitop==0.12",
-    "whitenoise==6.11.0",
-]
