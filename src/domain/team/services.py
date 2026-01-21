@@ -9,10 +9,7 @@ class TeamService(AbstractService):
     def __init__(self, repo: AbstractRepository[Team], **kwargs):
         self.repository = repo
 
-    def refresh(self):
-        self.repository.refresh_from_db()
-
-    def get_team(self, team_id: str) -> Team:
+    def get_team(self, team_id: int) -> Team:
         return self.repository.get(team_id)
 
     def get_teams(self) -> list[Team]:
@@ -38,8 +35,8 @@ class TeamService(AbstractService):
         return self._persist(team)
 
     @authorize.is_admin
-    def delete_team(self, team_id: int, **kwargs) -> None:
+    def delete_team(self, team_id: int, **kwargs) -> int:
         return self.repository.delete(team_id)
 
-    def _persist(self, team: Team) -> None:
+    def _persist(self, team: Team) -> Team:
         return self.repository.save(team)
