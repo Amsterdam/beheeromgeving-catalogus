@@ -16,9 +16,6 @@ class ProductService(AbstractService):
     def __init__(self, repo: AbstractRepository[Product]):
         self.repository = repo
 
-    def refresh(self):
-        self.repository.refresh_from_db()
-
     def get_products(self, **kwargs) -> list[Product]:
         return self.repository.list(**kwargs)
 
@@ -135,7 +132,7 @@ class ProductService(AbstractService):
     @authorize.is_team_member
     def delete_distribution(
         self, product_id: int, contract_id: int, distribution_id: int, **kwargs
-    ) -> DataContract:
+    ) -> int:
         product = self.repository.get(product_id)
         product.delete_distribution(contract_id, distribution_id)
         self._persist(product)

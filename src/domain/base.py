@@ -21,29 +21,29 @@ class BaseObject:
             setattr(self, k, v)
 
 
+# alias for typing
+list_ = list
+
+
 class AbstractRepository[T](abc.ABC):
     @abc.abstractmethod
-    def get(self, ref) -> T:
+    def get(self, id: int) -> T:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_by_name(self, str) -> T:
+    def get_by_name(self, name: str) -> T:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def list(self) -> list[T]:
+    def list(self) -> list_[T]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save(self, ref, data) -> T:
+    def save(self, item: T) -> T:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def delete(self, ref) -> int:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def refresh_from_db(self) -> None:
+    def delete(self, id: int) -> int:
         raise NotImplementedError
 
 
