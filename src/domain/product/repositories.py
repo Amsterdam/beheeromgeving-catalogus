@@ -1,3 +1,4 @@
+from django.db.models import F, QuerySet, Value
 from django.db.utils import IntegrityError
 
 from beheeromgeving import models as orm
@@ -9,31 +10,27 @@ from domain.product import Product
 list_ = list
 
 
-class ProductRepository(AbstractRepository):
-    _products: dict[int, Product]
+class ProductRepository(AbstractRepository[Product]):
+    qs: QuerySet[orm.Product]
 
     def __init__(self):
-        self.refresh_from_db()
+        self.qs = orm.Product.objects.all()
 
-    def refresh_from_db(self):
-        self._products = {p.id: p.to_domain() for p in orm.Product.objects.all()}
-
-    def get(self, product_id: int) -> Product:
+    def get(self, id: int) -> Product:
         try:
-            return self._products[product_id]
-        except KeyError as e:
+            return self.qs.get(pk=id).to_domain()
+        except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
 
     def get_by_name(self, name: str) -> Product:
-        try:
-            normalized_name = name.replace("_", " ").lower()
-            return next(
-                product
-                for product in self._products.values()
-                if normalized_name.startswith(product.name.lower())
-            )
-        except StopIteration as e:
-            raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.") from e
+        product = (
+            self.qs.annotate(search_name=Value(name))
+            .filter(search_name__istartswith=F("name"))
+            .first()
+        )
+        if not product:
+            raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.")
+        return product.to_domain()
 
     def list(
         self,
@@ -43,7 +40,11 @@ class ProductRepository(AbstractRepository):
         order: tuple[str, bool] | None = ("name", False),
         **kwargs,
     ) -> list_[Product]:
-        products = self.search(query) if query is not None else list_(self._products.values())
+        if query:
+            products = {p.pk: p.to_domain() for p in self.qs}
+            products = self.search(products, query)
+        else:
+            products = [p.to_domain() for p in self.qs]
         if filter:
             products = self.filter(products, filter)
         if order:
@@ -54,17 +55,17 @@ class ProductRepository(AbstractRepository):
             products = [product for product in products if product.team_id in team_ids]
         return products
 
-    def search(self, query: str) -> list_[Product]:
+    def search(self, products: dict[int, Product], query: str) -> list_[Product]:
         query_words = query.lower().split(" ")
         # count how many occurences each word of the query are in the product's
         # search fields.
         results = {
             p_id: sum(1 for q in query_words if q in p.search_string)
-            for p_id, p in self._products.items()
+            for p_id, p in products.items()
         }
         # sort them so the highest count appears first, and remove if count is 0.
         return [
-            self._products[p_id]
+            products[p_id]
             for p_id, count in sorted(results.items(), key=lambda item: item[1], reverse=True)
             if count > 0
         ]
@@ -80,19 +81,15 @@ class ProductRepository(AbstractRepository):
     def filter(self, products: list_[Product], filter: dict) -> list_[Product]:
         return [product for product in products if product.matches_filter(filter)]
 
-    def save(self, product: Product) -> Product:
+    def save(self, item: Product) -> Product:
         try:
-            saved_product = orm.Product.from_domain(product)
+            return orm.Product.from_domain(item)
         except IntegrityError as e:
-            raise exceptions.ValidationError(f"Error for {product.name}: {e!s}") from e
-        self._products[saved_product.id] = saved_product
-        return saved_product
+            raise exceptions.ValidationError(f"Error for {item.name}: {e!s}") from e
 
-    def delete(self, product_id: int) -> int:
-        try:
-            self._products.pop(product_id)
-        except KeyError as e:
-            raise exceptions.ObjectDoesNotExist from e
+    def delete(self, id: int) -> int:
+        num_delete, _ = orm.Product.objects.filter(pk=id).delete()
+        if num_delete == 0:
+            raise exceptions.ObjectDoesNotExist
 
-        orm.Product.objects.filter(id=product_id).delete()
-        return product_id
+        return id

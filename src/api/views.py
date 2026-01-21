@@ -81,10 +81,10 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
     @extend_schema(responses={200: dtos.TeamCreate})
     def create(self, request):
         team_dto = self._validate_dto(request.data)
-        team_id = team_service.create_team(
+        team = team_service.create_team(
             data=team_dto.model_dump(), scopes=request.get_token_scopes
         )
-        return Response(status=201, data=team_id)
+        return Response(status=201, data=team.id)
 
     @extend_schema(responses={200: dtos.TeamPartial})
     def partial_update(self, request, pk=None):
