@@ -41,7 +41,6 @@ retest:                                ## Run the failed tests again.
 ##
 
 format:                                ## Fix code-formatting of all files.
-	uv run black .
 	uv run ruff check --fix-only .
 #	pre-commit run -a
 

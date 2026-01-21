@@ -54,7 +54,7 @@ class Distribution(BaseObject):
 
 
 class ContractValidator:
-    def __init__(self, datacontract: "DataContract"):
+    def __init__(self, datacontract: DataContract):
         self.contract = datacontract
 
     def get_missing_fields(self) -> list[str]:
@@ -112,7 +112,7 @@ class DataContract(BaseObject):
 
 
 class ProductValidator:
-    def __init__(self, prod: "Product"):
+    def __init__(self, prod: Product):
         self.product = prod
 
     def can_create_contract(self) -> bool:
