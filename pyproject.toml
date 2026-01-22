@@ -11,7 +11,7 @@ dependencies = [
     "azure-identity==1.25.1",
     "azure-monitor-opentelemetry==1.8.4",
     "datapunt-authorization-django==1.7.0",
-    "django==5.2.9",
+    "django==5.2.10",
     "django-cors-headers==4.9.0",
     "django-environ==0.12.0",
     "django-healthchecks==1.5.0",
