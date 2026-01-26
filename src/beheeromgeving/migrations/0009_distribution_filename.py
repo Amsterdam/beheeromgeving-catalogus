@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beheeromgeving", "0008_alter_dataservice_endpoint_url_and_more"),
     ]

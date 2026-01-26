@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beheeromgeving", "0002_datacontract_id_alter_datacontract_name"),
     ]
@@ -19,7 +18,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 (
@@ -42,21 +44,33 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
-                ("name", models.CharField(max_length=64, unique=True, verbose_name="Name")),
+                (
+                    "name",
+                    models.CharField(max_length=64, unique=True, verbose_name="Name"),
+                ),
                 (
                     "description",
                     models.CharField(blank=True, max_length=512, verbose_name="Description"),
                 ),
-                ("acronym", models.CharField(max_length=10, unique=True, verbose_name="Acronym")),
-                ("po_name", models.CharField(max_length=64, verbose_name="Product Owner Name")),
+                (
+                    "acronym",
+                    models.CharField(max_length=10, unique=True, verbose_name="Acronym"),
+                ),
+                (
+                    "po_name",
+                    models.CharField(max_length=64, verbose_name="Product Owner Name"),
+                ),
                 (
                     "po_email",
                     models.CharField(
                         max_length=64,
-                        validators=[django.core.validators.EmailValidator],
+                        validators=[django.core.validators.EmailValidator],  # ty: ignore
                         verbose_name="Product Owner Email",
                     ),
                 ),
@@ -64,11 +78,14 @@ class Migration(migrations.Migration):
                     "contact_email",
                     models.CharField(
                         max_length=64,
-                        validators=[django.core.validators.EmailValidator],
+                        validators=[django.core.validators.EmailValidator],  # ty: ignore
                         verbose_name="Contact E-mail",
                     ),
                 ),
-                ("scope", models.CharField(max_length=64, verbose_name="Scope (Entra Group)")),
+                (
+                    "scope",
+                    models.CharField(max_length=64, verbose_name="Scope (Entra Group)"),
+                ),
             ],
         ),
         migrations.RemoveField(
@@ -152,7 +169,9 @@ class Migration(migrations.Migration):
             model_name="datacontract",
             name="has_special_personal_data",
             field=models.BooleanField(
-                default=False, null=True, verbose_name="Bevat Bijzondere Persoonsgegevens"
+                default=False,
+                null=True,
+                verbose_name="Bevat Bijzondere Persoonsgegevens",
             ),
         ),
         migrations.AddField(
@@ -277,7 +296,7 @@ class Migration(migrations.Migration):
                 blank=True,
                 help_text="Contact E-mail adres van de verantwoordelijke Data Steward in de business",
                 null=True,
-                validators=[django.core.validators.EmailValidator],
+                validators=[django.core.validators.EmailValidator],  # ty: ignore
                 verbose_name="Business Data Steward",
             ),
         ),
@@ -349,7 +368,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 (
@@ -469,7 +491,9 @@ class Migration(migrations.Migration):
                 (
                     "has_special_personal_data",
                     models.BooleanField(
-                        default=False, null=True, verbose_name="Bevat Bijzondere Persoonsgegevens"
+                        default=False,
+                        null=True,
+                        verbose_name="Bevat Bijzondere Persoonsgegevens",
                     ),
                 ),
                 ("last_updated", models.DateTimeField(auto_now=True)),

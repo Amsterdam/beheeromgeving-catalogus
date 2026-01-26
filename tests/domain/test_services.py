@@ -12,6 +12,7 @@ TEAM_BOR = ["scope_bor"]
 
 class TestTeamService:
     def test_get_team(self, team_service: TeamService, team: Team):
+        assert team.id
         result = team_service.get_team(team.id)
         assert result == team
 
@@ -40,7 +41,10 @@ class TestTeamService:
 
     @pytest.mark.parametrize(
         "scopes",
-        [pytest.param(UNAUTHORIZED, id="Unauthorized"), pytest.param(TEAM_BOR, id="Team Scope")],
+        [
+            pytest.param(UNAUTHORIZED, id="Unauthorized"),
+            pytest.param(TEAM_BOR, id="Team Scope"),
+        ],
     )
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_team_unauthorized(self, team_service: TeamService, scopes):
@@ -56,7 +60,7 @@ class TestTeamService:
         team_service.create_team(data=team_data, scopes=scopes)
 
     def test_update_team(self, team_service: TeamService, team: Team):
-
+        assert team.id
         team_service.update_team(
             team_id=team.id, data={"description": "New Description"}, scopes=ADMIN_SCOPE
         )
@@ -66,11 +70,15 @@ class TestTeamService:
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_update_team_unauthorized_field(self, team_service: TeamService, team: Team):
+        assert team.id
         team_service.update_team(
-            team_id=team.id, data={"description": "New Description"}, scopes=[team.scope]
+            team_id=team.id,
+            data={"description": "New Description"},
+            scopes=[team.scope],
         )
 
     def test_update_team_by_team_member(self, team_service: TeamService, team: Team):
+        assert team.id
         team_service.update_team(
             team_id=team.id,
             data={
@@ -90,6 +98,7 @@ class TestTeamService:
     def test_update_team_by_other_team_unauthorized(
         self, team_service: TeamService, team: Team, other_team: Team
     ):
+        assert team.id
         team_service._persist(other_team)
         team_service.update_team(
             team_id=team.id,
@@ -108,12 +117,14 @@ class TestTeamService:
         )
 
     def test_delete_team_by_admin(self, team_service: TeamService, team: Team):
+        assert team.id
         team_service.delete_team(team_id=team.id, scopes=ADMIN_SCOPE)
 
         assert len(team_service.get_teams()) == 0
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_delete_team_unauthorized(self, team_service: TeamService, team: Team):
+        assert team.id
         team_service.delete_team(team_id=team.id, scopes=UNAUTHORIZED)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
@@ -128,6 +139,7 @@ class TestProductService:
         assert result == [product]
 
     def test_get_product(self, product_service: ProductService, product: Product):
+        assert product.id
         result = product_service.get_product(product.id)
 
         assert result == product
@@ -151,6 +163,7 @@ class TestProductService:
         product_service.create_product(data=data, scopes=[other_team.scope])
 
     def test_update_product(self, product_service: ProductService, product: Product, team: Team):
+        assert product.id
         data = {"description": "a fancy product"}
         product_service.update_product(product_id=product.id, data=data, scopes=[team.scope])
 
@@ -164,6 +177,7 @@ class TestProductService:
         product_service.update_product(product_id=1337, data=data, scopes=[team.scope])
 
     def test_delete_product(self, product_service: ProductService, product: Product, team: Team):
+        assert product.id
         product_service.delete_product(product_id=product.id, scopes=[team.scope])
 
         assert len(product_service.get_products()) == 0
@@ -173,6 +187,7 @@ class TestProductService:
         product_service.delete_product(product_id=1337, scopes=[team.scope])  # non-existent
 
     def test_get_contracts(self, product_service: ProductService, product: Product):
+        assert product.id
         result = product_service.get_contracts(product.id)
 
         assert result == product.contracts
@@ -182,12 +197,15 @@ class TestProductService:
         product_service.get_contracts(1337)
 
     def test_get_contract(self, product_service: ProductService, product: Product):
+        assert product.id
+        assert product.contracts[0].id
         result = product_service.get_contract(product.id, product.contracts[0].id)
 
         assert result == product.contracts[0]
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contract_non_existent(self, product_service: ProductService, product: Product):
+        assert product.id
         product_service.get_contract(product.id, contract_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
@@ -201,20 +219,27 @@ class TestProductService:
         product = product_service.create_product(
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
+        assert product.id
         product_service.get_contract(product.id, contract_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contract_from_other_product(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.id
+        assert product.contracts[0].id
         new_product = product_service.create_product(
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
+        assert new_product.id
         product_service.get_contract(new_product.id, product.contracts[0].id)
 
     def test_create_contract(self, product_service: ProductService, product: Product, team: Team):
+        assert product.id
         contract = product_service.create_contract(
-            product_id=product.id, data={"purpose": "onderhoud van bomen"}, scopes=[team.scope]
+            product_id=product.id,
+            data={"purpose": "onderhoud van bomen"},
+            scopes=[team.scope],
         )
 
         assert isinstance(contract, DataContract)
@@ -236,9 +261,13 @@ class TestProductService:
         product = product_service.create_product(
             data={"team_id": team.id, **data}, scopes=[team.scope]
         )
+        assert product.id
+
         with pytest.raises(ValidationError, match=missing_fields):
             product_service.create_contract(
-                product_id=product.id, data={"purpose": "onderhoud van bomen"}, scopes=[team.scope]
+                product_id=product.id,
+                data={"purpose": "onderhoud van bomen"},
+                scopes=[team.scope],
             )
 
     def test_create_contract_no_missing_fields(
@@ -250,8 +279,12 @@ class TestProductService:
             data={"team_id": team.id, "name": "Product", "type": "D"},
             scopes=[team.scope],
         )
+        assert product.id
+
         contract = product_service.create_contract(
-            product_id=product.id, data={"purpose": "onderhoud van bomen"}, scopes=[team.scope]
+            product_id=product.id,
+            data={"purpose": "onderhoud van bomen"},
+            scopes=[team.scope],
         )
         assert contract.purpose == "onderhoud van bomen"
 
@@ -264,6 +297,9 @@ class TestProductService:
         )
 
     def test_update_contract(self, product_service: ProductService, product: Product, team: Team):
+        assert product.id
+        assert product.contracts[0].id
+
         result = product_service.update_contract(
             product_id=product.id,
             contract_id=product.contracts[0].id,
@@ -278,6 +314,8 @@ class TestProductService:
         self, product_service: ProductService, product: Product, team: Team
     ):
         """Ensure that an update to the contract keeps distributions intact."""
+        assert product.id
+        assert product.contracts[0].id
         current_distributions = product.contracts[0].distributions
         result = product_service.update_contract(
             product_id=product.id,
@@ -295,6 +333,8 @@ class TestProductService:
         new_product = product_service.create_product(
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
+        assert new_product.id
+        assert product.contracts[0].id
         product_service.update_contract(
             product_id=new_product.id,
             contract_id=product.contracts[0].id,
@@ -303,8 +343,12 @@ class TestProductService:
         )
 
     def test_delete_contract(self, product_service: ProductService, product: Product, team: Team):
+        assert product.id
+        assert product.contracts[0].id
         product_service.delete_contract(
-            product_id=product.id, contract_id=product.contracts[0].id, scopes=[team.scope]
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            scopes=[team.scope],
         )
 
         assert len(product_service.get_contracts(product.id)) == 0
@@ -313,6 +357,7 @@ class TestProductService:
     def test_delete_contract_non_existent(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.id
         product_service.delete_contract(
             product_id=product.id, contract_id=1337, scopes=[team.scope]
         )
@@ -321,6 +366,7 @@ class TestProductService:
     def test_delete_contract_non_existent_product(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.contracts[0].id
         product_service.delete_contract(
             product_id=1337, contract_id=product.contracts[0].id, scopes=[team.scope]
         )
@@ -333,9 +379,15 @@ class TestProductService:
         ],
     )
     def test_update_product_publication(
-        self, data, updated_status, product_service: ProductService, product: Product, team: Team
+        self,
+        data,
+        updated_status,
+        product_service: ProductService,
+        product: Product,
+        team: Team,
     ):
         """Test to see if a product's publication status is updated accordingly."""
+        assert product.id
         result = product_service.update_publication_status(
             product_id=product.id, data=data, scopes=[team.scope]
         )
@@ -350,8 +402,15 @@ class TestProductService:
         ],
     )
     def test_update_contract_publication(
-        self, data, updated_status, product_service: ProductService, product: Product, team: Team
+        self,
+        data,
+        updated_status,
+        product_service: ProductService,
+        product: Product,
+        team: Team,
     ):
+        assert product.id
+        assert product.contracts[0].id
         result = product_service.update_contract_publication_status(
             product_id=product.id,
             contract_id=product.contracts[0].id,
@@ -380,6 +439,7 @@ class TestProductService:
         product_missing_fields = product_service.create_product(
             data={"team_id": team.id, **data}, scopes=[team.scope]
         )
+        assert product_missing_fields.id
         with pytest.raises(ValidationError, match=missing_fields):
             product_service.update_publication_status(
                 product_id=product_missing_fields.id,
@@ -406,9 +466,11 @@ class TestProductService:
             data={"team_id": team.id, "name": "Product", "type": "D"},
             scopes=[team.scope],
         )
+        assert new_product.id
         contract_missing_fields = product_service.create_contract(
             product_id=new_product.id, data=data, scopes=[team.scope]
         )
+        assert contract_missing_fields.id
         with pytest.raises(ValidationError, match=missing_fields):
             product_service.update_contract_publication_status(
                 product_id=new_product.id,
@@ -432,7 +494,7 @@ class TestProductService:
         product_missing_fields = product_service.create_product(
             data={"team_id": team.id, **data}, scopes=[team.scope]
         )
-
+        assert product_missing_fields.id
         # This should not fail
         updated_product = product_service.update_publication_status(
             product_id=product_missing_fields.id,
@@ -460,9 +522,11 @@ class TestProductService:
             data={"team_id": team.id, "name": "Product", "type": "D"},
             scopes=[team.scope],
         )
+        assert new_product.id
         contract_missing_fields = product_service.create_contract(
             product_id=new_product.id, data=data, scopes=[team.scope]
         )
+        assert contract_missing_fields.id
 
         # This should not fail
         updated_contract = product_service.update_contract_publication_status(
@@ -475,12 +539,18 @@ class TestProductService:
         assert updated_contract.publication_status == "R"
 
     def test_get_distributions(self, product_service: ProductService, product: Product):
+        assert product.id
+        assert product.contracts[0].id
         result = product_service.get_distributions(
             product_id=product.id, contract_id=product.contracts[0].id
         )
         assert result == product.contracts[0].distributions
 
     def test_get_distribution(self, product_service: ProductService, product: Product):
+        assert product.id
+        assert product.contracts[0].id
+        assert product.contracts[0].distributions[0].id
+
         result = product_service.get_distribution(
             product_id=product.id,
             contract_id=product.contracts[0].id,
@@ -492,13 +562,19 @@ class TestProductService:
     def test_get_distribution_non_existent(
         self, product_service: ProductService, product: Product
     ):
+        assert product.id
+        assert product.contracts[0].id
         product_service.get_distribution(
-            product_id=product.id, contract_id=product.contracts[0].id, distribution_id=1337
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            distribution_id=1337,
         )
 
     def test_create_distribution(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.id
+        assert product.contracts[0].id
         data = {"format": "TEST", "type": "F", "filename": "file.test"}
         distribution = product_service.create_distribution(
             product_id=product.id,
@@ -506,6 +582,7 @@ class TestProductService:
             data=data,
             scopes=[team.scope],
         )
+        assert distribution.id
         updated_product = product_service.get_product(product.id)
         saved_distribution = updated_product.get_distribution(
             contract_id=product.contracts[0].id, distribution_id=distribution.id
@@ -517,6 +594,8 @@ class TestProductService:
     def test_create_distribution_not_allowed(
         self, product_service: ProductService, product: Product
     ):
+        assert product.id
+        assert product.contracts[0].id
         data = {"format": "TEST", "type": "F"}
         product_service.create_distribution(
             product_id=product.id,
@@ -528,6 +607,9 @@ class TestProductService:
     def test_update_distribution(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.id
+        assert product.contracts[0].id
+        assert product.contracts[0].distributions[1].id
         contract_id = product.contracts[0].id
         distribution_id = product.contracts[0].distributions[1].id
         data = {"format": "TEST", "type": "F"}
@@ -547,6 +629,9 @@ class TestProductService:
     def test_update_distribution_not_allowed(
         self, product_service: ProductService, product: Product
     ):
+        assert product.id
+        assert product.contracts[0].id
+        assert product.contracts[0].distributions[1].id
         data = {"format": "TEST", "type": "F"}
         product_service.update_distribution(
             product_id=product.id,
@@ -559,6 +644,9 @@ class TestProductService:
     def test_delete_distribution(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.id
+        assert product.contracts[0].id
+        assert product.contracts[0].distributions[1].id
         contract_id = product.contracts[0].id
         distribution_id = product.contracts[0].distributions[1].id
         product_service.delete_distribution(
@@ -575,6 +663,9 @@ class TestProductService:
     def test_delete_distribution_not_allowed(
         self, product_service: ProductService, product: Product
     ):
+        assert product.id
+        assert product.contracts[0].id
+        assert product.contracts[0].distributions[1].id
         contract_id = product.contracts[0].id
         distribution_id = product.contracts[0].distributions[1].id
         product_service.delete_distribution(
@@ -585,6 +676,7 @@ class TestProductService:
         )
 
     def test_get_services(self, product_service: ProductService, product: Product):
+        assert product.id
         result = product_service.get_services(product.id)
 
         assert result == product.services
@@ -594,12 +686,15 @@ class TestProductService:
         product_service.get_services(1337)
 
     def test_get_service(self, product_service: ProductService, product: Product):
+        assert product.id
+        assert product.services[0].id
         result = product_service.get_service(product.id, product.services[0].id)
 
         assert result == product.services[0]
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_service_non_existent(self, product_service: ProductService, product: Product):
+        assert product.id
         product_service.get_service(product.id, service_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
@@ -613,6 +708,7 @@ class TestProductService:
         product = product_service.create_product(
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
+        assert product.id
         product_service.get_service(product.id, service_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
@@ -622,9 +718,12 @@ class TestProductService:
         new_product = product_service.create_product(
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
+        assert new_product.id
+        assert product.services[0].id
         product_service.get_service(new_product.id, product.services[0].id)
 
     def test_create_service(self, product_service: ProductService, product: Product, team: Team):
+        assert product.id
         result = product_service.create_service(
             product_id=product.id, data={"type": "WMS"}, scopes=[team.scope]
         )
@@ -639,6 +738,8 @@ class TestProductService:
         product_service.create_service(product_id=1337, data={"type": "WMS"}, scopes=[team.scope])
 
     def test_update_service(self, product_service: ProductService, product: Product, team: Team):
+        assert product.id
+        assert product.services[0].id
         result = product_service.update_service(
             product_id=product.id,
             service_id=product.services[0].id,
@@ -653,9 +754,11 @@ class TestProductService:
     def test_update_service_other_product(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.services[0].id
         new_product = product_service.create_product(
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
+        assert new_product.id
         product_service.update_service(
             product_id=new_product.id,
             service_id=product.services[0].id,
@@ -666,7 +769,9 @@ class TestProductService:
     def test_delete_service(self, product_service, product: Product, team: Team):
         product.contracts = []
         product_service.delete_service(
-            product_id=product.id, service_id=product.services[0].id, scopes=[team.scope]
+            product_id=product.id,
+            service_id=product.services[0].id,
+            scopes=[team.scope],
         )
 
         assert len(product_service.get_services(product.id)) == 0
@@ -675,20 +780,26 @@ class TestProductService:
     def test_delete_service_fails_when_distribution_accesses_it(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.id
+        assert product.services[0].id
         product_service.delete_service(
-            product_id=product.id, service_id=product.services[0].id, scopes=[team.scope]
+            product_id=product.id,
+            service_id=product.services[0].id,
+            scopes=[team.scope],
         )
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_delete_service_non_existent(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.id
         product_service.delete_service(product_id=product.id, service_id=1337, scopes=[team.scope])
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_delete_service_non_existent_product(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.services[0].id
         product_service.delete_service(
             product_id=1337, service_id=product.services[0].id, scopes=[team.scope]
         )

@@ -6,7 +6,6 @@ from beheeromgeving.migration_utils import revert_team_scopes, update_team_scope
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beheeromgeving", "0011_datacontract_created_at_product_created_at"),
     ]

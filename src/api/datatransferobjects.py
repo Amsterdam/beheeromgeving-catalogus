@@ -2,31 +2,31 @@ from collections.abc import Sequence
 from datetime import date, datetime
 from typing import Literal, overload
 
-from django.db.models.manager import BaseManager
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from domain.base import BaseObject
 from domain.product import enums, objects
 from domain.team import Team as DomainTeam
 
 
 @overload
-def to_response_object(obj: Sequence[objects.BaseObject], dto_type: str) -> list[dict]: ...
+def to_response_object(obj: Sequence[BaseObject], dto_type: str | None = None) -> list[dict]: ...
 
 
 @overload
-def to_response_object(obj: objects.BaseObject, dto_type: str) -> dict: ...
+def to_response_object(obj: BaseObject, dto_type: str | None = None) -> dict: ...
 
 
 def to_response_object(
-    obj: objects.BaseObject | Sequence[objects.BaseObject], dto_type: str | None = None
+    obj: BaseObject | Sequence[BaseObject], dto_type: str | None = None
 ) -> dict | list[dict]:
-    if isinstance(obj, Sequence):
+    if not isinstance(obj, BaseObject):
         return [to_dto(el, dto_type=dto_type or "list").model_dump() for el in obj]
     return to_dto(obj, dto_type=dto_type or "detail").model_dump()
 
 
-def to_dto(domain_object: objects.BaseObject, dto_type: str = "detail") -> BaseModel:
-    OBJECT_MAPPING: dict[type[objects.BaseObject], dict[str, type[BaseModel]]] = {
+def to_dto(domain_object: BaseObject, dto_type: str = "detail") -> BaseModel:
+    OBJECT_MAPPING: dict[type[BaseObject], dict[str, type[BaseModel]]] = {
         DomainTeam: {
             "detail": Team,
             "list": TeamList,
@@ -56,18 +56,6 @@ def to_dto(domain_object: objects.BaseObject, dto_type: str = "detail") -> BaseM
 
 class ModelMixin:
     model_config = ConfigDict(from_attributes=True)
-
-    @field_validator(
-        "contracts",
-        "distributions",
-        "access_service",
-        mode="before",
-        check_fields=False,
-    )
-    def get_all_from_manager(cls, v: object) -> list | object:
-        if isinstance(v, BaseManager):
-            return [to_dto(e) for e in v.all()]
-        return v
 
     @field_validator("sources", "sinks", "team", mode="before", check_fields=False)
     def cast_to_id(cls, v: object):
@@ -311,7 +299,14 @@ class QueryParams(BaseModel):
     @property
     def filter(self) -> dict:
         result = {}
-        for attr in ["team", "theme", "type", "confidentiality", "language", "publication_status"]:
+        for attr in [
+            "team",
+            "theme",
+            "type",
+            "confidentiality",
+            "language",
+            "publication_status",
+        ]:
             attr_value = getattr(self, attr)
             if attr_value is not None and attr_value != "*":
                 result[attr] = getattr(self, attr)
