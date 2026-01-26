@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beheeromgeving", "0004_remove_datacontract_conditions_and_more"),
     ]
@@ -23,7 +22,7 @@ class Migration(migrations.Migration):
                 help_text="Contact E-mail adres van het team",
                 max_length=128,
                 null=True,
-                validators=[django.core.validators.EmailValidator],
+                validators=[django.core.validators.EmailValidator],  # ty: ignore
                 verbose_name="Contact Email",
             ),
         ),
@@ -34,7 +33,7 @@ class Migration(migrations.Migration):
                 blank=True,
                 help_text="Contact E-mail adres van de verantwoordelijke Data Steward in de business",
                 null=True,
-                validators=[django.core.validators.EmailValidator],
+                validators=[django.core.validators.EmailValidator],  # ty: ignore
                 verbose_name="Business Data Steward",
             ),
         ),

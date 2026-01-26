@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import NewType
 
+from domain.exceptions import ValidationError
+
 
 class AuthorizationResult(StrEnum):
     GRANTED = "granted"
@@ -25,6 +27,8 @@ class Permission:
     def can_access_fields(self, fields: set[str]):
         if self.allowed_fields == self.ALL:
             return True
+        elif not isinstance(self.allowed_fields, set):
+            raise ValidationError("Permission has invalid allowed_fields.")
         return self.allowed_fields >= fields
 
 
@@ -72,7 +76,8 @@ RULES = [
         decorator_name="can_update_team",
         method_name="permit",
         permission=Permission(
-            role=Role.TEAM_MEMBER, allowed_fields={"po_name", "po_email", "contact_email"}
+            role=Role.TEAM_MEMBER,
+            allowed_fields={"po_name", "po_email", "contact_email"},
         ),
     ),
     Rule(decorator_name="is_admin", method_name="require", role=Role.ADMIN),
@@ -100,7 +105,7 @@ class AuthorizationConfiguration:
 
     def __init__(
         self,
-        admin_role: Scope,
+        admin_role: str,
         team_scopes: dict[TeamId, Scope],
         product_scopes: dict[ProductId, Scope],
         feature_enabled: bool = True,
@@ -117,8 +122,8 @@ class AuthorizationConfiguration:
             return Role.TEAM_MEMBER
         return None
 
-    def team_id_to_scope(self, team_id: TeamId) -> Scope | None:
+    def team_id_to_scope(self, team_id: TeamId) -> Scope | AuthorizationResult:
         return self.team_scopes.get(team_id, AuthorizationResult.DENIED)
 
-    def product_id_to_scope(self, product_id: ProductId) -> Scope | None:
+    def product_id_to_scope(self, product_id: ProductId) -> Scope | AuthorizationResult:
         return self.product_scopes.get(product_id, AuthorizationResult.DENIED)

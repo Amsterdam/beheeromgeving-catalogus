@@ -165,8 +165,8 @@ def many_orm_products(orm_team) -> list[Product]:
             )
         )
         Product.objects.filter(id=result[-1].id).update(
-            last_updated=datetime.fromisoformat(f"2025-12-25T00:{59-index}+00:00"),
-            created_at=datetime.fromisoformat(f"2025-12-25T00:{59-index}+00:00"),
+            last_updated=datetime.fromisoformat(f"2025-12-25T00:{59 - index}+00:00"),
+            created_at=datetime.fromisoformat(f"2025-12-25T00:{59 - index}+00:00"),
         )
     return result
 

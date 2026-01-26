@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -19,17 +18,29 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
-                ("name", models.CharField(max_length=64, unique=True, verbose_name="Name")),
-                ("acronym", models.CharField(max_length=10, unique=True, verbose_name="Acronym")),
-                ("product_owner", models.CharField(max_length=64, verbose_name="Product Owner")),
+                (
+                    "name",
+                    models.CharField(max_length=64, unique=True, verbose_name="Name"),
+                ),
+                (
+                    "acronym",
+                    models.CharField(max_length=10, unique=True, verbose_name="Acronym"),
+                ),
+                (
+                    "product_owner",
+                    models.CharField(max_length=64, verbose_name="Product Owner"),
+                ),
                 (
                     "contact_email",
                     models.CharField(
                         max_length=64,
-                        validators=[django.core.validators.EmailValidator],
+                        validators=[django.core.validators.EmailValidator],  # ty: ignore
                         verbose_name="Contact E-mail",
                     ),
                 ),
@@ -41,7 +52,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 (
@@ -130,7 +144,7 @@ class Migration(migrations.Migration):
                     models.CharField(
                         help_text="Contact E-mail adres van de verantwoordelijke Data Steward in de business",
                         null=True,
-                        validators=[django.core.validators.EmailValidator],
+                        validators=[django.core.validators.EmailValidator],  # ty: ignore
                         verbose_name="Business Data Steward",
                     ),
                 ),
@@ -258,7 +272,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 (
@@ -286,7 +303,10 @@ class Migration(migrations.Migration):
                 (
                     "id",
                     models.BigAutoField(
-                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
                     ),
                 ),
                 (

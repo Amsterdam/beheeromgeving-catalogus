@@ -10,6 +10,10 @@ from domain.team import Team as DomainTeam
 
 
 class Product(models.Model):
+    contracts: models.Manager[DataContract]
+    services: models.Manager[DataService]
+    sinks: models.Manager[Product]
+
     name = models.CharField(
         _("Naam"),
         unique=True,
@@ -25,7 +29,11 @@ class Product(models.Model):
         help_text="Beschrijving en betekenis van het Data Product",
     )
     type = models.CharField(
-        _("Product type"), max_length=1, choices=enums.ProductType.choices(), null=True, blank=True
+        _("Product type"),
+        max_length=1,
+        choices=enums.ProductType.choices(),
+        null=True,
+        blank=True,
     )
     themes = ArrayField(
         models.CharField(_("Thema('s)"), max_length=32, choices=enums.Theme.choices()),
@@ -34,7 +42,7 @@ class Product(models.Model):
         help_text="Thema's voor Data Producten zoals gedefinieerd als de thema's op nationaal "
         "niveau. Dit geeft de mogelijkheid om te koppelen op de nationale repository.",
     )
-    team: Team = models.ForeignKey(
+    team = models.ForeignKey["Team"](
         "Team",
         on_delete=models.CASCADE,
         related_name="products",
@@ -53,7 +61,7 @@ class Product(models.Model):
         blank=True,
         null=True,
         help_text="Contact E-mail adres van de verantwoordelijke Data Steward in de business",
-        validators=[EmailValidator],
+        validators=[EmailValidator()],
     )
     _contact_email = models.CharField(
         _("Contact Email"),
@@ -61,7 +69,7 @@ class Product(models.Model):
         null=True,
         blank=True,
         help_text="Contact E-mail adres van het team",
-        validators=[EmailValidator],
+        validators=[EmailValidator()],
     )
     publication_status = models.CharField(
         _("Publicatiestatus"),
@@ -114,7 +122,7 @@ class Product(models.Model):
     sources = models.ManyToManyField("self", symmetrical=False, related_name="sinks")
 
     def __str__(self):
-        return self.name or str(self.id)
+        return self.name or str(self.pk)
 
     @property
     def contact_email(self):
@@ -140,11 +148,11 @@ class Product(models.Model):
 
     def to_domain(self):
         return objects.Product(
-            id=self.id,
+            id=self.pk,
             type=self.type,
             name=self.name,
             description=self.description,
-            team_id=self.team.id if self.team else None,
+            team_id=self.team.pk,
             language=self.language,
             is_geo=self.is_geo,
             crs=self.crs,
@@ -163,8 +171,8 @@ class Product(models.Model):
             contact_email=self.contact_email,
             data_steward=self.data_steward,
             services=[s.to_domain() for s in self.services.order_by("id")],
-            sources=[s.id for s in self.sources.all()],
-            sinks=[s.id for s in self.sinks.all()],
+            sources=[s.pk for s in self.sources.all()],
+            sinks=[s.pk for s in self.sinks.all()],
         )
 
     @classmethod
@@ -197,7 +205,9 @@ class Product(models.Model):
 
 
 class DataContract(models.Model):
-    product: Product = models.ForeignKey(
+    distributions: models.Manager[Distribution]
+
+    product = models.ForeignKey[Product](
         "Product",
         on_delete=models.CASCADE,
         help_text="Het Product waar dit contract bij hoort",
@@ -288,11 +298,11 @@ class DataContract(models.Model):
     )
 
     def __str__(self):
-        return self.name or str(self.id)
+        return self.name or str(self.pk)
 
     def to_domain(self):
         return objects.DataContract(
-            id=self.id,
+            id=self.pk,
             publication_status=self.publication_status,
             purpose=self.purpose,
             name=self.name,
@@ -328,10 +338,10 @@ class Team(models.Model):
     acronym = models.CharField(_("Acronym"), max_length=10, unique=True)
     po_name = models.CharField(_("Product Owner Name"), max_length=64)
     po_email = models.CharField(
-        _("Product Owner Email"), max_length=64, validators=[EmailValidator]
+        _("Product Owner Email"), max_length=64, validators=[EmailValidator()]
     )
     contact_email = models.CharField(
-        _("Contact E-mail"), max_length=64, validators=[EmailValidator]
+        _("Contact E-mail"), max_length=64, validators=[EmailValidator()]
     )
     scope = models.CharField(_("Scope (Entra Group)"), max_length=64)
 
@@ -340,7 +350,7 @@ class Team(models.Model):
 
     def to_domain(self) -> DomainTeam:
         return DomainTeam(
-            id=self.id,
+            id=self.pk,
             name=self.name,
             description=self.description,
             acronym=self.acronym,
@@ -351,17 +361,22 @@ class Team(models.Model):
         )
 
     @classmethod
-    def from_domain(cls, team: DomainTeam) -> Team:
+    def from_domain(cls, team: DomainTeam) -> DomainTeam:
         instance, _created = cls.objects.filter(pk=team.id).update_or_create(defaults=team.items())
         return instance.to_domain()
 
 
 class Distribution(models.Model):
+    access_service_id: int
+
     access_service = models.OneToOneField(
         "DataService", on_delete=models.CASCADE, related_name="distribution", null=True
     )
     access_url = models.URLField(
-        _("Access URL"), null=True, blank=True, help_text="Toegangslink naar de distributie."
+        _("Access URL"),
+        null=True,
+        blank=True,
+        help_text="Toegangslink naar de distributie.",
     )
     download_url = models.URLField(
         _("Download URL"),
@@ -437,7 +452,7 @@ class DataService(models.Model):
         null=True,
     )
     endpoint_url = models.URLField(_("API Link (Intern)"), null=True, blank=True)
-    product: Product = models.ForeignKey(
+    product = models.ForeignKey[Product](
         "Product",
         on_delete=models.CASCADE,
         help_text="Het Product waar deze service bij hoort",
@@ -448,7 +463,7 @@ class DataService(models.Model):
         return f"{self.type}: {self.endpoint_url}"
 
     def to_domain(self):
-        return objects.DataService(id=self.id, type=self.type, endpoint_url=self.endpoint_url)
+        return objects.DataService(id=self.pk, type=self.type, endpoint_url=self.endpoint_url)
 
     @classmethod
     def from_domain(cls, service: objects.DataService, product_id: int):

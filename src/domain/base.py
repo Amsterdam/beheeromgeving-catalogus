@@ -11,7 +11,7 @@ class BaseObject:
         """Returns a dictionary that can be persisted in the ORM, omitting fields
         that need their own logic."""
         dictionary = asdict(self)
-        for key in self._skip_keys | {"_skip_keys"}:
+        for key in getattr(self, "_skip_keys", set()) | {"_skip_keys"}:
             if key in dictionary:
                 dictionary.pop(key)
         return dictionary

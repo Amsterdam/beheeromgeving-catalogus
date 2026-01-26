@@ -9,7 +9,12 @@ class TestQueryParams:
     @pytest.mark.parametrize(
         "query_string,expect,expect_filter,expect_query",
         [
-            ("", QueryParams(), {"publication_status": enums.PublicationStatus.PUBLISHED}, None),
+            (
+                "",
+                QueryParams(),
+                {"publication_status": enums.PublicationStatus.PUBLISHED},
+                None,
+            ),
             ("publication_status=*", QueryParams(publication_status="*"), {}, None),
             (
                 "name=bomen",
@@ -19,7 +24,7 @@ class TestQueryParams:
             ),
             (
                 "language=EN",
-                QueryParams(language="EN"),
+                QueryParams(language="EN"),  # ty:ignore[invalid-argument-type]
                 {
                     "language": enums.Language.ENGLISH,
                     "publication_status": enums.PublicationStatus.PUBLISHED,
@@ -28,7 +33,7 @@ class TestQueryParams:
             ),
             (
                 "team=1&theme=NM,B",
-                QueryParams(team=1, theme="NM,B"),
+                QueryParams(team=1, theme="NM,B"),  # ty:ignore[invalid-argument-type]
                 {
                     "team": 1,
                     "theme": [enums.Theme.NATUUR_EN_MILIEU, enums.Theme.BESTUUR],
@@ -39,7 +44,7 @@ class TestQueryParams:
             (
                 "type=A&confidentiality=O",
                 QueryParams(
-                    type="A",
+                    type="A",  # ty:ignore[invalid-argument-type]
                     confidentiality=enums.ConfidentialityLevel.OPENBAAR,
                 ),
                 {
@@ -51,7 +56,7 @@ class TestQueryParams:
             ),
             (
                 "q=boom",
-                QueryParams(q="boom"),
+                QueryParams(q="boom"),  # ty:ignore[unknown-argument]
                 {"publication_status": enums.PublicationStatus.PUBLISHED},
                 "boom",
             ),

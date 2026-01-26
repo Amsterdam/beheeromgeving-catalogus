@@ -79,7 +79,7 @@ class ContractValidator:
         ):
             raise ValidationError(
                 "Cannot update publication status, contract is missing the following fields:"
-                f"[{", ".join(missing_fields)}]"
+                f"[{', '.join(missing_fields)}]"
             )
 
         return True
@@ -126,7 +126,7 @@ class ProductValidator:
         if missing_fields:
             raise ValidationError(
                 "Cannot create contract, product is missing the following fields:"
-                f"[{", ".join(missing_fields)}]"
+                f"[{', '.join(missing_fields)}]"
             )
         return True
 
@@ -145,7 +145,7 @@ class ProductValidator:
         ]
         return [field for field in required_fields if getattr(self.product, field) is None]
 
-    def can_change_publication_status(self, data: dict) -> True:
+    def can_change_publication_status(self, data: dict) -> bool:
         missing_fields = self.get_missing_fields()
         if (
             data.get("publication_status") == "P"
@@ -154,7 +154,7 @@ class ProductValidator:
         ):
             raise ValidationError(
                 "Cannot update publication status, product is missing the following fields:"
-                f"[{", ".join(missing_fields)}]"
+                f"[{', '.join(missing_fields)}]"
             )
 
         return True
@@ -165,7 +165,6 @@ class Product(BaseObject):
     id: int | None = None
     name: str | None = None
     description: str | None = None
-    team_id: int | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
     crs: enums.CoordRefSystem | None = None
@@ -183,6 +182,7 @@ class Product(BaseObject):
     services: list[DataService] = field(default_factory=list)
     sources: list[int] = field(default_factory=list)
     sinks: list[int] = field(default_factory=list)
+    team_id: int
 
     _skip_keys = {"contracts", "team", "owner", "refresh_period", "sources", "sinks", "services"}
 
