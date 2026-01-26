@@ -23,7 +23,7 @@ FROM ghcr.io/astral-sh/uv:0.9-python3.14-trixie-slim
 RUN groupadd --system --gid 999  catalogus  && useradd --system --gid 999 \
     --uid 1001 --create-home catalogus
 RUN apt update && apt install --no-install-recommends -y \
-curl \
+    curl \
     libpq5
 
 WORKDIR /app
