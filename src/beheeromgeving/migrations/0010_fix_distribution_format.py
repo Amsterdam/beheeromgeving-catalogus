@@ -6,7 +6,6 @@ from beheeromgeving.migration_utils import fix_distribution_format
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beheeromgeving", "0009_distribution_filename"),
     ]

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beheeromgeving", "0007_remove_datacontract_has_personal_data_and_more"),
     ]

@@ -10,6 +10,7 @@ from domain.product import (
     Product,
     ProductService,
     RefreshPeriod,
+    enums,
 )
 from domain.team import Team, TeamService
 from tests.domain.utils import DummyAuthRepo, DummyRepository
@@ -45,49 +46,54 @@ def other_team() -> Team:
 
 @pytest.fixture()
 def product(team: Team) -> Product:
+    assert team.id
     return Product(
         id=1,
         name="bomen",
         description="bomen in Amsterdam",
         team_id=team.id,
         contact_email=team.contact_email,
-        language="NL",
+        language=enums.Language.NEDERLANDS,
         is_geo=True,
-        crs="RD",
+        crs=enums.CoordRefSystem.RD,
         schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
-        type="D",
-        themes=["NM"],
+        type=enums.ProductType.DATAPRODUCT,
+        themes=[enums.Theme.NATUUR_EN_MILIEU],
         data_steward="meneerboom@amsterdam.nl",
         refresh_period=RefreshPeriod.from_dict({"frequency": 3, "unit": "MONTH"}),
         last_updated=datetime.fromisoformat("2025-09-04T11:25:05+00"),
         created_at=datetime.fromisoformat("2025-09-04T10:25:05+00"),
-        publication_status="D",
+        publication_status=enums.PublicationStatus.DRAFT,
         services=[
-            DataService(id=1, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen")
+            DataService(
+                id=1,
+                type=enums.DataServiceType.REST,
+                endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
+            )
         ],
         contracts=[
             DataContract(
                 id=1,
-                publication_status="D",
+                publication_status=enums.PublicationStatus.DRAFT,
                 purpose="onderhoud van bomen",
                 name="beheer bomen",
                 description="contract voor data nodig voor het beheer van bomen",
-                privacy_level="NPI",
+                privacy_level=enums.PrivacyLevel.NIET_PERSOONLIJK_IDENTIFICEERBAAR,
                 scope="scope_bomen_beheer",
-                confidentiality="I",
-                start_date="2025-01-01",
+                confidentiality=enums.ConfidentialityLevel.INTERN,
+                start_date=datetime.fromisoformat("2025-01-01T00:00:00+00"),
                 retainment_period=12,
                 distributions=[
                     Distribution(
                         id=1,
                         access_service_id=1,
-                        type="A",
+                        type=enums.DistributionType.API,
                     ),
                     Distribution(
                         id=2,
                         download_url="https://bomen.amsterdam.nl/beheer.csv",
                         format="csv",
-                        type="F",
+                        type=enums.DistributionType.FILE,
                         filename="beheer.csv",
                     ),
                 ],

@@ -24,7 +24,6 @@ def test_health(api_client):
 
 @pytest.mark.django_db
 class TestViews:
-
     @pytest.mark.parametrize(
         "path",
         [

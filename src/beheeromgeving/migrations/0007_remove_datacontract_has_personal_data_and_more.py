@@ -54,7 +54,6 @@ def backward(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beheeromgeving", "0006_alter_dataservice_type_alter_team_description_and_more"),
     ]

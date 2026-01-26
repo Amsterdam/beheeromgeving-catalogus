@@ -1,19 +1,23 @@
+from collections.abc import Callable
 from functools import wraps
+from typing import ParamSpec, Protocol, TypeVar
 
 from domain.auth import (
     RULES,
     AuthorizationConfiguration,
     AuthorizationResult,
     Permission,
+    ProductId,
     Role,
     Rule,
+    Scope,
+    TeamId,
 )
 from domain.base import AbstractAuthRepository
 from domain.exceptions import DomainException, NotAuthorized
 
 
 class AuthorizationService:
-
     def __init__(self, repo: AbstractAuthRepository):
         self.repo = repo
 
@@ -27,7 +31,7 @@ class AuthorizationService:
     def require(
         self,
         *args,
-        scopes: list[str],
+        scopes: list[Scope],
         role: Role | None = None,
         **kwargs,
     ) -> AuthorizationResult:
@@ -42,8 +46,8 @@ class AuthorizationService:
     def permit(
         self,
         *args,
-        team_id: int,
-        scopes: list[str],
+        team_id: TeamId,
+        scopes: list[Scope],
         data: dict,
         permission: Permission,
         **kwargs,
@@ -58,7 +62,7 @@ class AuthorizationService:
 
         return AuthorizationResult.DENIED
 
-    def get_applicable_roles(self, team_id: int, scopes: list[str]):
+    def get_applicable_roles(self, team_id: TeamId, scopes: list[Scope]):
         team_scope = self.config.team_id_to_scope(team_id)
         roles = {self.config.scope_to_role(scope) for scope in scopes}
         if team_scope not in scopes:
@@ -68,30 +72,39 @@ class AuthorizationService:
     def is_team_member(
         self,
         *args,
-        scopes: list[str],
+        scopes: list[Scope],
         data: dict | None = None,
-        product_id: int | None = None,
+        product_id: ProductId | None = None,
         **kwargs,
     ) -> AuthorizationResult:
         """Assert the user is a member of the team that owns the resource."""
         if data is None:
             data = {}
-        team_id: int = data.get("team_id")
+        team_id = data.get("team_id")
         if not team_id and not product_id:
             raise DomainException(
                 "AuthorizationService.is_team_member needs either a team_id or product_id"
             )
+        team_scope = None
         if team_id:
             team_scope = self.config.team_id_to_scope(team_id)
-        else:
+        elif product_id:
             team_scope = self.config.product_id_to_scope(product_id)
 
         if team_scope in scopes:
             return AuthorizationResult.GRANTED
         return AuthorizationResult.DENIED
 
-    def is_allowed(self, scopes: list[str], role: Role):
+    def is_allowed(self, scopes: list[Scope], role: Role):
         return any(self.config.scope_to_role(scope) == role for scope in scopes)
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+class AuthorizationDecorator(Protocol):
+    def __call__(self, func: Callable[P, R]) -> Callable[P, R]: ...
 
 
 class Authorizer:
@@ -119,8 +132,12 @@ class Authorizer:
 
     def __init__(self):
         self.auth = None
+        self.decorators = {}
         for rule in RULES:
             self.register_auth(rule)
+
+    def __getattr__(self, name: str) -> AuthorizationDecorator:
+        return self.decorators[name]
 
     def set_auth_service(self, auth: AuthorizationService):
         self.auth = auth
@@ -172,7 +189,7 @@ class Authorizer:
 
     def register_auth(self, rule: Rule):
         decorator = self._create_decorator(rule)
-        setattr(self, rule.decorator_name, decorator)
+        self.decorators[rule.decorator_name] = decorator
 
 
 authorize = Authorizer()

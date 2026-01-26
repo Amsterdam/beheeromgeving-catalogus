@@ -12,6 +12,7 @@ from domain.product import (
     Product,
     ProductRepository,
     RefreshPeriod,
+    enums,
 )
 from domain.team import Team, TeamRepository
 
@@ -136,9 +137,12 @@ class TestProductRepository:
 
     def test_save_updates_services(self, orm_product: ORMProduct):
         repo = ProductRepository()
-        product = repo.get(orm_product.id)
+        product = repo.get(orm_product.pk)
         product.services.append(
-            DataService(type="WMS", endpoint_url="https://api.data.amsterdam.nl/v1/wms/bomen")
+            DataService(
+                type=enums.DataServiceType.WMS,
+                endpoint_url="https://api.data.amsterdam.nl/v1/wms/bomen",
+            )
         )
         repo.save(product)
 
@@ -149,8 +153,10 @@ class TestProductRepository:
 
     def test_save_updates_contracts(self, orm_product: ORMProduct):
         repo = ProductRepository()
-        product = repo.get(orm_product.id)
-        product.contracts.append(DataContract(publication_status="D", name="Geheim Contract"))
+        product = repo.get(orm_product.pk)
+        product.contracts.append(
+            DataContract(publication_status=enums.PublicationStatus.DRAFT, name="Geheim Contract")
+        )
         repo.save(product)
 
         orm_product.refresh_from_db()
@@ -160,23 +166,29 @@ class TestProductRepository:
 
     def test_save_updates_distributions(self, orm_product: ORMProduct):
         repo = ProductRepository()
-        product = repo.get(orm_product.id)
+        product = repo.get(orm_product.pk)
         product.contracts[0].distributions = [
             Distribution(
                 id=product.contracts[0].distributions[0].id,
-                type="A",
+                type=enums.DistributionType.API,
                 access_service_id=product.services[0].id,
                 refresh_period=RefreshPeriod.from_dict({"frequency": 1, "unit": "HOUR"}),
             ),
-            Distribution(type="D", access_url="https://bomen.amsterdam.nl/dashboard"),
             Distribution(
-                type="F", format="txt", download_url="https://bomen.amsterdam.nl/bomen.txt"
+                type=enums.DistributionType.DASHBOARD,
+                access_url="https://bomen.amsterdam.nl/dashboard",
+            ),
+            Distribution(
+                type=enums.DistributionType.FILE,
+                format="txt",
+                download_url="https://bomen.amsterdam.nl/bomen.txt",
             ),
         ]
         repo.save(product)
 
         orm_product.refresh_from_db()
         contract = orm_product.contracts.first()
+        assert hasattr(contract, "distributions")
         distributions = list(contract.distributions.all())
         assert len(distributions) == 3
         assert distributions[0].type == "A"

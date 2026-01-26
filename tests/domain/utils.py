@@ -2,17 +2,35 @@ from django.conf import settings
 
 from domain import exceptions
 from domain.auth import AuthorizationConfiguration
-from domain.base import AbstractAuthRepository, AbstractRepository, BaseObject
+from domain.base import (
+    AbstractAuthRepository,
+    AbstractRepository,
+    BaseObject,
+)
 from domain.product import Product
 from domain.team import Team
+
+# alias for typing
+list_ = list
+
+
+class DummyRepoItem(BaseObject):
+    id: int
+    name: str
+    scope: str
+    team_id: int
 
 
 class DummyRepository(AbstractRepository):
     """DummyRepository for tests. This also uses a DummyAuthRepo to keep things in sync."""
 
-    _items: dict[int, BaseObject]
+    _items: dict[int, DummyRepoItem]
 
-    def __init__(self, objects: list[BaseObject], auth_repo=AbstractAuthRepository):
+    def __init__(
+        self,
+        objects: list_[DummyRepoItem],
+        auth_repo: type[AbstractAuthRepository] = AbstractAuthRepository,
+    ):
         self._items = {}
         self.auth_repo = auth_repo
         for object in objects:
@@ -65,11 +83,11 @@ class DummyRepository(AbstractRepository):
     def list(self):
         return list(self._items.values())
 
-    def save(self, object: BaseObject):
-        self._add_ids(object)
-        self._items[object.id] = object
-        self.auth_repo.add_object(object)
-        return object
+    def save(self, item: DummyRepoItem):
+        self._add_ids(item)
+        self._items[item.id] = item
+        self.auth_repo.add_object(item)  # ty:ignore[possibly-missing-attribute]
+        return item
 
     def delete(self, id):
         try:
@@ -79,7 +97,7 @@ class DummyRepository(AbstractRepository):
 
 
 class DummyAuthRepo(AbstractAuthRepository):
-    def __init__(self, teams: list[BaseObject], products: list[BaseObject]):
+    def __init__(self, teams: list[DummyRepoItem], products: list[DummyRepoItem]):
         self.team_scopes = {}
         self.product_scopes = {}
         for team in teams:

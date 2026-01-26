@@ -64,7 +64,8 @@ class Command(BaseCommand):
         for product in all_products:
             print(f"deleting product: {product.name}")
             team = self.team_service.get_team(product.team_id)
-            self.service.delete_product(product_id=product.id, scopes=[team.scope])
+            if product.id is not None:
+                self.service.delete_product(product_id=product.id, scopes=[team.scope])
 
     def handle(self, *args, **options):
         if options.get("purge", False):
@@ -73,8 +74,8 @@ class Command(BaseCommand):
         all_products = requests.get(MARKETPLACE_URL, timeout=10).json()["documents"]
         all_teams = self.team_service.get_teams()
         for product_summary in all_products:
-            product = requests.get(f"{MARKETPLACE_URL}/{product_summary["id"]}", timeout=10).json()
-            print(f"Adding product {product["naam"]}")
+            product = requests.get(f"{MARKETPLACE_URL}/{product_summary['id']}", timeout=10).json()
+            print(f"Adding product {product['naam']}")
             team = None
             try:
                 team = next(team for team in all_teams if team.name == product["dataTeam"])
@@ -89,8 +90,8 @@ class Command(BaseCommand):
                         )
                     except StopIteration:
                         print(
-                            f"SKIPPING {product["naam"]}: Cannot find team with "
-                            f"name {product["dataTeam"]}."
+                            f"SKIPPING {product['naam']}: Cannot find team with "
+                            f"name {product['dataTeam']}."
                         )
                         continue
             self.team_service.update_team(
@@ -131,7 +132,7 @@ class Command(BaseCommand):
             ),
             schema_url=(
                 "https://schemas.data.amsterdam.nl/datasets"
-                f"{product["amsterdamSchemaVerwijzing"]["datasetName"]}/dataset"
+                f"{product['amsterdamSchemaVerwijzing']['datasetName']}/dataset"
                 if product.get("amsterdamSchemaVerwijzing")
                 else ""
             ),
@@ -140,7 +141,6 @@ class Command(BaseCommand):
                 enums.Theme[unidecode("_".join(theme.upper().split(" ")))]
                 for theme in product["themaNamen"]
             ],
-            publication_status=enums.PublicationStatus.PUBLISHED,
             refresh_period=refresh_period,
             owner=(
                 product["eigenaar"]
@@ -181,9 +181,8 @@ class Command(BaseCommand):
             "bijzonder identificeerbaar": "BIJZONDER_IDENTIFICEERBAAR",
         }
         c = DataContractCreateOrUpdate(
-            publication_status=enums.PublicationStatus.PUBLISHED,
             purpose=product_dict["doelbinding"],
-            name=f"{product_dict["naam"]} {product_dict["vertrouwelijkheidsniveau"]}"[:64],
+            name=f"{product_dict['naam']} {product_dict['vertrouwelijkheidsniveau']}"[:64],
             description=product_dict["beschrijving"],
             privacy_level=enums.PrivacyLevel[
                 PRIVACY_LEVELS[product_dict["privacyniveau"].lower()]

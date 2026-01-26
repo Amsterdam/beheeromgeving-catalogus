@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Any
 
 import environ
 from pythonjsonlogger import json
@@ -73,7 +74,7 @@ STORAGES = {
     },
 }
 
-TEMPLATES = [
+TEMPLATES: list[dict[str, Any]] = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [str(SRC_DIR / "templates")],
@@ -109,7 +110,7 @@ if _USE_SECRET_STORE or CLOUD_ENV.startswith("azure"):
     # because the container environment can be inspected, and those vars export to subprocesses.
     pgpassword = Path(env.str("AZ_PG_TOKEN_PATH")).read_text()
 
-    DATABASES = {
+    DATABASES: dict[str, Any] = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": env.str("PGDATABASE"),
@@ -126,7 +127,7 @@ if _USE_SECRET_STORE or CLOUD_ENV.startswith("azure"):
     DATABASE_SET_ROLE = True
 else:
     # Regular development
-    DATABASES = {
+    DATABASES: dict[str, Any] = {
         "default": env.db_url(
             "DATABASE_URL",
             default="postgres://postgres:insecure@localhost:5416/beheeromgeving",
@@ -150,17 +151,17 @@ class CustomJsonFormatter(json.JsonFormatter):
         super().__init__(*args, **kwargs)
         self._skip_fields.update({"request": "request", "taskName": "taskName"})
 
-    def add_fields(self, log_record: dict, record, message_dict: dict):
+    def add_fields(self, log_data: dict[str, Any], record, message_dict: dict[str, Any]) -> None:
         # The 'rename_fields' logic fails when fields are missing, this is easier:
-        super().add_fields(log_record, record, message_dict)
+        super().add_fields(log_data, record, message_dict)
         # An in-place reordering, sotime/level appear first (easier for docker log scrolling)
         ordered_dict = {
-            "time": log_record.pop("asctime", record.asctime),
-            "level": log_record.pop("levelname", record.levelname),
-            **log_record,
+            "time": log_data.pop("asctime", record.asctime),
+            "level": log_data.pop("levelname", record.levelname),
+            **log_data,
         }
-        log_record.clear()
-        log_record.update(ordered_dict)
+        log_data.clear()
+        log_data.update(ordered_dict)
 
 
 _json_log_formatter = {
@@ -172,7 +173,7 @@ DJANGO_LOG_LEVEL = env.str("DJANGO_LOG_LEVEL", "INFO")
 LOG_LEVEL = env.str("LOG_LEVEL", "DEBUG" if DEBUG else "INFO")
 AUDIT_LOG_LEVEL = env.str("AUDIT_LOG_LEVEL", "INFO")
 
-LOGGING = {
+LOGGING: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": True,
     "formatters": {
@@ -204,8 +205,16 @@ LOGGING = {
         "handlers": ["console"],
     },
     "loggers": {
-        "django": {"handlers": ["console"], "level": DJANGO_LOG_LEVEL, "propagate": False},
-        "django.utils.autoreload": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.utils.autoreload": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "beheeromgeving": {
             "handlers": ["console"],
             "level": LOG_LEVEL,
@@ -238,7 +247,7 @@ if CLOUD_ENV.startswith("azure"):
     from azure.monitor.opentelemetry import configure_azure_monitor
     from opentelemetry.instrumentation.django import DjangoInstrumentor
     from opentelemetry.sdk.resources import Resource
-    from opentelemetry.semconv.resource import ResourceAttributes
+    from opentelemetry.semconv.attributes.service_attributes import SERVICE_NAME
 
     # Microsoft recommended abbreviation for Application Insights is `APPI`
     AZURE_APPI_CONNECTION_STRING = env.str("AZURE_APPI_CONNECTION_STRING")
@@ -259,9 +268,7 @@ if CLOUD_ENV.startswith("azure"):
                 "urllib": {"enabled": True},
                 "urllib3": {"enabled": True},
             },
-            resource=Resource.create(
-                {ResourceAttributes.SERVICE_NAME: "beheeromgeving-catalogus"}
-            ),
+            resource=Resource.create({SERVICE_NAME: "beheeromgeving-catalogus"}),
         )
         print("OpenTelemetry has been enabled")
 
@@ -302,7 +309,10 @@ if CLOUD_ENV.startswith("azure"):
         }
         for logger_name, logger_details in LOGGING["loggers"].items():
             if "audit_console" in logger_details["handlers"]:
-                LOGGING["loggers"][logger_name]["handlers"] = ["audit_console", "console"]
+                LOGGING["loggers"][logger_name]["handlers"] = [
+                    "audit_console",
+                    "console",
+                ]
         print("Audit logging has been enabled")
 
 
@@ -356,7 +366,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 if DEBUG:
-    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append(
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append(  # ty:ignore[possibly-missing-attribute]
         "rest_framework.renderers.BrowsableAPIRenderer"
     )
 

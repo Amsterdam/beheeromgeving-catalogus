@@ -1,5 +1,7 @@
+from typing import overload
+
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -63,7 +65,12 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
             initialize()
             is_initialized = True
 
-    def _validate_dto[M: dtos.BaseModel](self, data, dto_model: type[M] = dtos.TeamCreate) -> M:
+    @overload
+    def _validate_dto(self, data) -> dtos.TeamCreate: ...
+    @overload
+    def _validate_dto[BM: BaseModel](self, data, dto_model: type[BM]) -> BM: ...
+
+    def _validate_dto(self, data, dto_model: type[BaseModel] = dtos.TeamCreate) -> BaseModel:
         # Raises if data is invalid
         return dto_model(**data)
 
@@ -74,7 +81,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(data, status=200)
 
     @extend_schema(responses={200: dtos.Team})
-    def retrieve(self, _request, pk=None):
+    def retrieve(self, _request, pk: str):
         team = team_service.get_team(int(pk))
         return Response(dtos.to_response_object(team), status=200)
 
@@ -87,7 +94,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(status=201, data=team.id)
 
     @extend_schema(responses={200: dtos.TeamPartial})
-    def partial_update(self, request, pk=None):
+    def partial_update(self, request, pk: str):
         team_dto = self._validate_dto(request.data, dtos.TeamPartial)
         team_service.update_team(
             team_id=int(pk),
@@ -97,7 +104,7 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(status=200)
 
     @extend_schema()
-    def destroy(self, request, pk=None):
+    def destroy(self, request, pk: str):
         team_service.delete_team(int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
 
@@ -110,7 +117,13 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             initialize()
             is_initialized = True
 
-    def _validate_dto[M: dtos.BaseModel](self, data, dto_type: type[M] = dtos.ProductCreate) -> M:
+    @overload
+    def _validate_dto(self, data) -> dtos.ProductCreate: ...
+
+    @overload
+    def _validate_dto[BM: BaseModel](self, data, dto_type: type[BM]) -> BM: ...
+
+    def _validate_dto(self, data, dto_type: type[BaseModel] = dtos.ProductCreate) -> BaseModel:
         # Raises if data is invalid
         return dto_type(**data)
 
@@ -125,7 +138,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
                 "one of those words needs to be present.",
             ),
             OpenApiParameter(
-                "page", description="Page number (1-indexed) for the paginated results.", default=1
+                "page",
+                description="Page number (1-indexed) for the paginated results.",
+                default=1,
             ),
             OpenApiParameter(
                 "pagesize",
@@ -140,7 +155,8 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             ),
             OpenApiParameter("language", description="Filter on language."),
             OpenApiParameter(
-                "order", description="Order products on field (prefix with '-' to reverse)."
+                "order",
+                description="Order products on field (prefix with '-' to reverse).",
             ),
         ],
     )
@@ -166,7 +182,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return pagination.get_paginated_response(paginated_data)
 
     @extend_schema(responses={200: dtos.ProductDetail})
-    def retrieve(self, _request, pk=None):
+    def retrieve(self, _request, pk: str):
         product = product_service.get_product(int(pk))
         return Response(dtos.to_response_object(product), status=200)
 
@@ -181,7 +197,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(dtos.to_response_object(product), status=201)
 
     @extend_schema(request=dtos.ProductUpdate, responses={200: dtos.ProductDetail})
-    def partial_update(self, request, pk=None):
+    def partial_update(self, request, pk: str):
         product_dto = self._validate_dto(request.data, dto_type=dtos.ProductUpdate)
         # ignore contracts/service as these should be updated through their own endpoint
         product = product_service.update_product(
@@ -192,13 +208,18 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(dtos.to_response_object(product), status=200)
 
     @extend_schema()
-    def destroy(self, request, pk=None):
+    def destroy(self, request, pk: str):
         product_service.delete_product(product_id=int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
 
     @extend_schema(request=dtos.SetState, responses={200: dtos.ProductDetail})
-    @action(detail=True, methods=["post"], url_path="set-state", url_name="publication_status")
-    def set_state(self, request, pk=None):
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="set-state",
+        url_name="publication_status",
+    )
+    def set_state(self, request, pk: str):
         state_dto = self._validate_dto(request.data, dto_type=dtos.SetState)
 
         updated_product = product_service.update_publication_status(
@@ -224,7 +245,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def create_contract(self, request, pk: str):
         contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
         contract = product_service.create_contract(
-            product_id=int(pk), data=contract_dto.model_dump(), scopes=request.get_token_scopes
+            product_id=int(pk),
+            data=contract_dto.model_dump(),
+            scopes=request.get_token_scopes,
         )
         data = dtos.to_response_object(contract)
         return Response(data, status=201)
@@ -236,14 +259,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_path="contracts/(?P<contract_id>[^/.]+)",
         url_name="contract-detail",
     )
-    def contract_detail(self, _request, pk=None, contract_id=None):
+    def contract_detail(self, _request, pk: str, contract_id: str):
         contract = product_service.get_contract(int(pk), int(contract_id))
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
     @extend_schema(request=dtos.DataContractCreateOrUpdate, responses={200: dtos.DataContract})
     @contract_detail.mapping.patch
-    def update_contract(self, request, pk=None, contract_id=None):
+    def update_contract(self, request, pk: str, contract_id: str):
         contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
         contract = product_service.update_contract(
             product_id=int(pk),
@@ -261,7 +284,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_path="contracts/(?P<contract_id>[^/.]+)/set-state",
         url_name="contract_publication_status",
     )
-    def set_state_contract(self, request, pk=None, contract_id=None):
+    def set_state_contract(self, request, pk: str, contract_id: str):
         state_dto = self._validate_dto(request.data, dto_type=dtos.SetState)
 
         updated_contract = product_service.update_contract_publication_status(
@@ -275,9 +298,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema()
     @contract_detail.mapping.delete
-    def delete_contract(self, request, pk=None, contract_id=None):
+    def delete_contract(self, request, pk: str, contract_id: str):
         product_service.delete_contract(
-            product_id=int(pk), contract_id=int(contract_id), scopes=request.get_token_scopes
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            scopes=request.get_token_scopes,
         )
         return Response(status=204)
 
@@ -288,7 +313,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_path="contracts/(?P<contract_id>[^/.]+)/distributions",
         url_name="distributions-list",
     )
-    def distributions_list(self, request, pk=None, contract_id=None):
+    def distributions_list(self, request, pk: str, contract_id: str):
         distributions = product_service.get_distributions(
             product_id=int(pk), contract_id=int(contract_id)
         )
@@ -297,7 +322,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(request=dtos.DistributionCreateOrUpdate, responses={201: dtos.Distribution})
     @distributions_list.mapping.post
-    def create_distribution(self, request, pk=None, contract_id=None):
+    def create_distribution(self, request, pk: str, contract_id: str):
         distribution_dto = self._validate_dto(
             request.data, dto_type=dtos.DistributionCreateOrUpdate
         )
@@ -317,16 +342,18 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_path="contracts/(?P<contract_id>[^/.]+)/distributions/(?P<distribution_id>[^/.]+)",
         url_name="distributions-detail",
     )
-    def distribution_detail(self, request, pk=None, contract_id=None, distribution_id=None):
+    def distribution_detail(self, request, pk: str, contract_id: str, distribution_id: str):
         distribution = product_service.get_distribution(
-            product_id=int(pk), contract_id=int(contract_id), distribution_id=int(distribution_id)
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            distribution_id=int(distribution_id),
         )
         data = dtos.to_response_object(distribution)
         return Response(data, status=200)
 
     @extend_schema(request=dtos.DistributionCreateOrUpdate, responses={200: dtos.Distribution})
     @distribution_detail.mapping.patch
-    def update_distribution(self, request, pk=None, contract_id=None, distribution_id=None):
+    def update_distribution(self, request, pk: str, contract_id: str, distribution_id: str):
         distribution_dto = self._validate_dto(request.data, dtos.DistributionCreateOrUpdate)
         distribution = product_service.update_distribution(
             product_id=int(pk),
@@ -340,7 +367,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema()
     @distribution_detail.mapping.delete
-    def delete_distribution(self, request, pk=None, contract_id=None, distribution_id=None):
+    def delete_distribution(self, request, pk: str, contract_id: str, distribution_id: str):
         product_service.delete_distribution(
             product_id=int(pk),
             contract_id=int(contract_id),
@@ -351,14 +378,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataService]})
     @action(detail=True, methods=["get"], url_path="services", url_name="services-list")
-    def services_list(self, _request, pk=None):
+    def services_list(self, _request, pk: str):
         services = product_service.get_services(int(pk))
         data = dtos.to_response_object(services)
         return Response(data, status=200)
 
     @extend_schema(request=dtos.DataServiceCreateOrUpdate, responses={201: dtos.DataService})
     @services_list.mapping.post
-    def create_service(self, request, pk=None):
+    def create_service(self, request, pk: str):
         service_dto = self._validate_dto(request.data, dtos.DataServiceCreateOrUpdate)
         service = product_service.create_service(
             product_id=int(pk),
@@ -375,14 +402,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_path="services/(?P<service_id>[^/.]+)",
         url_name="service-detail",
     )
-    def service_detail(self, _request, pk=None, service_id=None):
+    def service_detail(self, _request, pk: str, service_id: str):
         service = product_service.get_service(int(pk), int(service_id))
         data = dtos.to_response_object(service)
         return Response(data, status=200)
 
     @extend_schema(request=dtos.DataServiceCreateOrUpdate, responses={200: dtos.DataService})
     @service_detail.mapping.patch
-    def update_service(self, request, pk=None, service_id=None):
+    def update_service(self, request, pk: str, service_id: str):
         service_dto = self._validate_dto(request.data, dtos.DataServiceCreateOrUpdate)
         service = product_service.update_service(
             product_id=int(pk),
@@ -395,9 +422,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema()
     @service_detail.mapping.delete
-    def delete_service(self, request, pk=None, service_id=None):
+    def delete_service(self, request, pk: str, service_id: str):
         product_service.delete_service(
-            product_id=int(pk), service_id=int(service_id), scopes=request.get_token_scopes
+            product_id=int(pk),
+            service_id=int(service_id),
+            scopes=request.get_token_scopes,
         )
         return Response(status=204)
 

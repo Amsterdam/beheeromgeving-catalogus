@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("beheeromgeving", "0005_remove_datacontract_data_steward_and_more"),
     ]

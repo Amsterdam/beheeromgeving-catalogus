@@ -32,7 +32,8 @@ class Command(BaseCommand):
             all_teams = self.service.get_teams()
             for team in all_teams:
                 print(f"deleting team: {team.acronym}")
-                self.service.delete_team(team.id, scopes=[settings.ADMIN_ROLE_NAME])
+                if team.id is not None:
+                    self.service.delete_team(team.id, scopes=[settings.ADMIN_ROLE_NAME])
             return
         publisher_acronyms = requests.get(
             "https://schemas.data.amsterdam.nl/publishers/index", timeout=10
@@ -51,7 +52,7 @@ class Command(BaseCommand):
 
             for acronym, data in publishers.items():
                 if acronym not in po_json:
-                    print(f"{acronym} isn't available. {data["name"]}")
+                    print(f"{acronym} isn't available. {data['name']}")
                     continue
                 po_name = po_json[acronym]["po_name"]
                 po_email = po_json[acronym]["po_email"]
