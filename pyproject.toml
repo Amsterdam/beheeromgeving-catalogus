@@ -9,7 +9,7 @@ requires-python = ">=3.14,<4.0"
 context = "."
 dependencies = [
     "azure-identity==1.25.1",
-    "azure-monitor-opentelemetry==1.8.4",
+    "azure-monitor-opentelemetry==1.8.5",
     "datapunt-authorization-django==1.7.0",
     "django==5.2.10",
     "django-cors-headers==4.9.0",
@@ -33,7 +33,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "debugpy==1.8.19",
+    "debugpy==1.8.20",
     "django-coverage-plugin==3.2.0",
     "django-debug-toolbar==6.2.0",
     "django-extensions==4.1",
@@ -44,7 +44,7 @@ dev = [
     "pytest-django==4.11.1",
     "pytest-sugar==1.1.1",
     "requests-mock==1.12.1",
-    "ruff==0.14.13",
+    "ruff==0.14.14",
     "termcolor==3.3.0",
     "ty>=0.0.12",
 ]
