@@ -121,6 +121,8 @@ class TestViews:
             "themes",
             "last_updated",
             "team_id",
+            "is_geo",
+            "schema_url",
             "contract_count",
             "publication_status",
         ]:
