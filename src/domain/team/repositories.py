@@ -1,4 +1,4 @@
-from django.db.models import F, QuerySet, Value
+from django.db.models import F, Manager, Value
 from django.db.utils import IntegrityError
 
 from beheeromgeving import models as orm
@@ -11,20 +11,20 @@ list_ = list
 
 
 class TeamRepository(AbstractRepository[Team]):
-    qs: QuerySet[orm.Team]
+    manager: Manager[orm.Team]
 
     def __init__(self):
-        self.qs = orm.Team.objects.all()
+        self.manager = orm.Team.objects
 
     def get(self, id: int) -> Team:
         try:
-            return self.qs.get(pk=id).to_domain()
+            return self.manager.get(pk=id).to_domain()
         except orm.Team.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist(f"Team with id {id} does not exist") from e
 
     def get_by_name(self, name: str) -> Team:
         team = (
-            self.qs.annotate(search_name=Value(name))
+            self.manager.annotate(search_name=Value(name))
             .filter(search_name__istartswith=F("name"))
             .first()
         )
@@ -33,7 +33,7 @@ class TeamRepository(AbstractRepository[Team]):
         return team.to_domain()
 
     def list(self) -> list_[Team]:
-        return [t.to_domain() for t in self.qs]
+        return [t.to_domain() for t in self.manager.all()]
 
     def save(self, item: Team) -> Team:
         try:

@@ -1,4 +1,4 @@
-from django.db.models import F, QuerySet, Value
+from django.db.models import F, Manager, Value
 from django.db.utils import IntegrityError
 
 from beheeromgeving import models as orm
@@ -11,20 +11,20 @@ list_ = list
 
 
 class ProductRepository(AbstractRepository[Product]):
-    qs: QuerySet[orm.Product]
+    manager: Manager[orm.Product]
 
     def __init__(self):
-        self.qs = orm.Product.objects.all()
+        self.manager = orm.Product.objects
 
     def get(self, id: int) -> Product:
         try:
-            return self.qs.get(pk=id).to_domain()
+            return self.manager.get(pk=id).to_domain()
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
 
     def get_by_name(self, name: str) -> Product:
         product = (
-            self.qs.annotate(search_name=Value(name))
+            self.manager.annotate(search_name=Value(name))
             .filter(search_name__istartswith=F("name"))
             .first()
         )
@@ -41,10 +41,10 @@ class ProductRepository(AbstractRepository[Product]):
         **kwargs,
     ) -> list_[Product]:
         if query:
-            products = {p.pk: p.to_domain() for p in self.qs}
+            products = {p.pk: p.to_domain() for p in self.manager.all()}
             products = self.search(products, query)
         else:
-            products = [p.to_domain() for p in self.qs]
+            products = [p.to_domain() for p in self.manager.all()]
         if filter:
             products = self.filter(products, filter)
         if order:
