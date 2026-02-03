@@ -419,7 +419,7 @@ class TestViews:
             {"data_steward": "newmail@steward.nl"},
         ],
     )
-    def test_product_update(self, orm_product, orm_team, data, client_with_token):
+    def test_product_update(self, orm_product, orm_team, data, client_with_token, api_client):
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}",
             data=data,
@@ -430,6 +430,15 @@ class TestViews:
             assert response.data[key] == val
             assert getattr(orm_product, key) == val
         assert response.data["last_updated"] == orm_product.last_updated
+
+    def test_product_update_reflected_in_list_view(self, orm_product, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}",
+            data={"name": "New Name"},
+        )
+        assert response.status_code == 200
+        product_list = client_with_token([]).get("/products")
+        assert product_list.data["results"][0]["name"] == "New Name"
 
     def test_product_update_refresh_period(self, orm_product, orm_team, client_with_token):
         data = {"refresh_period": {"unit": "MONTH", "frequency": 2}}
