@@ -15,7 +15,7 @@ SRC_DIR = Path(__file__).parents[1]
 CLOUD_ENV = env.str("CLOUD_ENV", "default").lower()
 DEBUG = env.bool("DJANGO_DEBUG", default=(CLOUD_ENV == "default"))
 
-# Ensures all urls have this prefix
+# Ensure all urls in json output are correct:
 FORCE_SCRIPT_NAME = "/catalogus" if CLOUD_ENV.startswith("azure") else None
 USE_X_FORWARDED_HOST = True
 
@@ -367,6 +367,7 @@ SPECTACULAR_SETTINGS = {
     "PREPROCESSING_HOOKS": [
         "api.openapi.preprocessors.preprocessing_filter_spec",
     ],
+    # Ensure paths are correct in swagger docs:
     "SCHEMA_PATH_PREFIX_INSERT": "/catalogus" if CLOUD_ENV.startswith("azure") else "",
 }
 
