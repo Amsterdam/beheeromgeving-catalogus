@@ -367,6 +367,7 @@ SPECTACULAR_SETTINGS = {
     "PREPROCESSING_HOOKS": [
         "api.openapi.preprocessors.preprocessing_filter_spec",
     ],
+    "SCHEMA_PATH_PREFIX_INSERT": "/catalogus" if CLOUD_ENV.startswith("azure") else "",
 }
 
 if DEBUG:
