@@ -15,6 +15,10 @@ SRC_DIR = Path(__file__).parents[1]
 CLOUD_ENV = env.str("CLOUD_ENV", "default").lower()
 DEBUG = env.bool("DJANGO_DEBUG", default=(CLOUD_ENV == "default"))
 
+# Ensures all urls have this prefix
+FORCE_SCRIPT_NAME = "/catalogus" if CLOUD_ENV.startswith("azure") else None
+USE_X_FORWARDED_HOST = True
+
 # Whitenoise needs a place to store static files and their gzipped versions.
 STATIC_ROOT = env.str("STATIC_ROOT", str(SRC_DIR.parent / "web/static"))
 STATIC_URL = env.str("STATIC_URL", "/static/")
