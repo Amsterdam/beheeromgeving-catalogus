@@ -50,7 +50,10 @@ services:
     develop:
       watch:
         - action: sync
-          path: /src
+          path: ./src
           target: /app/src
         - action: rebuild
-          path: /pyproject.toml
+          path: ./pyproject.toml
+        - action: sync+restart
+          path: ./src/beheeromgeving/settings.py
+          target: /app/src/beheeromgeving/settings.py
