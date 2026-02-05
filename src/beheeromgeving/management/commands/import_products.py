@@ -110,6 +110,12 @@ class Command(BaseCommand):
             new_contract = self.create_contract(product, new_product, team)
 
             self.create_distributions(product, new_product, new_contract, services, team)
+            try:
+                self.service.update_publication_status(new_product.id, {"publication_status": "P"})
+            except ValidationError as e:
+                # only happens when refresh_period cannot be parsed.
+                print(e.message, product["ververstermijn"])
+                continue
 
     def create_product(self, product, team):
         refresh_parts = product["ververstermijn"].split(" ")
@@ -131,9 +137,9 @@ class Command(BaseCommand):
                 else None
             ),
             schema_url=(
-                "https://schemas.data.amsterdam.nl/datasets"
-                f"{product['amsterdamSchemaVerwijzing']['datasetName']}/dataset"
-                if product.get("amsterdamSchemaVerwijzing")
+                "https://api.schemas.data.amsterdam.nl/v1/datasets/"
+                f"{product['amsterdamSchemaDatasetVerwijzing']['datasetName']}"
+                if product.get("amsterdamSchemaDatasetVerwijzing")
                 else ""
             ),
             type=enums.ProductType.DATAPRODUCT,

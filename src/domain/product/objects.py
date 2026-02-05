@@ -137,7 +137,6 @@ class ProductValidator:
             "team_id",
             "language",
             "is_geo",
-            "crs",
             "schema_url",
             "themes",
             "refresh_period",
@@ -147,6 +146,8 @@ class ProductValidator:
 
     def can_change_publication_status(self, data: dict) -> bool:
         missing_fields = self.get_missing_fields()
+        if self.product.is_geo and not self.product.crs:
+            missing_fields.append("crs")
         if (
             data.get("publication_status") == "P"
             and missing_fields
