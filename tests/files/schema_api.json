@@ -1,0 +1,60 @@
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "type": "dataset",
+      "id": "aardgasverbruik",
+      "title": "aardgasverbruik",
+      "description": "Data van Liander over Standaard Jaarverbruik (SJV) en aantal aansluitingen per postcode-range in de MRA. Het standaard jaarverbruik is het verwachte jaarverbruik voor gas op een aansluiting in een jaar met gemiddelde klimaatomstandigheden (standaardjaar). O&S heeft statistieken over deze data gegenereerd. Het aardgasverbruik van (delen van) enkele gemeentes in de MRA zit niet opgenomen in de gegevens van Liander, aangezien Stedin daar de regionale netbeheerder is van het aardgasnetwerk (Aalsmeer, Amstelveen, Beverwijk, Bloemendaal, Heemskerk, Heemstede, Ouder-Amstel, Uitgeest, Uithoorn en Zandvoort).",
+      "owner": "Liander / Gemeente Amsterdam",
+      "publisher": {
+        "name": "DataDiensten",
+        "id": "DADI",
+        "shortname": "dadi",
+        "tags": {
+          "team": "dadi",
+          "costcenter": "73800001.4425"
+        },
+        "type": "publisher"
+      },
+      "crs": "EPSG:28992",
+      "creator": "Onderzoek en Statistiek",
+      "auth": [
+        {
+          "type": "scope",
+          "id": "OPENBAAR",
+          "name": "Openbaar",
+          "accessPackages": {
+            "nonProduction": "EM4W-DATA-schemascope-ot-scope_openbaar",
+            "production": "EM4W-DATA-schemascope-p-scope_openbaar"
+          },
+          "owner": {
+            "$ref": "publishers/DADI"
+          }
+        }
+      ],
+      "authorizationGrantor": "basisstatistiek.os@amsterdam.nl",
+      "defaultVersion": "v1",
+      "versions": {
+        "v1": {
+          "status": "superseded",
+          "endSupportDate": "2026-02-18",
+          "enableAPI": true,
+          "version": "1.0.0",
+          "tables": [
+            {
+              "id": "mraLiander",
+              "$ref": "mra_liander/v1"
+            },
+            {
+              "id": "mraStatistiekenPcranges",
+              "$ref": "mra_statistieken_pcranges/v1"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

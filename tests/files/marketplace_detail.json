@@ -1,0 +1,165 @@
+{
+  "id": "bomen_stamgegevens_v1",
+  "naam": "Bomen stamgegevens",
+  "versie": "V1",
+  "beschrijving": "Deze dataset bevat de vaste boomgegevens van een boom. In de dataset staan bomen in de openbare ruimte die gemeente Amsterdam in beheer heeft.",
+  "doelbinding": "Beschikbaar stellen van informatie over de bomen in beheer van Gemeente Amsterdam aan een breed publiek in het kader van transparantie en kennis delen. Daarnaast wordt de data gebruikt voor onderhoud en onderzoek.",
+  "themaNamen": [
+    "Natuur en milieu"
+  ],
+  "zoekwoorden": [
+    "Bomen",
+    "stamgegevens",
+    "boom",
+    "beheer openbare ruimte",
+    "groen"
+  ],
+  "eigenaar": "Product Owner van het Datateam",
+  "dataTeam": "Beheer Openbare Ruimte",
+  "contactEmailAdres": "data.datateambeeldschoon@amsterdam.nl",
+  "businessDataSteward": "",
+  "taal": "Nederlands",
+  "vertrouwelijkheidsniveau": "Open",
+  "privacyniveau": "Niet persoonlijk identificeerbaar",
+  "geoData": "Ja",
+  "geoCoördinaatreferentiesysteem": "RD",
+  "ververstermijn": "Dagelijks",
+  "bewaartermijn": "36",
+  "startDatumContract": "2023-01-01",
+  "schema": {
+    "tables": [
+      {
+        "id": "TABLE_bomen_stamgegevens_v1.json",
+        "as_id": "stamgegevens",
+        "name": "stamgegevens van bomen",
+        "description": "bevat de actuele stamgegevens van de bomen in beheer van gemeente Amsterdam. In Amsterdam staan ongeveer 1 miljoen bomen. Deze staan in tuinen, (sport)parken, begraafplaatsen en op straat. De gemeente beheert zo’n 300.000 bomen. Het beheer bestaat uit goede zorg voor bomen. Dat betekent op tijd snoeien en regelmatig controleren op ziektes en onveilige situaties.",
+        "attributes": [
+          {
+            "id": {
+              "description": "Unieke aanduiding van record",
+              "type": "integer",
+              "term": "ID"
+            },
+            "gbdBuurt": {
+              "description": "Unieke identificatie van een buurt",
+              "type": "string",
+              "term": "Buurt ID"
+            },
+            "geometrie": {
+              "description": "Aanduiding voor de geometrie van het beheerobject volgens het Stelsel van de Rijksdriehoeksmeting (RD, epsg:28992). bevat punt-geometrie.",
+              "type": "",
+              "term": "Geometrie"
+            },
+            "typeBeheerderPlus": {
+              "description": "Nadere aanduiding van de beheerder van het beheerobject.",
+              "type": "string",
+              "term": "Beheerder type plus"
+            },
+            "boomhoogteklasseActueel": {
+              "description": "Aanduiding van de boomhoogte in meters ingedeeld in vaste klassen.",
+              "type": "string",
+              "term": "Boomhoogte klasse code"
+            },
+            "typeEigenaarPlus": {
+              "description": "Nadere aanduiding van de eigenaar van het beheerobject.",
+              "type": "string",
+              "term": "Eigenaar type plus"
+            },
+            "jaarVanAanleg": {
+              "description": "Jaar waarin het beheerobject is geplaatst",
+              "type": "integer",
+              "term": "Beheerobject plaatsing jaar"
+            },
+            "soortnaam": {
+              "description": "Aanduiding voor de soortnaam van het natuurobject die binnen het beheerobject voorkomen",
+              "type": "string",
+              "term": "Natuurobject soort naam"
+            },
+            "stamdiameterklasse": {
+              "description": "Aanduiding van de diameter van de stam in diameterklassen.",
+              "type": "string",
+              "term": "Boomstam diameter klasse code"
+            },
+            "standplaats": {
+              "description": "De fysieke locatie waar het beheerobject is geplaatst",
+              "type": "string",
+              "term": "Beheerobject standplaats"
+            },
+            "standplaatsGedetailleerd": {
+              "description": "Nadere meer gedetailleerde specificatie waar het beheerobject staat",
+              "type": "string",
+              "term": "Beheerobject standplaats gedetailleerd"
+            },
+            "typeObject": {
+              "description": "Nadere aanduiding van de toestand van een beheerobject.",
+              "type": "string",
+              "term": "Beheerobject status"
+            },
+            "typeSoortnaam": {
+              "description": "De volledige latijnse benaming van een beheerobject",
+              "type": "string",
+              "term": "Beheerobject latijnse naam"
+            },
+            "groeiplaatsBoomID": {
+              "description": "ID boomgroeiplaats",
+              "type": "integer",
+              "term": "ID boomgroeiplaats"
+            },
+            "beschermingsstatusGedetailleerd": {
+              "description": "Details bij speciale status van de boom",
+              "type": "string",
+              "term": "Beheerobject beschermingsstatus gedetailleerd"
+            },
+            "beschermingsstatus": {
+              "description": "Speciale status van de boom",
+              "type": "string",
+              "term": "Beheerobject beschermingsstatus"
+            },
+            "mutatieDatum": {
+              "description": "Datum waarop laatste mutatie heeft plaatsgevonden",
+              "type": "string",
+              "term": "Datum mutatie"
+            },
+            "soortnaamKort": {
+              "description": "Wetenschappelijk naam, afkomstig uit referentietabel",
+              "type": "string",
+              "term": "Beheerobject wetenschappelijke naam"
+            },
+            "soortnaamTop": {
+              "description": "Nederlandse soortnaam uit referentietabel",
+              "type": "string",
+              "term": "Beheerobject Nederlandse naam"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "updateDatumContract": "2025-08-18 12:18:26",
+  "aanmaakDatumContract": "2025-03-12 12:42:27",
+  "amsterdamSchemaDatasetVerwijzing": {
+    "datasetName": "bomen",
+    "scope": "OPENBAAR",
+    "tables": [
+      "stamgegevens_V1"
+    ]
+  },
+  "distributietype": [
+    "API"
+  ],
+  "api": [
+    {
+      "type": "Rest",
+      "link": "https://api.data.amsterdam.nl/v1/bomen/stamgegevens/"
+    },
+    {
+      "type": "WFS",
+      "link": "https://api.data.amsterdam.nl/v1/wfs/bomen/stamgegevens/"
+    },
+    {
+      "type": "MVT",
+      "link": "https://api.data.amsterdam.nl/v1/mvt/bomen/stamgegevens/"
+    }
+  ],
+  "bestanden": []
+}

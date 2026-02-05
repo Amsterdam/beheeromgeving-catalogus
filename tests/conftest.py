@@ -265,5 +265,23 @@ def client_with_token(api_client):
 
 @pytest.fixture()
 def product_json():
-    with open(Path(__file__).parent / "product.json") as file:
+    with open(Path(__file__).parent / "files" / "product.json") as file:
+        return json.load(file)
+
+
+@pytest.fixture()
+def marketplace_json():
+    with open(Path(__file__).parent / "files" / "marketplace.json") as file:
+        return json.load(file)
+
+
+@pytest.fixture()
+def marketplace_detail_json():
+    with open(Path(__file__).parent / "files" / "marketplace_detail.json") as file:
+        return json.load(file)
+
+
+@pytest.fixture()
+def schema_api_json():
+    with open(Path(__file__).parent / "files" / "schema_api.json") as file:
         return json.load(file)
