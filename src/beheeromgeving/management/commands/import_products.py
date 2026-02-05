@@ -142,7 +142,11 @@ class Command(BaseCommand):
 
             self._create_distributions(product, new_product, new_contract, services, team)
             try:
-                self.service.update_publication_status(new_product.id, {"publication_status": "P"})
+                self.service.update_publication_status(
+                    product_id=new_product.id,
+                    data={"publication_status": "P"},
+                    scopes=[team.scope],
+                )
             except ValidationError as e:
                 # only happens when refresh_period cannot be parsed.
                 print(e.message, product["ververstermijn"])
@@ -199,19 +203,24 @@ class Command(BaseCommand):
                     else None,
                 )
                 contract = self.service.create_contract(
-                    product_id=product.id, data=contract.model_dump()
+                    product_id=product.id, data=contract.model_dump(), scopes=[team.scope]
                 )
                 path = to_snake_case(dataset["id"]).replace("_", "/")
                 s = DataServiceCreateOrUpdate(
                     type=enums.DataServiceType.REST,
                     endpoint_url=f"https://api.data.amsterdam.nl/v1/{path}",
                 )
-                service = self.service.create_service(product_id=product.id, data=s.model_dump())
+                service = self.service.create_service(
+                    product_id=product.id, data=s.model_dump(), scopes=[team.scope]
+                )
                 d = DistributionCreateOrUpdate(
                     access_service_id=service.id, type=enums.DistributionType.API
                 )
                 self.service.create_distribution(
-                    product_id=product.id, contract_id=contract.id, data=d.model_dump()
+                    product_id=product.id,
+                    contract_id=contract.id,
+                    data=d.model_dump(),
+                    scopes=[team.scope],
                 )
 
     def _get_refresh_period(self, product):
