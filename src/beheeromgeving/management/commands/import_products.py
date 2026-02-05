@@ -10,11 +10,13 @@ from api.datatransferobjects import (
     DataServiceCreateOrUpdate,
     DistributionCreateOrUpdate,
     ProductCreate,
+    ProductUpdate,
     RefreshPeriod,
 )
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
-from domain.exceptions import ValidationError
+from domain.exceptions import ObjectDoesNotExist, ValidationError
 from domain.product import ProductRepository, ProductService, enums
+from domain.product.objects import Product
 from domain.team import TeamRepository, TeamService
 
 MARKETPLACE_URL = "https://dmpfunc002.amsterdam.nl/marketplace"
@@ -101,6 +103,9 @@ class Command(BaseCommand):
                 scopes=[team.scope],
             )
             try:
+                domain_product = self.service.get_product_by_name(product["naam"])
+                new_product = self.update_product(domain_product, product)
+            except ObjectDoesNotExist:
                 new_product = self.create_product(product, team)
             except ValidationError as e:
                 print(e.message)
@@ -117,7 +122,7 @@ class Command(BaseCommand):
                 print(e.message, product["ververstermijn"])
                 continue
 
-    def create_product(self, product, team):
+    def _get_refresh_period(self, product):
         refresh_parts = product["ververstermijn"].split(" ")
         try:
             refresh_period = RefreshPeriod(
@@ -125,37 +130,55 @@ class Command(BaseCommand):
             )
         except KeyError:
             refresh_period = None
-        p = ProductCreate(
-            team_id=team.id,
-            name=product["naam"],
-            description=product["beschrijving"],
-            language=enums.Language[product["taal"].upper()],
-            is_geo=product["geoData"] == "Ja",
-            crs=(
+        return refresh_period
+
+    def _get_product_kwargs(self, product):
+        return {
+            "description": product["beschrijving"],
+            "language": enums.Language[product["taal"].upper()],
+            "is_geo": product["geoData"] == "Ja",
+            "crs": (
                 product["geoCoördinaatreferentiesysteem"]
                 if product["geoCoördinaatreferentiesysteem"] not in ["Niet van toepassing", ""]
                 else None
             ),
-            schema_url=(
+            "schema_url": (
                 "https://api.schemas.data.amsterdam.nl/v1/datasets/"
                 f"{product['amsterdamSchemaDatasetVerwijzing']['datasetName']}"
                 if product.get("amsterdamSchemaDatasetVerwijzing")
                 else ""
             ),
-            type=enums.ProductType.DATAPRODUCT,
-            themes=[
+            "type": enums.ProductType.DATAPRODUCT,
+            "themes": [
                 enums.Theme[unidecode("_".join(theme.upper().split(" ")))]
                 for theme in product["themaNamen"]
             ],
-            refresh_period=refresh_period,
-            owner=(
+            "refresh_period": self._get_refresh_period(product),
+            "owner": (
                 product["eigenaar"]
                 if product["eigenaar"] != "Product Owner van het Datateam"
                 else None
             ),
-            data_steward=product["businessDataSteward"],
+            "data_steward": product["businessDataSteward"],
+        }
+
+    def create_product(self, product, team):
+        p = ProductCreate(
+            team_id=team.id, name=product["naam"], **self._get_product_kwargs(product)
         )
         return self.service.create_product(data=p.model_dump(), scopes=[team.scope])
+
+    def update_product(self, domain_product: Product, product: dict):
+        update_dto = ProductUpdate(
+            name=domain_product.name,
+            team_id=domain_product.team_id,
+            **self._get_product_kwargs(product),
+        )
+        if not domain_product.id:
+            raise ObjectDoesNotExist
+        return self.service.update_product(
+            product_id=domain_product.id, data=update_dto.model_dump()
+        )
 
     def create_services(self, product, new_product, team):
         services = []
