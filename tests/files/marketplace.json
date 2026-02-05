@@ -1,0 +1,24 @@
+{
+  "totalResults": 1,
+  "documents": [
+    {
+      "id": "bomen_stamgegevens_v1",
+      "naam": "Bomen stamgegevens",
+      "versie": "V1",
+      "themaNamen": [
+        "Natuur en milieu"
+      ],
+      "beschrijving": "Deze dataset bevat de vaste boomgegevens van een boom. In de dataset staan bomen in de openbare ruimte die gemeente Amsterdam in beheer heeft.",
+      "contactEmailAdres": "data.datateambeeldschoon@amsterdam.nl",
+      "dataTeam": "Beheer Openbare Ruimte",
+      "distributietype": [
+        "API"
+      ],
+      "taal": "Nederlands",
+      "vertrouwelijkheidsniveau": "Open",
+      "startDatumContract": "01-01-2023",
+      "updateDatumContract": "2025-08-18 12:18:26",
+      "aanmaakDatumContract": "2025-03-12 12:42:27"
+    }
+  ]
+}
