@@ -142,12 +142,16 @@ class ProductValidator:
             "refresh_period",
             "contact_email",
         ]
-        return [field for field in required_fields if getattr(self.product, field) is None]
+        missing_fields = [
+            field for field in required_fields if getattr(self.product, field) is None
+        ]
+        if self.product.is_geo and not self.product.crs:
+            missing_fields.append("crs")
+        return missing_fields
 
     def can_change_publication_status(self, data: dict) -> bool:
         missing_fields = self.get_missing_fields()
-        if self.product.is_geo and not self.product.crs:
-            missing_fields.append("crs")
+
         if (
             data.get("publication_status") == "P"
             and missing_fields
