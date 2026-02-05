@@ -9,16 +9,18 @@ class TestImportProducts:
     def test_import_products(self, product_json: dict, orm_team):
         import_products = ImportProductsCommand()
 
-        new_product = import_products.create_product(product_json, orm_team)
+        new_product = import_products._create_product(
+            orm_team, product_json["naam"], **import_products._get_product_kwargs(product_json)
+        )
         assert new_product.name == product_json["naam"]
 
-        services = import_products.create_services(product_json, new_product, orm_team)
+        services = import_products._create_services(product_json, new_product, orm_team)
         assert len(services) == len(product_json["api"])
 
-        new_contract = import_products.create_contract(product_json, new_product, orm_team)
+        new_contract = import_products._create_contract(product_json, new_product, orm_team)
         assert new_contract.purpose == product_json["doelbinding"]
 
-        distributions = import_products.create_distributions(
+        distributions = import_products._create_distributions(
             product_json, new_product, new_contract, services, orm_team
         )
         assert len(distributions) == 4  # 3 api endpoints and 1 file
