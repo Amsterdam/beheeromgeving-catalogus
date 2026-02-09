@@ -15,6 +15,7 @@ from api.datatransferobjects import (
     ProductUpdate,
     RefreshPeriod,
 )
+from beheeromgeving.management.commands.refresh_periods import FREQUENCY_MAP, REFRESH_MAP, UNIT_MAP
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
 from domain.exceptions import ObjectDoesNotExist, ValidationError
 from domain.product import ProductRepository, ProductService, enums
@@ -24,28 +25,6 @@ from domain.team.objects import Team
 
 MARKETPLACE_URL = "https://dmpfunc002.amsterdam.nl/marketplace"
 SCHEMA_API_URL = "https://api.schemas.data.amsterdam.nl/v1/datasets"
-
-FREQUENCY_MAP = {
-    "Een": 1,
-    "Twee": 2,
-    "Drie": 3,
-    "Vier": 4,
-    "Dagelijks": 1,
-    "Maandelijks": 1,
-    "Wekelijks": 1,
-    "Jaarlijks": 1,
-}
-UNIT_MAP = {
-    "maand": enums.TimeUnit.MONTH,
-    "dag": enums.TimeUnit.DAY,
-    "uur": enums.TimeUnit.HOUR,
-    "jaar": enums.TimeUnit.YEAR,
-    "week": enums.TimeUnit.WEEK,
-    "Dagelijks": enums.TimeUnit.DAY,
-    "Wekelijks": enums.TimeUnit.WEEK,
-    "Maandelijks": enums.TimeUnit.MONTH,
-    "Jaarlijks": enums.TimeUnit.YEAR,
-}
 
 
 class Command(BaseCommand):
@@ -126,7 +105,8 @@ class Command(BaseCommand):
             )
             try:
                 domain_product = self.service.get_product_by_name(product["naam"])
-                new_product = self._update_product(domain_product, product)
+                self._unpublish(domain_product, team)
+                new_product = self._update_product(team, domain_product, product)
             except ObjectDoesNotExist:
                 new_product = self._create_product(
                     team,
@@ -142,15 +122,39 @@ class Command(BaseCommand):
 
             self._create_distributions(product, new_product, new_contract, services, team)
             try:
-                self.service.update_publication_status(
-                    product_id=new_product.id,
-                    data={"publication_status": "P"},
-                    scopes=[team.scope],
-                )
+                self._publish(new_product, team)
             except ValidationError as e:
                 # only happens when refresh_period cannot be parsed.
                 print(e.message, product["ververstermijn"])
                 continue
+
+    def _unpublish(self, product, team):
+        self.service.update_publication_status(
+            product_id=product.id,
+            data={"publication_status": "D"},
+            scopes=[team.scope],
+        )
+        for contract in product.contracts:
+            self.service.update_contract_publication_status(
+                product_id=product.id,
+                contract_id=contract.id,
+                data={"publication_status": "D"},
+                scopes=[team.scope],
+            )
+
+    def _publish(self, product, team):
+        for contract in product.contracts:
+            self.service.update_contract_publication_status(
+                product_id=product.id,
+                contract_id=contract.id,
+                data={"publication_status": "P"},
+                scopes=[team.scope],
+            )
+        self.service.update_publication_status(
+            product_id=product.id,
+            data={"publication_status": "P"},
+            scopes=[team.scope],
+        )
 
     def _import_from_schema_api(self):
         response = requests.get(SCHEMA_API_URL, timeout=10).json()
@@ -192,7 +196,7 @@ class Command(BaseCommand):
                     owner=dataset["owner"][:64] if dataset.get("owner") else None,
                 )
                 if not product.id:
-                    raise ObjectDoesNotExist from None
+                    raise RuntimeError(f"Product {product.name} is missing id") from None
                 auth = dataset.get("auth", [{"id": "OPENBAAR", "name": "Openbaar"}])[0]
                 contract = DataContractCreateOrUpdate(
                     name=f"{name} {auth.get('name')}"[:64],
@@ -205,6 +209,8 @@ class Command(BaseCommand):
                 contract = self.service.create_contract(
                     product_id=product.id, data=contract.model_dump(), scopes=[team.scope]
                 )
+                if not contract.id:
+                    raise RuntimeError(f"Contract {contract.name} doesn't have an id") from None
                 path = to_snake_case(dataset["id"]).replace("_", "/")
                 s = DataServiceCreateOrUpdate(
                     type=enums.DataServiceType.REST,
@@ -224,13 +230,18 @@ class Command(BaseCommand):
                 )
 
     def _get_refresh_period(self, product):
-        refresh_parts = product["ververstermijn"].split(" ")
+        refresh_period_input = product["ververstermijn"]
         try:
-            refresh_period = RefreshPeriod(
-                frequency=FREQUENCY_MAP[refresh_parts[0]], unit=UNIT_MAP[refresh_parts[-1]]
-            )
+            kwargs = REFRESH_MAP[refresh_period_input]
+            refresh_period = RefreshPeriod(**kwargs)  # ty:ignore[invalid-argument-type]
         except KeyError:
-            refresh_period = None
+            try:
+                refresh_parts = refresh_period_input.split(" ")
+                refresh_period = RefreshPeriod(
+                    frequency=FREQUENCY_MAP[refresh_parts[0]], unit=UNIT_MAP[refresh_parts[-1]]
+                )
+            except KeyError:
+                refresh_period = None
         return refresh_period
 
     def _get_product_kwargs(self, product):
@@ -269,16 +280,16 @@ class Command(BaseCommand):
         product_dto = ProductCreate(team_id=team.id, name=name, **kwargs)
         return self.service.create_product(data=product_dto.model_dump(), scopes=[team.scope])
 
-    def _update_product(self, domain_product: Product, product: dict):
+    def _update_product(self, team: Team, domain_product: Product, product: dict):
         update_dto = ProductUpdate(
             name=domain_product.name,
             team_id=domain_product.team_id,
             **self._get_product_kwargs(product),
         )
         if not domain_product.id:
-            raise ObjectDoesNotExist
+            raise RuntimeError(f"Product {domain_product.name} is missing id")
         return self.service.update_product(
-            product_id=domain_product.id, data=update_dto.model_dump()
+            product_id=domain_product.id, data=update_dto.model_dump(), scopes=[team.scope]
         )
 
     def _create_services(self, product, new_product, team):
@@ -318,8 +329,8 @@ class Command(BaseCommand):
                 PRIVACY_LEVELS[product_dict["privacyniveau"].lower()]
             ],
             scope=(
-                product_dict["amsterdamSchemaVerwijzing"]["scope"]
-                if product_dict.get("amsterdamSchemaVerwijzing")
+                product_dict["amsterdamSchemaDatasetVerwijzing"]["scope"]
+                if product_dict.get("amsterdamSchemaDatasetVerwijzing")
                 else "scope_openbaar"
             ),
             confidentiality=conf_level_map[product_dict["vertrouwelijkheidsniveau"]],
