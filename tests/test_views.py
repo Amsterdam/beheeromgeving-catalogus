@@ -386,6 +386,14 @@ class TestViews:
         with pytest.raises(Product.DoesNotExist):
             orm_product.refresh_from_db()
 
+    def test_product_delete_fails_on_published_product(
+        self, orm_team, orm_product, client_with_token
+    ):
+        orm_product.publication_status = "P"
+        orm_product.save()
+        response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}")
+        assert response.status_code == 400
+
     def test_product_delete_unauthorized(self, orm_product, client_with_token):
         response = client_with_token([]).delete(f"/products/{orm_product.id}")
         assert response.status_code == 401
@@ -599,6 +607,18 @@ class TestViews:
 
         assert len(orm_product.contracts.all()) == 0
 
+    def test_contract_delete_fails_on_published_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract.publication_status = "P"
+        contract.save()
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract.id}"
+        )
+
+        assert response.status_code == 400
+
     def test_distribution_list(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
         response = api_client.get(
@@ -715,6 +735,18 @@ class TestViews:
         orm_contract = orm_product.contracts.first()
         assert not orm_contract.distributions.filter(pk=distribution_id).exists()
 
+    def test_distribution_delete_fails_on_published_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract.publication_status = "P"
+        contract.save()
+        distribution_id = orm_product.contracts.first().distributions.first().id
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution_id}"
+        )
+        assert response.status_code == 400
+
     def test_distribution_delete_not_allowed(self, orm_product, orm_other_team, client_with_token):
         contract_id = orm_product.contracts.first().id
         distribution_id = orm_product.contracts.first().distributions.first().id
@@ -803,6 +835,26 @@ class TestViews:
         assert response.status_code == 204
         orm_product.refresh_from_db()
         assert len(orm_product.services.all()) == 0
+
+    def test_service_delete_fails_on_published_product(
+        self, orm_product, orm_team, client_with_token
+    ):
+        orm_product.publication_status = "P"
+        orm_product.save()
+
+        # first delete the distribution referencing the service:
+        contract = orm_product.contracts.first()
+        distribution_id = contract.distributions.first().id
+        client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution_id}"
+        )
+        # delete the service:
+        service_id = orm_product.services.first().id
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/services/{service_id}"
+        )
+
+        assert response.status_code == 400
 
     def test_service_delete_not_allowed(self, orm_product, orm_team, client_with_token):
         service_id = orm_product.services.first().id
