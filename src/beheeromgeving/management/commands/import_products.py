@@ -31,7 +31,8 @@ class Command(BaseCommand):
     service: ProductService
     team_service: TeamService
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         authorize.set_auth_service(AuthorizationService(AuthorizationRepository()))
         self.service = ProductService(ProductRepository())
         self.team_service = TeamService(TeamRepository())
@@ -54,7 +55,7 @@ class Command(BaseCommand):
     def purge(self):
         all_products = self.service.get_products()
         for product in all_products:
-            print(f"deleting product: {product.name}")
+            self.stdout.write(f"deleting product: {product.name}")
             team = self.team_service.get_team(product.team_id)
             if product.id is not None:
                 self.service.delete_product(product_id=product.id, scopes=[team.scope])
@@ -71,14 +72,14 @@ class Command(BaseCommand):
             self._import_from_market_place()
             self._import_from_schema_api()
         else:
-            print("Invalid source")
+            self.stdout.write("Invalid source")
 
     def _import_from_market_place(self):
         all_products = requests.get(MARKETPLACE_URL, timeout=10).json()["documents"]
         all_teams = self.team_service.get_teams()
         for product_summary in all_products:
             product = requests.get(f"{MARKETPLACE_URL}/{product_summary['id']}", timeout=10).json()
-            print(f"Adding product {product['naam']}")
+            self.stdout.write(f"Adding product {product['naam']}")
             team = None
             try:
                 team = next(team for team in all_teams if team.name == product["dataTeam"])
@@ -92,7 +93,7 @@ class Command(BaseCommand):
                             if team.acronym == team_map[product["dataTeam"]]
                         )
                     except StopIteration:
-                        print(
+                        self.stderr.write(
                             f"SKIPPING {product['naam']}: Cannot find team with "
                             f"name {product['dataTeam']}."
                         )
@@ -114,7 +115,7 @@ class Command(BaseCommand):
                     **self._get_product_kwargs(product),
                 )
             except ValidationError as e:
-                print(e.message)
+                self.stderr.write(e.message)
                 continue
 
             services = self._create_services(product, new_product, team)
@@ -125,7 +126,7 @@ class Command(BaseCommand):
                 self._publish(new_product, team)
             except ValidationError as e:
                 # only happens when refresh_period cannot be parsed.
-                print(e.message, product["ververstermijn"])
+                self.stderr.write(e.message + product["ververstermijn"])
                 continue
 
     def _unpublish(self, product, team):
@@ -172,11 +173,11 @@ class Command(BaseCommand):
                 product = self.service.get_product_by_name(name[:64])
             except ObjectDoesNotExist:
                 # Create
-                print(f"Adding product {name}")
+                self.stdout.write(f"Adding product {name}")
                 try:
                     team = self.team_service.get_team_by_name(dataset["publisher"]["name"])
                 except ObjectDoesNotExist:
-                    print(f"Team {dataset['publisher']['name']} doesn't exist")
+                    self.stderr.write(f"Team {dataset['publisher']['name']} doesn't exist")
                     continue
                 crs = dataset.get("crs")
                 crs_map = {
