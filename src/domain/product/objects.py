@@ -247,7 +247,8 @@ class Product(BaseObject):
         return contract
 
     def delete_contract(self, contract_id: int) -> int:
-        self.get_contract(contract_id)  # Raise if it doesn't exist.
+        contract = self.get_contract(contract_id)  # Raise if it doesn't exist.
+        contract.validate.can_update()
         self.contracts = [contract for contract in self.contracts if contract.id != contract_id]
         return contract_id
 
@@ -279,6 +280,7 @@ class Product(BaseObject):
     def delete_distribution(self, contract_id: int, distribution_id: int) -> int:
         self.get_distribution(contract_id, distribution_id)  # Raises if it doesn't exist.
         contract = self.get_contract(contract_id)
+        contract.validate.can_update()
         contract.distributions = [
             distribution
             for distribution in contract.distributions
@@ -298,6 +300,7 @@ class Product(BaseObject):
         return service
 
     def delete_service(self, service_id: int) -> int:
+        self.validate.can_update()
         self.get_service(service_id)  # Raises if it doesn't exist
         if any(
             distribution.access_service_id == service_id

@@ -57,6 +57,7 @@ class Command(BaseCommand):
         for product in all_products:
             self.stdout.write(f"deleting product: {product.name}")
             team = self.team_service.get_team(product.team_id)
+            self._unpublish(product, team)
             if product.id is not None:
                 self.service.delete_product(product_id=product.id, scopes=[team.scope])
 
