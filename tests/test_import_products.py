@@ -144,6 +144,7 @@ class TestImportProducts:
         )
         requests_mock.get(SCHEMA_API_URL, text=json.dumps(schema_api_json))
         call_command("import_products", source="all")
+        assert Product.objects.count() == 2
 
         call_command("import_products", purge=True)
         assert Product.objects.count() == 0
