@@ -419,7 +419,7 @@ class TestViews:
             {"data_steward": "newmail@steward.nl"},
         ],
     )
-    def test_product_update(self, orm_product, orm_team, data, client_with_token, api_client):
+    def test_product_update(self, orm_product, orm_team, data, client_with_token):
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}",
             data=data,
@@ -430,6 +430,19 @@ class TestViews:
             assert response.data[key] == val
             assert getattr(orm_product, key) == val
         assert response.data["last_updated"] == orm_product.last_updated
+
+    def test_product_update_fails_on_published_product(
+        self, orm_product, orm_team, client_with_token
+    ):
+        orm_product.publication_status = "P"
+        orm_product.save()
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}",
+            data={"name": "New Name"},
+        )
+        assert response.status_code == 400
+        orm_product.refresh_from_db()
+        assert orm_product.name != "New Name"
 
     def test_product_update_reflected_in_list_view(self, orm_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).patch(
@@ -548,6 +561,19 @@ class TestViews:
                 or response_value == datetime.strptime(value, "%Y-%m-%d").date()  # noqa: DTZ007
             )
 
+    def test_contract_update_fails_on_published_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract.publication_status = "P"
+        contract.save()
+        contract_id = orm_product.contracts.first().id
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}", data={"name": "New Name"}
+        )
+        assert response.status_code == 400
+        assert orm_product.contracts.first().name != "New Name"
+
     @pytest.mark.parametrize(
         "data",
         [
@@ -631,6 +657,22 @@ class TestViews:
         )
         assert response.status_code == 200
         assert response.data["format"] == "TEST"
+
+    def test_distribution_update_fails_on_published_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract.publication_status = "P"
+        contract.save()
+        contract_id = orm_product.contracts.first().id
+        distribution_id = orm_product.contracts.first().distributions.first().id
+        data = {"format": "TEST", "type": "F"}
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}",
+            data=data,
+        )
+        assert response.status_code == 400
+        assert orm_product.contracts.first().distributions.first().format != "TEST"
 
     def test_distribution_patch_and_then_get(self, orm_product, orm_team, client_with_token):
         contract_id = orm_product.contracts.first().id
@@ -719,6 +761,18 @@ class TestViews:
             f"/products/{orm_product.id}/services/{service_id}", data={"type": "WMS"}
         )
         assert response.status_code == 200
+
+    def test_service_update_fails_on_published_product(
+        self, orm_product, orm_team, client_with_token
+    ):
+        orm_product.publication_status = "P"
+        orm_product.save()
+        service_id = orm_product.services.first().id
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/services/{service_id}", data={"type": "WMS"}
+        )
+        assert response.status_code == 400
+        assert orm_product.services.first().type != "WMS"
 
     @pytest.mark.parametrize(
         "data",

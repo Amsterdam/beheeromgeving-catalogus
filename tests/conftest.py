@@ -60,7 +60,7 @@ def orm_product(orm_team) -> Product:
         type="D",
         themes=["NM"],
         refresh_period="3.MONTH",
-        publication_status="P",
+        publication_status="D",
     )
 
     service = DataService.objects.create(
