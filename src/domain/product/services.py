@@ -45,6 +45,8 @@ class ProductService(AbstractService):
 
     @authorize.is_team_member
     def delete_product(self, *, product_id: int, **kwargs) -> None:
+        product = self.get_product(product_id)
+        product.validate.can_update()
         self.repository.delete(product_id)
 
     def get_contracts(self, product_id: int) -> list[DataContract]:
