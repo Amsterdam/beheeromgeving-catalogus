@@ -40,7 +40,7 @@ class ProductService(AbstractService):
         existing_product = self.get_product(product_id)
         if data.get("refresh_period"):
             data["refresh_period"] = RefreshPeriod.from_dict(data["refresh_period"])
-        existing_product.update_from_dict(data)
+        existing_product.update(data)
         return self._persist(existing_product)
 
     @authorize.is_team_member

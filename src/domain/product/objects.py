@@ -57,6 +57,11 @@ class ContractValidator:
     def __init__(self, datacontract: DataContract):
         self.contract = datacontract
 
+    def can_update(self) -> bool:
+        if self.contract.publication_status == enums.PublicationStatus.PUBLISHED:
+            raise ValidationError("Cannot update published contract.")
+        return True
+
     def get_missing_fields(self) -> list[str]:
         required_fields = [
             "name",
@@ -114,6 +119,11 @@ class DataContract(BaseObject):
 class ProductValidator:
     def __init__(self, prod: Product):
         self.product = prod
+
+    def can_update(self) -> bool:
+        if self.product.publication_status == enums.PublicationStatus.PUBLISHED:
+            raise ValidationError("Cannot update published product.")
+        return True
 
     def can_create_contract(self) -> bool:
         required_fields = [
@@ -214,14 +224,20 @@ class Product(BaseObject):
                 f"service with id {service_id} does not exist on product {self.id}"
             ) from None
 
-    def update_state(self, data: dict):
+    def update(self, data: dict) -> Product:
+        if self.validate.can_update():
+            self.update_from_dict(data)
+        return self
+
+    def update_state(self, data: dict) -> Product:
         if self.validate.can_change_publication_status(data):
             self.update_from_dict(data)
         return self
 
     def update_contract(self, contract_id: int, data: dict) -> DataContract:
         contract = self.get_contract(contract_id)
-        contract.update_from_dict(data)
+        if contract.validate.can_update():
+            contract.update_from_dict(data)
         return contract
 
     def update_contract_state(self, contract_id: int, data: dict) -> DataContract:
@@ -252,6 +268,8 @@ class Product(BaseObject):
     def update_distribution(
         self, contract_id: int, distribution_id: int, data: dict
     ) -> Distribution:
+        contract = self.get_contract(contract_id)
+        contract.validate.can_update()
         distribution = self.get_distribution(contract_id, distribution_id)
         distribution.update_from_dict(data)
         if refresh_period := data.get("refresh_period"):
@@ -274,6 +292,7 @@ class Product(BaseObject):
         return service
 
     def update_service(self, service_id: int, data: dict) -> DataService:
+        self.validate.can_update()
         service = self.get_service(service_id)
         service.update_from_dict(data)
         return service
