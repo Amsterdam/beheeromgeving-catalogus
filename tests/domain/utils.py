@@ -83,6 +83,9 @@ class DummyRepository(AbstractRepository):
         except StopIteration as e:
             raise exceptions.ObjectDoesNotExist(f"Object with name {name} does not exist") from e
 
+    def get_published_by_name(self, name):
+        return self.get_by_name(name)
+
     def list(self):
         return list(self._items.values())
 

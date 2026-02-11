@@ -75,21 +75,25 @@ class AuthorizationService:
         scopes: list[Scope],
         data: dict | None = None,
         product_id: ProductId | None = None,
+        name: str | None = None,
         **kwargs,
     ) -> AuthorizationResult:
         """Assert the user is a member of the team that owns the resource."""
         if data is None:
             data = {}
         team_id = data.get("team_id")
-        if not team_id and not product_id:
+        if not team_id and not product_id and not name:
             raise DomainException(
-                "AuthorizationService.is_team_member needs either a team_id or product_id"
+                "AuthorizationService.is_team_member needs either a team_id, product_id, "
+                "or (product) name."
             )
         team_scope = None
         if team_id:
             team_scope = self.config.team_id_to_scope(team_id)
         elif product_id:
             team_scope = self.config.product_id_to_scope(product_id)
+        elif name:
+            team_scope = self.config.product_name_to_scope(name)
 
         if team_scope in scopes:
             return AuthorizationResult.GRANTED
