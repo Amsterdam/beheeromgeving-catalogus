@@ -5,6 +5,7 @@ from beheeromgeving import models as orm
 from domain import exceptions
 from domain.base import AbstractRepository
 from domain.product import Product
+from domain.team import Team
 
 # alias for typing
 list_ = list
@@ -28,7 +29,7 @@ class ProductRepository(AbstractRepository[Product]):
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
 
-    def get_by_name(self, name: str) -> Product:
+    def _get_by_name(self, name: str) -> orm.Product:
         product = (
             self.manager.annotate(search_name=Value(name))
             .filter(search_name__istartswith=F("name"))
@@ -36,7 +37,15 @@ class ProductRepository(AbstractRepository[Product]):
         )
         if not product:
             raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.")
+        return product
+
+    def get_by_name(self, name: str) -> Product:
+        product = self._get_by_name(name)
         return product.to_domain()
+
+    def get_published_by_name(self, name: str) -> Product:
+        product = self._get_by_name(name)
+        return product.to_domain(published_only=True)
 
     def list(
         self,
@@ -44,7 +53,25 @@ class ProductRepository(AbstractRepository[Product]):
         query: str | None = None,
         filter: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
-        **kwargs,
+    ) -> list_[Product]:
+        if query:
+            products = {p.pk: p.to_domain(published_only=True) for p in self.manager.all()}
+            products = self.search(products, query)
+        else:
+            products = [p.to_domain(published_only=True) for p in self.manager.all()]
+        if filter:
+            products = self.filter(products, filter)
+        if order:
+            products = self.order(products, order)
+        return products
+
+    def list_mine(
+        self,
+        *,
+        query: str | None = None,
+        filter: dict | None = None,
+        order: tuple[str, bool] | None = ("name", False),
+        teams: list_[Team],
     ) -> list_[Product]:
         if query:
             products = {p.pk: p.to_domain() for p in self.manager.all()}
@@ -55,11 +82,8 @@ class ProductRepository(AbstractRepository[Product]):
             products = self.filter(products, filter)
         if order:
             products = self.order(products, order)
-
-        if kwargs.get("teams") is not None:
-            team_ids = [team.id for team in kwargs["teams"]]
-            products = [product for product in products if product.team_id in team_ids]
-        return products
+        team_ids = [team.id for team in teams]
+        return [product for product in products if product.team_id in team_ids]
 
     def search(self, products: dict[int, Product], query: str) -> list_[Product]:
         query_words = query.lower().split(" ")

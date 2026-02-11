@@ -107,7 +107,7 @@ class AuthorizationConfiguration:
         self,
         admin_role: str,
         team_scopes: dict[TeamId, Scope],
-        product_scopes: dict[ProductId, Scope],
+        product_scopes: dict[ProductId | str, Scope],
         feature_enabled: bool = True,
     ):
         self.team_scopes = team_scopes or {}
@@ -127,3 +127,6 @@ class AuthorizationConfiguration:
 
     def product_id_to_scope(self, product_id: ProductId) -> Scope | AuthorizationResult:
         return self.product_scopes.get(product_id, AuthorizationResult.DENIED)
+
+    def product_name_to_scope(self, name: str) -> Scope | AuthorizationResult:
+        return self.product_scopes.get(name, AuthorizationResult.DENIED)
