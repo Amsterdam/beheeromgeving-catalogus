@@ -22,6 +22,12 @@ class ProductRepository(AbstractRepository[Product]):
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
 
+    def get_published(self, id: int) -> Product:
+        try:
+            return self.manager.get(pk=id).to_domain(published_only=True)
+        except orm.Product.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist from e
+
     def get_by_name(self, name: str) -> Product:
         product = (
             self.manager.annotate(search_name=Value(name))

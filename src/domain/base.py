@@ -30,6 +30,9 @@ class AbstractRepository[T](abc.ABC):
     def get(self, id: int) -> T:
         raise NotImplementedError
 
+    def get_published(self, id: int) -> T:
+        raise NotImplementedError
+
     @abc.abstractmethod
     def get_by_name(self, name: str) -> T:
         raise NotImplementedError
