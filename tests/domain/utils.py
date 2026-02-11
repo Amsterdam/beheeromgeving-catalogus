@@ -69,6 +69,9 @@ class DummyRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object with id {id} does not exist") from e
 
+    def get_published(self, id):
+        return self.get(id)
+
     def get_by_name(self, name):
         try:
             normalized_name = name.replace("_", " ").lower()
