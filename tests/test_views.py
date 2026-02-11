@@ -240,7 +240,7 @@ class TestViews:
         assert response.data["results"][0]["themes"] == orm_product.themes
         assert response.data["results"][1]["themes"] == orm_product2.themes
 
-    def test_contract_list_filter_matches_confidentiality(
+    def test_product_list_filter_matches_confidentiality(
         self, orm_product, orm_product2, api_client
     ):
         """Assert that we can filter the contracts on confidentiality."""
@@ -367,8 +367,12 @@ class TestViews:
         assert response.data["name"] == orm_product.name
         assert response.data["missing_fields"] == []
 
-    def test_product_detail_missing_fields(self, orm_incomplete_product, api_client):
-        response = api_client.get(f"/products/{orm_incomplete_product.id}")
+    def test_product_detail_missing_fields(
+        self, orm_incomplete_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_incomplete_product.id}"
+        )
         assert response.status_code == 200
         assert response.data["name"] == orm_incomplete_product.name
         assert response.data["missing_fields"] == ["crs"]
@@ -380,17 +384,15 @@ class TestViews:
         )
         assert response.status_code == 201
 
-    def test_product_delete(self, orm_team, orm_product, client_with_token):
-        response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}")
+    def test_product_delete(self, orm_team, orm_draft_product, client_with_token):
+        response = client_with_token([orm_team.scope]).delete(f"/products/{orm_draft_product.id}")
         assert response.status_code == 204
         with pytest.raises(Product.DoesNotExist):
-            orm_product.refresh_from_db()
+            orm_draft_product.refresh_from_db()
 
     def test_product_delete_fails_on_published_product(
         self, orm_team, orm_product, client_with_token
     ):
-        orm_product.publication_status = "P"
-        orm_product.save()
         response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}")
         assert response.status_code == 400
 
@@ -427,23 +429,21 @@ class TestViews:
             {"data_steward": "newmail@steward.nl"},
         ],
     )
-    def test_product_update(self, orm_product, orm_team, data, client_with_token):
+    def test_product_update(self, orm_draft_product, orm_team, data, client_with_token):
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}",
+            f"/products/{orm_draft_product.id}",
             data=data,
         )
         assert response.status_code == 200
-        orm_product.refresh_from_db()
+        orm_draft_product.refresh_from_db()
         for key, val in data.items():
             assert response.data[key] == val
-            assert getattr(orm_product, key) == val
-        assert response.data["last_updated"] == orm_product.last_updated
+            assert getattr(orm_draft_product, key) == val
+        assert response.data["last_updated"] == orm_draft_product.last_updated
 
     def test_product_update_fails_on_published_product(
         self, orm_product, orm_team, client_with_token
     ):
-        orm_product.publication_status = "P"
-        orm_product.save()
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}",
             data={"name": "New Name"},
@@ -461,17 +461,17 @@ class TestViews:
         product_list = client_with_token([]).get("/products")
         assert product_list.data["results"][0]["name"] == "New Name"
 
-    def test_product_update_refresh_period(self, orm_product, orm_team, client_with_token):
+    def test_product_update_refresh_period(self, orm_draft_product, orm_team, client_with_token):
         data = {"refresh_period": {"unit": "MONTH", "frequency": 2}}
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}",
+            f"/products/{orm_draft_product.id}",
             data=data,
         )
         assert response.status_code == 200
-        orm_product.refresh_from_db()
-        assert orm_product.refresh_period == "2.MONTH"  # DB stores in this way.
+        orm_draft_product.refresh_from_db()
+        assert orm_draft_product.refresh_period == "2.MONTH"  # DB stores in this way.
         assert response.data["refresh_period"] == data["refresh_period"]
-        assert response.data["last_updated"] == orm_product.last_updated
+        assert response.data["last_updated"] == orm_draft_product.last_updated
 
     @pytest.mark.parametrize(
         "data",
@@ -525,9 +525,13 @@ class TestViews:
         assert response.data["name"] == orm_product.contracts.first().name
         assert response.data["missing_fields"] == []
 
-    def test_contract_detail_missing_fields(self, orm_incomplete_product, api_client):
+    def test_contract_detail_missing_fields(
+        self, orm_incomplete_product, orm_team, client_with_token
+    ):
         contract_id = orm_incomplete_product.contracts.first().id
-        response = api_client.get(f"/products/{orm_incomplete_product.id}/contracts/{contract_id}")
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_incomplete_product.id}/contracts/{contract_id}"
+        )
 
         assert response.status_code == 200
         assert response.data["name"] == orm_incomplete_product.contracts.first().name
@@ -556,10 +560,10 @@ class TestViews:
             {"tables": None},
         ],
     )
-    def test_contract_update(self, orm_product, orm_team, data, client_with_token):
-        contract_id = orm_product.contracts.first().id
+    def test_contract_update(self, orm_draft_product, orm_team, data, client_with_token):
+        contract_id = orm_draft_product.contracts.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}", data=data
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}", data=data
         )
         assert response.status_code == 200
         for key, value in data.items():
@@ -572,9 +576,6 @@ class TestViews:
     def test_contract_update_fails_on_published_contract(
         self, orm_product, orm_team, client_with_token
     ):
-        contract = orm_product.contracts.first()
-        contract.publication_status = "P"
-        contract.save()
         contract_id = orm_product.contracts.first().id
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/contracts/{contract_id}", data={"name": "New Name"}
@@ -589,30 +590,28 @@ class TestViews:
             {"distributions": [{"type": 3}]},  # Wrong type on subfield
         ],
     )
-    def test_contract_update_bad_data(self, data, orm_product, orm_team, client_with_token):
-        contract_id = orm_product.contracts.first().id
+    def test_contract_update_bad_data(self, data, orm_draft_product, orm_team, client_with_token):
+        contract_id = orm_draft_product.contracts.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}", data=data
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}", data=data
         )
         assert response.status_code == 400
 
-    def test_contract_delete(self, orm_product, orm_team, client_with_token):
-        contract_id = orm_product.contracts.first().id
+    def test_contract_delete(self, orm_draft_product, orm_team, client_with_token):
+        contract_id = orm_draft_product.contracts.first().id
         response = client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_product.id}/contracts/{contract_id}"
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}"
         )
 
         assert response.status_code == 204
-        orm_product.refresh_from_db()
+        orm_draft_product.refresh_from_db()
 
-        assert len(orm_product.contracts.all()) == 0
+        assert len(orm_draft_product.contracts.all()) == 0
 
     def test_contract_delete_fails_on_published_contract(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
-        contract.publication_status = "P"
-        contract.save()
         response = client_with_token([orm_team.scope]).delete(
             f"/products/{orm_product.id}/contracts/{contract.id}"
         )
@@ -667,12 +666,12 @@ class TestViews:
         )
         assert response.status_code == 401
 
-    def test_distribution_update(self, orm_product, orm_team, client_with_token):
-        contract_id = orm_product.contracts.first().id
-        distribution_id = orm_product.contracts.first().distributions.first().id
+    def test_distribution_update(self, orm_draft_product, orm_team, client_with_token):
+        contract_id = orm_draft_product.contracts.first().id
+        distribution_id = orm_draft_product.contracts.first().distributions.first().id
         data = {"format": "TEST", "type": "F"}
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}",
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions/{distribution_id}",
             data=data,
         )
         assert response.status_code == 200
@@ -681,9 +680,6 @@ class TestViews:
     def test_distribution_update_fails_on_published_contract(
         self, orm_product, orm_team, client_with_token
     ):
-        contract = orm_product.contracts.first()
-        contract.publication_status = "P"
-        contract.save()
         contract_id = orm_product.contracts.first().id
         distribution_id = orm_product.contracts.first().distributions.first().id
         data = {"format": "TEST", "type": "F"}
@@ -694,69 +690,72 @@ class TestViews:
         assert response.status_code == 400
         assert orm_product.contracts.first().distributions.first().format != "TEST"
 
-    def test_distribution_patch_and_then_get(self, orm_product, orm_team, client_with_token):
-        contract_id = orm_product.contracts.first().id
-        distribution_id = orm_product.contracts.first().distributions.first().id
+    def test_distribution_patch_and_then_get(self, orm_draft_product, orm_team, client_with_token):
+        contract_id = orm_draft_product.contracts.first().id
+        distribution_id = orm_draft_product.contracts.first().distributions.first().id
         data = {
             "format": "TEST",
             "type": "F",
             "filename": "test.csv",
             "refresh_period": {"frequency": 3, "unit": "DAY"},
         }
-        url = f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+        url = (
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/"
+            f"distributions/{distribution_id}"
+        )
         client_with_token([orm_team.scope]).patch(
             url,
             data=data,
         )
-        response = client_with_token([]).get(url)
+        response = client_with_token([orm_team.scope]).get(url)
         assert response.status_code == 200
         for k, v in data.items():
             assert response.data[k] == v
 
-    def test_distribution_update_not_allowed(self, orm_product, client_with_token):
-        contract_id = orm_product.contracts.first().id
-        distribution_id = orm_product.contracts.first().distributions.first().id
+    def test_distribution_update_not_allowed(self, orm_draft_product, client_with_token):
+        contract_id = orm_draft_product.contracts.first().id
+        distribution_id = orm_draft_product.contracts.first().distributions.first().id
         data = {"format": "TEST", "type": "F"}
         response = client_with_token([]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}",
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions/{distribution_id}",
             data=data,
         )
         assert response.status_code == 401
 
-    def test_distribution_delete(self, orm_product, orm_team, client_with_token):
-        contract_id = orm_product.contracts.first().id
-        distribution_id = orm_product.contracts.first().distributions.first().id
+    def test_distribution_delete(self, orm_draft_product, orm_team, client_with_token):
+        contract_id = orm_draft_product.contracts.first().id
+        distribution_id = orm_draft_product.contracts.first().distributions.first().id
         response = client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
         )
         assert response.status_code == 204
 
-        orm_product.refresh_from_db()
-        orm_contract = orm_product.contracts.first()
+        orm_draft_product.refresh_from_db()
+        orm_contract = orm_draft_product.contracts.first()
         assert not orm_contract.distributions.filter(pk=distribution_id).exists()
 
     def test_distribution_delete_fails_on_published_contract(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
-        contract.publication_status = "P"
-        contract.save()
         distribution_id = orm_product.contracts.first().distributions.first().id
         response = client_with_token([orm_team.scope]).delete(
             f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution_id}"
         )
         assert response.status_code == 400
 
-    def test_distribution_delete_not_allowed(self, orm_product, orm_other_team, client_with_token):
-        contract_id = orm_product.contracts.first().id
-        distribution_id = orm_product.contracts.first().distributions.first().id
+    def test_distribution_delete_not_allowed(
+        self, orm_draft_product, orm_other_team, client_with_token
+    ):
+        contract_id = orm_draft_product.contracts.first().id
+        distribution_id = orm_draft_product.contracts.first().distributions.first().id
         response = client_with_token([orm_other_team.scope]).delete(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
         )
         assert response.status_code == 401
 
-        orm_product.refresh_from_db()
-        orm_contract = orm_product.contracts.first()
+        orm_draft_product.refresh_from_db()
+        orm_contract = orm_draft_product.contracts.first()
         assert orm_contract.distributions.filter(pk=distribution_id).exists()
 
     def test_service_list(self, orm_product, api_client):
@@ -787,18 +786,16 @@ class TestViews:
         )
         assert response.status_code == 201
 
-    def test_service_update(self, orm_product, orm_team, client_with_token):
-        service_id = orm_product.services.first().id
+    def test_service_update(self, orm_draft_product, orm_team, client_with_token):
+        service_id = orm_draft_product.services.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/services/{service_id}", data={"type": "WMS"}
+            f"/products/{orm_draft_product.id}/services/{service_id}", data={"type": "WMS"}
         )
         assert response.status_code == 200
 
     def test_service_update_fails_on_published_product(
         self, orm_product, orm_team, client_with_token
     ):
-        orm_product.publication_status = "P"
-        orm_product.save()
         service_id = orm_product.services.first().id
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/services/{service_id}", data={"type": "WMS"}
@@ -812,36 +809,33 @@ class TestViews:
             {"type": "API"},  # Wrong type
         ],
     )
-    def test_service_update_bad_data(self, data, orm_product, orm_team, client_with_token):
-        service_id = orm_product.services.first().id
+    def test_service_update_bad_data(self, data, orm_draft_product, orm_team, client_with_token):
+        service_id = orm_draft_product.services.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/services/{service_id}", data=data
+            f"/products/{orm_draft_product.id}/services/{service_id}", data=data
         )
         assert response.status_code == 400
 
-    def test_service_delete(self, orm_product, orm_team, client_with_token):
+    def test_service_delete(self, orm_draft_product, orm_team, client_with_token):
         # first delete the distribution referencing the service:
-        contract = orm_product.contracts.first()
+        contract = orm_draft_product.contracts.first()
         distribution_id = contract.distributions.first().id
         client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution_id}"
+            f"/products/{orm_draft_product.id}/contracts/{contract.id}/distributions/{distribution_id}"
         )
         # delete the service:
-        service_id = orm_product.services.first().id
+        service_id = orm_draft_product.services.first().id
         response = client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_product.id}/services/{service_id}"
+            f"/products/{orm_draft_product.id}/services/{service_id}"
         )
 
         assert response.status_code == 204
-        orm_product.refresh_from_db()
-        assert len(orm_product.services.all()) == 0
+        orm_draft_product.refresh_from_db()
+        assert len(orm_draft_product.services.all()) == 0
 
     def test_service_delete_fails_on_published_product(
         self, orm_product, orm_team, client_with_token
     ):
-        orm_product.publication_status = "P"
-        orm_product.save()
-
         # first delete the distribution referencing the service:
         contract = orm_product.contracts.first()
         distribution_id = contract.distributions.first().id
@@ -856,15 +850,15 @@ class TestViews:
 
         assert response.status_code == 400
 
-    def test_service_delete_not_allowed(self, orm_product, orm_team, client_with_token):
-        service_id = orm_product.services.first().id
+    def test_service_delete_not_allowed(self, orm_draft_product, orm_team, client_with_token):
+        service_id = orm_draft_product.services.first().id
         response = client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_product.id}/services/{service_id}"
+            f"/products/{orm_draft_product.id}/services/{service_id}"
         )
 
         assert response.status_code == 400
-        orm_product.refresh_from_db()
-        assert len(orm_product.services.all()) == 1
+        orm_draft_product.refresh_from_db()
+        assert len(orm_draft_product.services.all()) == 1
 
     def test_me_with_scopes(self, orm_product, orm_team, orm_other_team, client_with_token):
         response = client_with_token([orm_team.scope]).get("/me")
@@ -887,7 +881,7 @@ class TestViews:
         ]:
             assert key in response.data["products"]["results"][0]
         # contract
-        assert len(response.data["products"]["results"][0]["contracts"]) == 1
+        assert len(response.data["products"]["results"][0]["contracts"]) == 2
         for key in [
             "id",
             "name",
