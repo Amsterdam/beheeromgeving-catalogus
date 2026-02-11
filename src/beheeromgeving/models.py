@@ -146,7 +146,16 @@ class Product(models.Model):
         else:
             self._owner = None
 
-    def to_domain(self):
+    def to_domain(self, published_only: bool = False):
+        if published_only and self.publication_status != enums.PublicationStatus.PUBLISHED.value:
+            raise self.DoesNotExist()
+        contracts = [c.to_domain() for c in self.contracts.order_by("id")]
+        if published_only:
+            contracts = [
+                c
+                for c in contracts
+                if c.publication_status == enums.PublicationStatus.PUBLISHED.value
+            ]
         return objects.Product(
             id=self.pk,
             type=self.type,
@@ -157,7 +166,7 @@ class Product(models.Model):
             is_geo=self.is_geo,
             crs=self.crs,
             schema_url=self.schema_url,
-            contracts=[c.to_domain() for c in self.contracts.order_by("id")],
+            contracts=contracts,
             themes=self.themes,
             last_updated=self.last_updated,
             created_at=self.created_at,
