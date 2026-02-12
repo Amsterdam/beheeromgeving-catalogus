@@ -8,7 +8,7 @@ author_email = "datapunt@amsterdam.nl"
 requires-python = ">=3.14,<4.0"
 context = "."
 dependencies = [
-    "azure-identity==1.25.1",
+    "azure-identity==1.25.2",
     "azure-monitor-opentelemetry==1.8.6",
     "datapunt-authorization-django==1.8.0",
     "django==5.2.11",
