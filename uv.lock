@@ -170,7 +170,7 @@ dev = [
 requires-dist = [
     { name = "azure-identity", specifier = "==1.25.2" },
     { name = "azure-monitor-opentelemetry", specifier = "==1.8.6" },
-    { name = "datapunt-authorization-django", specifier = "==1.8.0" },
+    { name = "datapunt-authorization-django", specifier = "==2.0.0" },
     { name = "django", specifier = "==5.2.11" },
     { name = "django-cors-headers", specifier = "==4.9.0" },
     { name = "django-environ", specifier = "==0.12.0" },
@@ -384,16 +384,16 @@ wheels = [
 
 [[package]]
 name = "datapunt-authorization-django"
-version = "1.8.0"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "jwcrypto" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/fa/aff924099cd2bfdd7f614a5e4c2dec57938ab4895b1b188438fc1b9e9cce/datapunt_authorization_django-1.8.0.tar.gz", hash = "sha256:4294d0d4850b066a92776dff72f60c611536690f829e2d19d8cb9b5a9abc8352", size = 25513, upload-time = "2026-02-04T09:34:00.667Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/a7/3dea4cb7f8be3b081cbc9f4efd00764b1c438b2aeb0fbf3536f9c7170f9d/datapunt_authorization_django-2.0.0.tar.gz", hash = "sha256:3d6fda4d10bd221dcca3c41ba7f6d85fc892f828923be64c0ebc39ed02b88053", size = 27107, upload-time = "2026-02-10T11:42:08.034Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/59/074c6758dc006ad835ae157c39d03d23a65737bbabac40fbd727159e5005/datapunt_authorization_django-1.8.0-py3-none-any.whl", hash = "sha256:76d495a875357d6c45fcfbc981e0f18ce419b73548187b7d586fb750b41f591f", size = 18590, upload-time = "2026-02-04T09:33:59.373Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/f9/666d3b22a12eb3c299408d575d6e412064d190e395f8c99b8ad3546558c4/datapunt_authorization_django-2.0.0-py3-none-any.whl", hash = "sha256:ad945911db5fe5172b3886758724b70cdcb1f38023aab30c38d41f119709ee80", size = 19690, upload-time = "2026-02-10T11:42:06.426Z" },
 ]
 
 [[package]]
