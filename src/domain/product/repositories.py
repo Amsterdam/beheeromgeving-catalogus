@@ -47,8 +47,10 @@ class ProductRepository(AbstractRepository[Product]):
         return product.to_domain()
 
     def get_published_by_name(self, name: str) -> Product:
-        product = self._get_by_name(name)
-        return product.to_domain(published_only=True)
+        product = self._get_by_name(name).to_domain(published_only=True)
+        if not product:
+            raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.")
+        return product
 
     def list_all(self, **kwargs):
         return [p.to_domain() for p in self.manager.all()]
