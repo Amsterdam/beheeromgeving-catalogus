@@ -56,6 +56,16 @@ class TestImportProducts:
             Product.objects.filter(publication_status=enums.PublicationStatus.DRAFT).count() == 1
         )
         assert DataContract.objects.count() == 2
+        assert (
+            DataContract.objects.filter(publication_status=enums.PublicationStatus.DRAFT).count()
+            == 1
+        )
+        assert (
+            DataContract.objects.filter(
+                publication_status=enums.PublicationStatus.PUBLISHED
+            ).count()
+            == 1
+        )
         assert DataService.objects.count() == 4
         assert Distribution.objects.count() == 4
 
@@ -84,6 +94,16 @@ class TestImportProducts:
             Product.objects.filter(publication_status=enums.PublicationStatus.DRAFT).count() == 1
         )
         assert DataContract.objects.count() == 2
+        assert (
+            DataContract.objects.filter(publication_status=enums.PublicationStatus.DRAFT).count()
+            == 1
+        )
+        assert (
+            DataContract.objects.filter(
+                publication_status=enums.PublicationStatus.PUBLISHED
+            ).count()
+            == 1
+        )
         assert DataService.objects.count() == 4
         assert Distribution.objects.count() == 4
 

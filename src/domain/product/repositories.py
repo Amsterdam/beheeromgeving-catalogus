@@ -25,9 +25,12 @@ class ProductRepository(AbstractRepository[Product]):
 
     def get_published(self, id: int) -> Product:
         try:
-            return self.manager.get(pk=id).to_domain(published_only=True)
+            product = self.manager.get(pk=id).to_domain(published_only=True)
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
+        if product is None:
+            raise exceptions.ObjectDoesNotExist
+        return product
 
     def _get_by_name(self, name: str) -> orm.Product:
         product = (
@@ -47,6 +50,9 @@ class ProductRepository(AbstractRepository[Product]):
         product = self._get_by_name(name)
         return product.to_domain(published_only=True)
 
+    def list_all(self, **kwargs):
+        return [p.to_domain() for p in self.manager.all()]
+
     def list(
         self,
         *,
@@ -59,6 +65,7 @@ class ProductRepository(AbstractRepository[Product]):
             products = self.search(products, query)
         else:
             products = [p.to_domain(published_only=True) for p in self.manager.all()]
+        products = [p for p in products if p is not None]
         if filter:
             products = self.filter(products, filter)
         if order:

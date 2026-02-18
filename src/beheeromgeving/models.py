@@ -148,7 +148,7 @@ class Product(models.Model):
 
     def to_domain(self, published_only: bool = False):
         if published_only and self.publication_status != enums.PublicationStatus.PUBLISHED.value:
-            raise self.DoesNotExist()
+            return None
         contracts = [c.to_domain() for c in self.contracts.order_by("id")]
         if published_only:
             contracts = [

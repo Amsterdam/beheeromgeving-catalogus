@@ -180,7 +180,7 @@ def orm_product2(orm_other_team) -> Product:
 
     contract = DataContract.objects.create(
         product=product,
-        publication_status="D",
+        publication_status="P",
         purpose="beheer van fietspaaltjes",
         name="beheer fietspaaltjes",
         description="contract voor data nodig voor het de fietspaaltjes op de fietspaden",
