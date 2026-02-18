@@ -44,6 +44,12 @@ class AbstractRepository[T](abc.ABC):
     def list(self) -> list_[T]:
         raise NotImplementedError
 
+    def list_all(self) -> list_[T]:
+        raise NotImplementedError
+
+    def list_mine(self, *, query, filter, order, teams) -> list_[T]:
+        raise NotImplementedError
+
     @abc.abstractmethod
     def save(self, item: T) -> T:
         raise NotImplementedError

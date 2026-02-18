@@ -19,6 +19,10 @@ class ProductService(AbstractService):
     def get_products(self, **kwargs) -> list[Product]:
         return self.repository.list(**kwargs)
 
+    @authorize.is_admin
+    def get_all_products(self, **kwargs) -> list[Product]:
+        return self.repository.list_all()
+
     def get_my_products(self, **kwargs) -> list[Product]:
         return self.repository.list_mine(**kwargs)
 

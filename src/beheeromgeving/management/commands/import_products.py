@@ -4,6 +4,7 @@ from math import ceil
 from pathlib import Path
 
 import requests
+from django.conf import settings
 from django.core.management import BaseCommand
 from unidecode import unidecode
 
@@ -17,7 +18,7 @@ from api.datatransferobjects import (
 )
 from beheeromgeving.management.commands.refresh_periods import FREQUENCY_MAP, REFRESH_MAP, UNIT_MAP
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
-from domain.exceptions import ObjectDoesNotExist, ValidationError
+from domain.exceptions import NotAuthorized, ObjectDoesNotExist, ValidationError
 from domain.product import ProductRepository, ProductService, enums
 from domain.product.objects import Product
 from domain.team import TeamRepository, TeamService
@@ -53,7 +54,7 @@ class Command(BaseCommand):
         )
 
     def purge(self):
-        all_products = self.service.get_products()
+        all_products = self.service.get_all_products(scopes=[settings.ADMIN_ROLE_NAME])
         for product in all_products:
             self.stdout.write(f"deleting product: {product.name}")
             team = self.team_service.get_team(product.team_id)
@@ -106,10 +107,12 @@ class Command(BaseCommand):
                 scopes=[team.scope],
             )
             try:
-                domain_product = self.service.get_product_by_name(product["naam"])
+                domain_product = self.service.get_full_product_by_name(
+                    name=product["naam"], scopes=[team.scope]
+                )
                 self._unpublish(domain_product, team)
                 new_product = self._update_product(team, domain_product, product)
-            except ObjectDoesNotExist:
+            except ObjectDoesNotExist, NotAuthorized:
                 new_product = self._create_product(
                     team,
                     product["naam"],
@@ -124,19 +127,26 @@ class Command(BaseCommand):
 
             self._create_distributions(product, new_product, new_contract, services, team)
             try:
-                self._publish(new_product, team)
+                latest = self.service.get_full_product(
+                    product_id=new_product.id, scopes=[team.scope]
+                )
+                self._publish(latest, team)
             except ValidationError as e:
                 # only happens when refresh_period cannot be parsed.
                 self.stderr.write(e.message + product["ververstermijn"])
                 continue
 
-    def _unpublish(self, product, team):
+    def _unpublish(self, product: Product, team: Team):
+        if not product.id:
+            raise RuntimeError(f"Product {product.name} has no id.")
         self.service.update_publication_status(
             product_id=product.id,
             data={"publication_status": "D"},
             scopes=[team.scope],
         )
         for contract in product.contracts:
+            if not contract.id:
+                raise RuntimeError(f"Contract {contract.name} has no id.")
             self.service.update_contract_publication_status(
                 product_id=product.id,
                 contract_id=contract.id,
@@ -144,8 +154,12 @@ class Command(BaseCommand):
                 scopes=[team.scope],
             )
 
-    def _publish(self, product, team):
+    def _publish(self, product: Product, team: Team):
+        if not product.id:
+            raise RuntimeError(f"Product {product.name} has no id.")
         for contract in product.contracts:
+            if not contract.id:
+                raise RuntimeError(f"Contract {contract.name} has no id.")
             self.service.update_contract_publication_status(
                 product_id=product.id,
                 contract_id=contract.id,
@@ -171,15 +185,17 @@ class Command(BaseCommand):
             if not name:
                 name = dataset["id"]
             try:
-                product = self.service.get_product_by_name(name[:64])
+                team = self.team_service.get_team_by_name(dataset["publisher"]["name"])
             except ObjectDoesNotExist:
+                self.stderr.write(f"Team {dataset['publisher']['name']} doesn't exist")
+                continue
+            try:
+                product = self.service.get_full_product_by_name(
+                    name=name[:64], scopes=[team.scope]
+                )
+            except ObjectDoesNotExist, NotAuthorized:
                 # Create
                 self.stdout.write(f"Adding product {name}")
-                try:
-                    team = self.team_service.get_team_by_name(dataset["publisher"]["name"])
-                except ObjectDoesNotExist:
-                    self.stderr.write(f"Team {dataset['publisher']['name']} doesn't exist")
-                    continue
                 crs = dataset.get("crs")
                 crs_map = {
                     "EPSG:28992": enums.CoordRefSystem.RD,
