@@ -129,4 +129,7 @@ class AuthorizationConfiguration:
         return self.product_scopes.get(product_id, AuthorizationResult.DENIED)
 
     def product_name_to_scope(self, name: str) -> Scope | AuthorizationResult:
-        return self.product_scopes.get(name, AuthorizationResult.DENIED)
+        for product_name, product_scope in self.product_scopes.items():
+            if isinstance(product_name, str) and product_name.startswith(name.lower()):
+                return product_scope
+        return AuthorizationResult.DENIED
