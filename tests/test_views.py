@@ -156,21 +156,32 @@ class TestViews:
         self, many_orm_products, non_published_products, api_client
     ):
         """
-        Changed to allow data amsterdam to continue working on the cms
+        Ensure that non-published products are not shown in the list view.
         """
         response = api_client.get("/products")
         assert response.status_code == 200
-        assert response.data["count"] == 30
+        assert response.data["count"] == 26
 
     def test_products_list_cannot_filter_on_publication_status(
         self, many_orm_products, non_published_products, api_client
     ):
         """
-        Changed to allow data amsterdam to continue working on the cms
+        Ensure that the list view cannot filter on publication_status draft.
         """
         response = api_client.get("/products?publication_status=D")
         assert response.status_code == 200
-        assert response.data["count"] == 30
+        assert response.data["count"] == 26
+
+    def test_product_list_does_not_show_draft_products(self, orm_draft_product, api_client):
+        response = api_client.get("/products")
+        assert response.status_code == 200
+        assert response.data["count"] == 0
+
+    def test_product_list_does_not_count_non_pubished_contracts(self, orm_product, api_client):
+        response = api_client.get("/products")
+        assert response.status_code == 200
+        assert response.data["count"] == 1
+        assert response.data["results"][0]["contract_count"] == 1
 
     def test_product_list_query_by_name(self, orm_product, api_client):
         """Assert we can query the products based on name.
@@ -188,6 +199,17 @@ class TestViews:
         response = api_client.get("/products?name=fietspaaltjes_v1")
         assert response.status_code == 404
         assert response.data == "Product with name fietspaaltjes_v1 does not exist."
+
+    def test_product_list_query_by_name_draft_non_team_404(self, api_client, orm_draft_product):
+        response = api_client.get("/products?name=bomen")
+        assert response.status_code == 404
+
+    def test_product_list_query_by_name_draft_team_200(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).get("/products?name=bomen")
+        assert response.status_code == 200
+        assert response.data["name"] == orm_draft_product.name
 
     def test_product_list_query_matches_product_name(self, orm_product, orm_product2, api_client):
         """Assert that we can query the products on product name."""
@@ -361,6 +383,17 @@ class TestViews:
         )  # fietspaaltjes, fietspaden; count: 2
         assert response.data["results"][1]["id"] == orm_product.id  # bomen; count: 1
 
+    def test_product_detail_does_not_show_draft_product(self, orm_draft_product, api_client):
+        response = api_client.get(f"/products/{orm_draft_product.id}")
+        assert response.status_code == 404
+
+    def test_product_detail_omits_non_published_contracts_when_not_logged_in(
+        self, orm_product, api_client
+    ):
+        response = api_client.get(f"/products/{orm_product.id}")
+        assert response.status_code == 200
+        assert len(response.data["contracts"]) == 1
+
     def test_product_detail(self, orm_product, api_client):
         response = api_client.get(f"/products/{orm_product.id}")
         assert response.status_code == 200
@@ -452,14 +485,16 @@ class TestViews:
         orm_product.refresh_from_db()
         assert orm_product.name != "New Name"
 
-    def test_product_update_reflected_in_list_view(self, orm_product, orm_team, client_with_token):
+    def test_product_update_reflected_in_me_view(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}",
+            f"/products/{orm_draft_product.id}",
             data={"name": "New Name"},
         )
         assert response.status_code == 200
-        product_list = client_with_token([]).get("/products")
-        assert product_list.data["results"][0]["name"] == "New Name"
+        product_list = client_with_token([orm_team.scope]).get("/me")
+        assert product_list.data["products"]["results"][0]["name"] == "New Name"
 
     def test_product_update_refresh_period(self, orm_draft_product, orm_team, client_with_token):
         data = {"refresh_period": {"unit": "MONTH", "frequency": 2}}
@@ -511,11 +546,19 @@ class TestViews:
             response.data["publication_status"] == orm_product.contracts.first().publication_status
         )
 
-    def test_contract_list(self, orm_product, api_client):
+    def test_contract_list_shows_only_published_contracts(self, orm_product, api_client):
         response = api_client.get(f"/products/{orm_product.id}/contracts")
 
         assert response.status_code == 200
         assert len(response.data) == 1
+
+    def test_contract_list_shows_all_contracts_when_logged_in(
+        self, orm_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}/contracts")
+
+        assert response.status_code == 200
+        assert len(response.data) == 2
 
     def test_contract_detail(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
@@ -536,6 +579,12 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_incomplete_product.contracts.first().name
         assert response.data["missing_fields"] == ["confidentiality"]
+
+    def test_contract_detail_unavailable_when_draft(self, orm_product, api_client):
+        contract_id = orm_product.contracts.last().id
+        response = api_client.get(f"/products/{orm_product.id}/contracts/{contract_id}")
+
+        assert response.status_code == 404
 
     def test_contract_create(self, orm_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
@@ -626,6 +675,22 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 2
 
+    def test_distribution_list_draft_non_team_404(self, orm_draft_product, api_client):
+        contract_id = orm_draft_product.contracts.first().id
+        response = api_client.get(
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions"
+        )
+        assert response.status_code == 404
+
+    def test_distribution_list_draft_team_200(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        contract_id = orm_draft_product.contracts.first().id
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions"
+        )
+        assert response.status_code == 200
+
     def test_distribution_detail(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
         distribution_id = orm_product.contracts.first().distributions.first().id
@@ -641,6 +706,24 @@ class TestViews:
             f"/products/{orm_product.id}/contracts/{contract_id}/distributions/1337"
         )
         assert response.status_code == 404
+
+    def test_distribution_detail_draft_non_team_404(self, orm_draft_product, api_client):
+        contract_id = orm_draft_product.contracts.first().id
+        distribution_id = orm_draft_product.contracts.first().distributions.first().id
+        response = api_client.get(
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+        )
+        assert response.status_code == 404
+
+    def test_distribution_detail_draft_team_200(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        contract_id = orm_draft_product.contracts.first().id
+        distribution_id = orm_draft_product.contracts.first().distributions.first().id
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
+        )
+        assert response.status_code == 200
 
     def test_distribution_create(self, orm_product, orm_team, client_with_token):
         contract_id = orm_product.contracts.first().id
@@ -764,6 +847,18 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 1
 
+    def test_service_list_draft_non_team_404(self, orm_draft_product, api_client):
+        response = api_client.get(f"/products/{orm_draft_product.id}/services")
+
+        assert response.status_code == 404
+
+    def test_service_list_draft_team_200(self, orm_draft_product, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_draft_product.id}/services"
+        )
+
+        assert response.status_code == 200
+
     def test_service_detail(self, orm_product, api_client):
         response = api_client.get(
             f"/products/{orm_product.id}/services/{orm_product.services.first().id}"
@@ -771,6 +866,20 @@ class TestViews:
 
         assert response.status_code == 200
         assert response.data["id"] == orm_product.services.first().id
+
+    def test_service_detail_draft_non_team_404(self, orm_draft_product, api_client):
+        response = api_client.get(
+            f"/products/{orm_draft_product.id}/services/{orm_draft_product.services.first().id}"
+        )
+
+        assert response.status_code == 404
+
+    def test_service_detail_draft_team_200(self, orm_draft_product, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_draft_product.id}/services/{orm_draft_product.services.first().id}"
+        )
+
+        assert response.status_code == 200
 
     def test_service_create(self, orm_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
