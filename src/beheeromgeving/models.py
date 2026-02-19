@@ -292,11 +292,11 @@ class DataContract(models.Model):
         "aanmaakdatum van het contract in. Wanneer het Data Product gemigreerd is vanaf de oude "
         "Data Catalogus, vul hier dan de publicatiedatum van de oude catalogus (Issued) in.",
     )
-    scope = models.URLField(
-        _("Amsterdam Schema scope verwijzing (url)"),
-        blank=True,
+    scopes = ArrayField(
+        models.CharField(_("Scopes"), max_length=64),
         null=True,
-        help_text="Verwijzing naar een scope beschreven in Amsterdam Schema.",
+        blank=True,
+        help_text="De scope ids die gebruiken moet hebben om dit contract te kunnen afnemen.",
     )
     tables = ArrayField(
         models.CharField(_("Tabellen"), max_length=64),
@@ -318,7 +318,7 @@ class DataContract(models.Model):
             description=self.description,
             last_updated=self.last_updated,
             privacy_level=self.privacy_level,
-            scope=self.scope,
+            scopes=self.scopes,
             confidentiality=self.confidentiality,
             start_date=self.start_date,
             retainment_period=self.retainment_period,
