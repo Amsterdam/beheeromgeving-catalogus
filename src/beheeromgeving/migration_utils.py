@@ -27,7 +27,7 @@ def revert_team_scopes(apps, schema_editor):
 def transfer_scopes_forward(apps, schema_editor):  # pragma: no cover
     DataContract = apps.get_model("beheeromgeving", "DataContract")
     for contract in DataContract.objects.all():
-        contract.scopes = contract._scope.split(",")
+        contract.scopes = [scope.replace("scope_", "") for scope in contract._scope.split(",")]
         contract.save()
 
 
