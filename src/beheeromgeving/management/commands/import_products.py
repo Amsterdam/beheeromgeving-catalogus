@@ -342,10 +342,13 @@ class Command(BaseCommand):
             privacy_level=enums.PrivacyLevel[
                 PRIVACY_LEVELS[product_dict["privacyniveau"].lower()]
             ],
-            scope=(
-                product_dict["amsterdamSchemaDatasetVerwijzing"]["scope"]
+            scopes=(
+                [
+                    p.lower().replace("scope_", "")
+                    for p in product_dict["amsterdamSchemaDatasetVerwijzing"]["scope"].split(",")
+                ]
                 if product_dict.get("amsterdamSchemaDatasetVerwijzing")
-                else "scope_openbaar"
+                else ["openbaar"]
             ),
             confidentiality=conf_level_map[product_dict["vertrouwelijkheidsniveau"]],
             start_date=product_dict["startDatumContract"],

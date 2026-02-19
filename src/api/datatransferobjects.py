@@ -149,7 +149,7 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     description: str | None = None
     last_updated: datetime | None = None
     privacy_level: enums.PrivacyLevel | None = None
-    scope: str | None = None
+    scopes: list[str] | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
     start_date: date | None = None
     retainment_period: int | None = None
