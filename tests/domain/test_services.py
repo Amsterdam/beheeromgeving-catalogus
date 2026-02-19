@@ -456,7 +456,7 @@ class TestProductService:
             "purpose": "onderhoud van bomen",
             "name": "beheer bomen",
             "privacy_level": "NPI",
-            "scope": "scope_bomen_beheer",
+            "scopes": ["bomen_beheer"],
             "start_date": "2025-01-01",
             "retainment_period": 12,
         }
@@ -514,7 +514,7 @@ class TestProductService:
             "purpose": "onderhoud van bomen",
             "name": "beheer bomen",
             "privacy_level": "NPI",
-            "scope": "scope_bomen_beheer",
+            "scopes": ["bomen_beheer"],
             "start_date": "2025-01-01",
             "retainment_period": 12,
         }

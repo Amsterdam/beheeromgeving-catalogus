@@ -601,7 +601,7 @@ class TestViews:
             {"purpose": "New Purpose"},
             {"description": "New Description"},
             {"privacy_level": "BI"},
-            {"scope": "another_scope"},
+            {"scopes": ["another_scope"]},
             {"confidentiality": "V"},
             {"start_date": "2025-02-02"},
             {"retainment_period": 100},
