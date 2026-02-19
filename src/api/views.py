@@ -167,11 +167,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         params = self._validate_dto(data=query_params, dto_type=dtos.QueryParams)
         if params.name:
             try:
-                product = product_service.get_full_product_by_name(
+                product = product_service.get_product_by_name(
                     name=params.name, scopes=request.get_token_scopes
                 )
             except exceptions.NotAuthorized:
-                product = product_service.get_product_by_name(params.name)
+                product = product_service.get_published_product_by_name(params.name)
             data = dtos.to_response_object(product)
             return Response(data, status=200)
 
@@ -189,11 +189,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @extend_schema(responses={200: dtos.ProductDetail})
     def retrieve(self, request, pk: str):
         try:
-            product = product_service.get_full_product(
+            product = product_service.get_product(
                 product_id=int(pk), scopes=request.get_token_scopes
             )
         except exceptions.NotAuthorized:
-            product = product_service.get_product(int(pk))
+            product = product_service.get_published_product(int(pk))
         return Response(dtos.to_response_object(product), status=200)
 
     @extend_schema(request=dtos.ProductCreate, responses={200: dtos.ProductDetail})
@@ -276,11 +276,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     )
     def contract_detail(self, request, pk: str, contract_id: str):
         try:
-            contract = product_service.get_full_contract(
+            contract = product_service.get_contract(
                 product_id=int(pk), contract_id=int(contract_id), scopes=request.get_token_scopes
             )
         except exceptions.NotAuthorized:
-            contract = product_service.get_contract(int(pk), int(contract_id))
+            contract = product_service.get_published_contract(int(pk), int(contract_id))
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
@@ -369,14 +369,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     )
     def distribution_detail(self, request, pk: str, contract_id: str, distribution_id: str):
         try:
-            distribution = product_service.get_full_distribution(
+            distribution = product_service.get_distribution(
                 product_id=int(pk),
                 contract_id=int(contract_id),
                 distribution_id=int(distribution_id),
                 scopes=request.get_token_scopes,
             )
         except exceptions.NotAuthorized:
-            distribution = product_service.get_distribution(
+            distribution = product_service.get_published_distribution(
                 product_id=int(pk),
                 contract_id=int(contract_id),
                 distribution_id=int(distribution_id),
@@ -442,11 +442,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     )
     def service_detail(self, request, pk: str, service_id: str):
         try:
-            service = product_service.get_full_service(
+            service = product_service.get_service(
                 product_id=int(pk), service_id=int(service_id), scopes=request.get_token_scopes
             )
         except exceptions.NotAuthorized:
-            service = product_service.get_service(int(pk), int(service_id))
+            service = product_service.get_published_service(int(pk), int(service_id))
         data = dtos.to_response_object(service)
         return Response(data, status=200)
 

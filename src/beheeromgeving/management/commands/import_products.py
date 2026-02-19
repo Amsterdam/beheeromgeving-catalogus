@@ -107,7 +107,7 @@ class Command(BaseCommand):
                 scopes=[team.scope],
             )
             try:
-                domain_product = self.service.get_full_product_by_name(
+                domain_product = self.service.get_product_by_name(
                     name=product["naam"], scopes=[team.scope]
                 )
                 self._unpublish(domain_product, team)
@@ -127,9 +127,7 @@ class Command(BaseCommand):
 
             self._create_distributions(product, new_product, new_contract, services, team)
             try:
-                latest = self.service.get_full_product(
-                    product_id=new_product.id, scopes=[team.scope]
-                )
+                latest = self.service.get_product(product_id=new_product.id, scopes=[team.scope])
                 self._publish(latest, team)
             except ValidationError as e:
                 # only happens when refresh_period cannot be parsed.
@@ -190,9 +188,7 @@ class Command(BaseCommand):
                 self.stderr.write(f"Team {dataset['publisher']['name']} doesn't exist")
                 continue
             try:
-                product = self.service.get_full_product_by_name(
-                    name=name[:64], scopes=[team.scope]
-                )
+                product = self.service.get_product_by_name(name=name[:64], scopes=[team.scope])
             except ObjectDoesNotExist, NotAuthorized:
                 # Create
                 self.stdout.write(f"Adding product {name}")
