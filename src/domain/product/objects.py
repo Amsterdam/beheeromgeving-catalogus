@@ -71,7 +71,7 @@ class ContractValidator:
             "privacy_level",
             "retainment_period",
             "start_date",
-            "scope",
+            "scopes",
         ]
         return [field for field in required_fields if getattr(self.contract, field) is None]
 
@@ -99,7 +99,7 @@ class DataContract(BaseObject):
     description: str | None = None
     last_updated: datetime | None = None
     privacy_level: enums.PrivacyLevel | None = None
-    scope: str | None = None
+    scopes: list[str] | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
     start_date: date | None = None
     retainment_period: int | None = None
