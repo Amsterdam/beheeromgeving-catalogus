@@ -133,7 +133,7 @@ class TestImportProducts:
         assert updated_product.contracts.count() == 1
         updated_contract = updated_product.contracts.first()
         assert updated_contract
-        assert updated_contract.scope == "FP/MDW"
+        assert updated_contract.scopes == ["fp/mdw"]
 
     def test_import_products_does_not_update_from_schema_api(
         self, requests_mock, schema_api_json, orm_team

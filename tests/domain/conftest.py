@@ -79,7 +79,7 @@ def product(team: Team) -> Product:
                 name="beheer bomen",
                 description="contract voor data nodig voor het beheer van bomen",
                 privacy_level=enums.PrivacyLevel.NIET_PERSOONLIJK_IDENTIFICEERBAAR,
-                scope="scope_bomen_beheer",
+                scopes=["bomen_beheer"],
                 confidentiality=enums.ConfidentialityLevel.INTERN,
                 start_date=datetime.fromisoformat("2025-01-01T00:00:00+00"),
                 retainment_period=12,
