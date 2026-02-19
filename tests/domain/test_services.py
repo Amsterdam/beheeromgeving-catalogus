@@ -140,13 +140,13 @@ class TestProductService:
 
     def test_get_product(self, product_service: ProductService, product: Product):
         assert product.id
-        result = product_service.get_product(product.id)
+        result = product_service.get_published_product(product.id)
 
         assert result == product
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_product_non_existent(self, product_service: ProductService):
-        product_service.get_product(1337)  # non-existent
+        product_service.get_published_product(1337)  # non-existent
 
     def test_create_product(self, product_service: ProductService, team: Team):
         data = {"type": "D", "team_id": team.id}
@@ -167,7 +167,7 @@ class TestProductService:
         data = {"description": "a fancy product"}
         product_service.update_product(product_id=product.id, data=data, scopes=[team.scope])
 
-        result = product_service.get_product(product.id)
+        result = product_service.get_published_product(product.id)
 
         assert result.description == "a fancy product"
 
@@ -199,18 +199,18 @@ class TestProductService:
     def test_get_contract(self, product_service: ProductService, product: Product):
         assert product.id
         assert product.contracts[0].id
-        result = product_service.get_contract(product.id, product.contracts[0].id)
+        result = product_service.get_published_contract(product.id, product.contracts[0].id)
 
         assert result == product.contracts[0]
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contract_non_existent(self, product_service: ProductService, product: Product):
         assert product.id
-        product_service.get_contract(product.id, contract_id=1337)
+        product_service.get_published_contract(product.id, contract_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contract_from_non_existent_product(self, product_service: ProductService):
-        product_service.get_contract(1337, contract_id=1337)
+        product_service.get_published_contract(1337, contract_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contract_from_product_with_no_contracts(
@@ -220,7 +220,7 @@ class TestProductService:
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
         assert product.id
-        product_service.get_contract(product.id, contract_id=1337)
+        product_service.get_published_contract(product.id, contract_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contract_from_other_product(
@@ -232,7 +232,7 @@ class TestProductService:
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
         assert new_product.id
-        product_service.get_contract(new_product.id, product.contracts[0].id)
+        product_service.get_published_contract(new_product.id, product.contracts[0].id)
 
     def test_create_contract(self, product_service: ProductService, product: Product, team: Team):
         assert product.id
@@ -551,7 +551,7 @@ class TestProductService:
         assert product.contracts[0].id
         assert product.contracts[0].distributions[0].id
 
-        result = product_service.get_distribution(
+        result = product_service.get_published_distribution(
             product_id=product.id,
             contract_id=product.contracts[0].id,
             distribution_id=product.contracts[0].distributions[0].id,
@@ -564,7 +564,7 @@ class TestProductService:
     ):
         assert product.id
         assert product.contracts[0].id
-        product_service.get_distribution(
+        product_service.get_published_distribution(
             product_id=product.id,
             contract_id=product.contracts[0].id,
             distribution_id=1337,
@@ -583,7 +583,7 @@ class TestProductService:
             scopes=[team.scope],
         )
         assert distribution.id
-        updated_product = product_service.get_product(product.id)
+        updated_product = product_service.get_published_product(product.id)
         saved_distribution = updated_product.get_distribution(
             contract_id=product.contracts[0].id, distribution_id=distribution.id
         )
@@ -620,7 +620,7 @@ class TestProductService:
             data=data,
             scopes=[team.scope],
         )
-        updated_distribution = product_service.get_product(product.id).get_distribution(
+        updated_distribution = product_service.get_published_product(product.id).get_distribution(
             contract_id, distribution_id
         )
         assert updated_distribution.format == "TEST"
@@ -655,7 +655,7 @@ class TestProductService:
             distribution_id=distribution_id,
             scopes=[team.scope],
         )
-        product = product_service.get_product(product_id=product.id)
+        product = product_service.get_published_product(product_id=product.id)
         distribution_ids = [d.id for d in product.contracts[0].distributions]
         assert distribution_id not in distribution_ids
 
@@ -688,18 +688,18 @@ class TestProductService:
     def test_get_service(self, product_service: ProductService, product: Product):
         assert product.id
         assert product.services[0].id
-        result = product_service.get_service(product.id, product.services[0].id)
+        result = product_service.get_published_service(product.id, product.services[0].id)
 
         assert result == product.services[0]
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_service_non_existent(self, product_service: ProductService, product: Product):
         assert product.id
-        product_service.get_service(product.id, service_id=1337)
+        product_service.get_published_service(product.id, service_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_service_from_non_existent_product(self, product_service: ProductService):
-        product_service.get_service(1337, service_id=1337)
+        product_service.get_published_service(1337, service_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_service_from_product_with_no_services(
@@ -709,7 +709,7 @@ class TestProductService:
             data={"type": "D", "team_id": team.id}, scopes=[team.scope]
         )
         assert product.id
-        product_service.get_service(product.id, service_id=1337)
+        product_service.get_published_service(product.id, service_id=1337)
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_service_from_other_product(
@@ -720,7 +720,7 @@ class TestProductService:
         )
         assert new_product.id
         assert product.services[0].id
-        product_service.get_service(new_product.id, product.services[0].id)
+        product_service.get_published_service(new_product.id, product.services[0].id)
 
     def test_create_service(self, product_service: ProductService, product: Product, team: Team):
         assert product.id
