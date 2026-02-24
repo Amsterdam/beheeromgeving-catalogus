@@ -322,6 +322,42 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["results"][0]["name"] == expected_name
 
+    def test_product_list_filter_matches_is_geo(self, orm_product, orm_product2, api_client):
+        """Assert that we can filter the products on is_geo."""
+        response = api_client.get("/products?is_geo=False")
+        assert response.status_code == 200
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product2.name
+
+    def test_product_list_filter_does_not_match_is_geo(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can filter the products on is_geo."""
+        response = api_client.get("/products?is_geo=True")
+        assert response.status_code == 200
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product.name
+
+    def test_product_list_filter_matches_has_schema_url(
+        self, orm_product2, orm_product, api_client
+    ):
+        """Assert that we can filter the products on has_schema_url."""
+        response = api_client.get("/products?has_schema_url=True")
+        assert response.status_code == 200
+        # only product2 is returned
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product2.name
+
+    def test_product_list_filter_does_not_have_schema_url(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can filter the products on has_schema_url."""
+        response = api_client.get("/products?has_schema_url=False")
+        assert response.status_code == 200
+        # only product1 is returned
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product.name
+
     def test_product_list_filter_matches_multiple_filter_params(
         self, orm_product, orm_product2, api_client
     ):
