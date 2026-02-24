@@ -275,6 +275,8 @@ class QueryParams(BaseModel):
     language: enums.Language | None = None
     order: tuple[str, bool] | None = None
     query: str | None = Field(alias="q", default=None)
+    is_geo: bool | None = None
+    has_schema_url: bool | None = None
 
     @field_validator("theme", mode="before")
     def validate_themes(cls, raw):
@@ -308,6 +310,8 @@ class QueryParams(BaseModel):
             "confidentiality",
             "language",
             "publication_status",
+            "is_geo",
+            "has_schema_url",
         ]:
             attr_value = getattr(self, attr)
             if attr_value is not None and attr_value != "*":

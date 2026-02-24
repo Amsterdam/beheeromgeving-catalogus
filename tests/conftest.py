@@ -56,7 +56,7 @@ def orm_product(orm_team) -> Product:
         language="NL",
         is_geo=True,
         crs="RD",
-        schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+        schema_url="",
         type="D",
         themes=["NM"],
         refresh_period="3.MONTH",
@@ -64,7 +64,9 @@ def orm_product(orm_team) -> Product:
     )
 
     service = DataService.objects.create(
-        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
     )
 
     contract = DataContract.objects.create(
@@ -126,7 +128,9 @@ def orm_draft_product(orm_team) -> Product:
     )
 
     service = DataService.objects.create(
-        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
     )
 
     contract = DataContract.objects.create(
@@ -165,7 +169,7 @@ def orm_product2(orm_other_team) -> Product:
         team=orm_other_team,
         data_steward="meneerfiets@amsterdam.nl",
         language="EN",
-        is_geo=True,
+        is_geo=False,
         crs="RD",
         schema_url="https://schemas.data.amsterdam.nl/datasets/fietspaaltjes/dataset",
         type="D",
@@ -175,7 +179,9 @@ def orm_product2(orm_other_team) -> Product:
     )
 
     service = DataService.objects.create(
-        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
     )
 
     contract = DataContract.objects.create(
@@ -273,7 +279,9 @@ def orm_incomplete_product(orm_team) -> Product:
     )
 
     service = DataService.objects.create(
-        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
     )
 
     contract = DataContract.objects.create(

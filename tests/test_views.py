@@ -132,10 +132,19 @@ class TestViews:
         "query_string,expected",
         [
             ("", ("http://testserver/products?page=2", None, 10)),
-            ("?page=2", ("http://testserver/products?page=3", "http://testserver/products", 10)),
+            (
+                "?page=2",
+                ("http://testserver/products?page=3", "http://testserver/products", 10),
+            ),
             ("?page=3", (None, "http://testserver/products?page=2", 6)),
-            ("?pagesize=13", ("http://testserver/products?page=2&pagesize=13", None, 13)),
-            ("?pagesize=13&page=2", (None, "http://testserver/products?pagesize=13", 13)),
+            (
+                "?pagesize=13",
+                ("http://testserver/products?page=2&pagesize=13", None, 13),
+            ),
+            (
+                "?pagesize=13&page=2",
+                (None, "http://testserver/products?pagesize=13", 13),
+            ),
             ("?pagesize=50", (None, None, 26)),
         ],
     )
@@ -312,6 +321,42 @@ class TestViews:
         response = api_client.get(f"/products?order={order}")
         assert response.status_code == 200
         assert response.data["results"][0]["name"] == expected_name
+
+    def test_product_list_filter_matches_is_geo(self, orm_product, orm_product2, api_client):
+        """Assert that we can filter the products on is_geo."""
+        response = api_client.get("/products?is_geo=False")
+        assert response.status_code == 200
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product2.name
+
+    def test_product_list_filter_does_not_match_is_geo(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can filter the products on is_geo."""
+        response = api_client.get("/products?is_geo=True")
+        assert response.status_code == 200
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product.name
+
+    def test_product_list_filter_matches_has_schema_url(
+        self, orm_product2, orm_product, api_client
+    ):
+        """Assert that we can filter the products on has_schema_url."""
+        response = api_client.get("/products?has_schema_url=True")
+        assert response.status_code == 200
+        # only product2 is returned
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product2.name
+
+    def test_product_list_filter_does_not_have_schema_url(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can filter the products on has_schema_url."""
+        response = api_client.get("/products?has_schema_url=False")
+        assert response.status_code == 200
+        # only product1 is returned
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0]["name"] == orm_product.name
 
     def test_product_list_filter_matches_multiple_filter_params(
         self, orm_product, orm_product2, api_client
@@ -627,7 +672,8 @@ class TestViews:
     ):
         contract_id = orm_product.contracts.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}", data={"name": "New Name"}
+            f"/products/{orm_product.id}/contracts/{contract_id}",
+            data={"name": "New Name"},
         )
         assert response.status_code == 400
         assert orm_product.contracts.first().name != "New Name"
@@ -729,7 +775,8 @@ class TestViews:
         contract_id = orm_product.contracts.first().id
         data = {"format": "TEST", "type": "F"}
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
+            data=data,
         )
         assert response.status_code == 201
 
@@ -737,7 +784,8 @@ class TestViews:
         contract_id = orm_product.contracts.first().id
         data = {}
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
+            data=data,
         )
         assert response.status_code == 201
 
@@ -745,7 +793,8 @@ class TestViews:
         contract_id = orm_product.contracts.first().id
         data = {"format": "TEST", "type": "F"}
         response = client_with_token([orm_other_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
+            data=data,
         )
         assert response.status_code == 401
 
@@ -884,7 +933,10 @@ class TestViews:
     def test_service_create(self, orm_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
             f"/products/{orm_product.id}/services",
-            data={"type": "REST", "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2"},
+            data={
+                "type": "REST",
+                "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2",
+            },
         )
         assert response.status_code == 201
 
@@ -898,7 +950,8 @@ class TestViews:
     def test_service_update(self, orm_draft_product, orm_team, client_with_token):
         service_id = orm_draft_product.services.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_draft_product.id}/services/{service_id}", data={"type": "WMS"}
+            f"/products/{orm_draft_product.id}/services/{service_id}",
+            data={"type": "WMS"},
         )
         assert response.status_code == 200
 

@@ -199,7 +199,15 @@ class Product(BaseObject):
     sinks: list[int] = field(default_factory=list)
     team_id: int
 
-    _skip_keys = {"contracts", "team", "owner", "refresh_period", "sources", "sinks", "services"}
+    _skip_keys = {
+        "contracts",
+        "team",
+        "owner",
+        "refresh_period",
+        "sources",
+        "sinks",
+        "services",
+    }
 
     def __post_init__(self):
         self.validate = ProductValidator(self)
@@ -378,6 +386,14 @@ class Product(BaseObject):
             for contract in self.contracts
             for distribution in contract.distributions
         ):
+            return False
+        is_geo = filter.get("is_geo")
+        if is_geo is not None and self.is_geo != is_geo:
+            return False
+        has_schema_url = filter.get("has_schema_url")
+        if has_schema_url is True and self.schema_url == "":  # noqa: SIM103
+            return False
+        if has_schema_url is False and self.schema_url != "":  # noqa: SIM103
             return False
 
         return True
