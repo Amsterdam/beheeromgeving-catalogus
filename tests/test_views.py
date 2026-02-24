@@ -140,6 +140,10 @@ class TestViews:
                 "?page=2",
                 ("http://testserver/products?page=3", "http://testserver/products", 10),
             ),
+            (
+                "?page=2",
+                ("http://testserver/products?page=3", "http://testserver/products", 10),
+            ),
             ("?page=3", (None, "http://testserver/products?page=2", 6)),
             (
                 "?pagesize=13",
