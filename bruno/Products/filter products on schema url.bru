@@ -1,0 +1,19 @@
+meta {
+  name: filter products on has_schema_url
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/products?has_schema_url=True
+  body: none
+  auth: inherit
+}
+
+params:query {
+  has_schema_url: True
+}
+
+settings {
+  encodeUrl: true
+}

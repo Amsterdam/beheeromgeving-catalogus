@@ -158,6 +158,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
                 "order",
                 description="Order products on field (prefix with '-' to reverse).",
             ),
+            OpenApiParameter("is_geo", description="Filter on geo."),
+            OpenApiParameter(
+                "has_schema_url",
+                description="Filter on whether product has a schema_url.",
+            ),
         ],
     )
     def list(self, request):
@@ -277,7 +282,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def contract_detail(self, request, pk: str, contract_id: str):
         try:
             contract = product_service.get_contract(
-                product_id=int(pk), contract_id=int(contract_id), scopes=request.get_token_scopes
+                product_id=int(pk),
+                contract_id=int(contract_id),
+                scopes=request.get_token_scopes,
             )
         except exceptions.NotAuthorized:
             contract = product_service.get_published_contract(int(pk), int(contract_id))
@@ -336,7 +343,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def distributions_list(self, request, pk: str, contract_id: str):
         try:
             distributions = product_service.get_all_distributions(
-                product_id=int(pk), contract_id=int(contract_id), scopes=request.get_token_scopes
+                product_id=int(pk),
+                contract_id=int(contract_id),
+                scopes=request.get_token_scopes,
             )
         except exceptions.NotAuthorized:
             distributions = product_service.get_distributions(
@@ -443,7 +452,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def service_detail(self, request, pk: str, service_id: str):
         try:
             service = product_service.get_service(
-                product_id=int(pk), service_id=int(service_id), scopes=request.get_token_scopes
+                product_id=int(pk),
+                service_id=int(service_id),
+                scopes=request.get_token_scopes,
             )
         except exceptions.NotAuthorized:
             service = product_service.get_published_service(int(pk), int(service_id))
