@@ -132,10 +132,19 @@ class TestViews:
         "query_string,expected",
         [
             ("", ("http://testserver/products?page=2", None, 10)),
-            ("?page=2", ("http://testserver/products?page=3", "http://testserver/products", 10)),
+            (
+                "?page=2",
+                ("http://testserver/products?page=3", "http://testserver/products", 10),
+            ),
             ("?page=3", (None, "http://testserver/products?page=2", 6)),
-            ("?pagesize=13", ("http://testserver/products?page=2&pagesize=13", None, 13)),
-            ("?pagesize=13&page=2", (None, "http://testserver/products?pagesize=13", 13)),
+            (
+                "?pagesize=13",
+                ("http://testserver/products?page=2&pagesize=13", None, 13),
+            ),
+            (
+                "?pagesize=13&page=2",
+                (None, "http://testserver/products?pagesize=13", 13),
+            ),
             ("?pagesize=50", (None, None, 26)),
         ],
     )
@@ -399,6 +408,10 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_product.name
         assert response.data["missing_fields"] == []
+        assert (
+            response.data["schema_url"]
+            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset"
+        )
 
     def test_product_detail_missing_fields(
         self, orm_incomplete_product, orm_team, client_with_token
@@ -560,6 +573,13 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 2
 
+    def test_contract_list_shows_confidentiality(self, orm_product, api_client):
+        response = api_client.get(f"/products/{orm_product.id}/contracts")
+
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]["confidentiality"] == "I"
+
     def test_contract_detail(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
         response = api_client.get(f"/products/{orm_product.id}/contracts/{contract_id}")
@@ -567,6 +587,7 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_product.contracts.first().name
         assert response.data["missing_fields"] == []
+        assert orm_product.schema_url in response.data["schema_url"]
 
     def test_contract_detail_missing_fields(
         self, orm_incomplete_product, orm_team, client_with_token
@@ -579,6 +600,38 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_incomplete_product.contracts.first().name
         assert response.data["missing_fields"] == ["confidentiality"]
+        assert orm_incomplete_product.schema_url in response.data["schema_url"]
+
+    def test_contract_detail_schema_url(self, orm_incomplete_product, orm_team, client_with_token):
+        contract_id = orm_incomplete_product.contracts.first().id
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_incomplete_product.id}/contracts/{contract_id}"
+        )
+
+        assert response.status_code == 200
+        assert response.data["name"] == orm_incomplete_product.contracts.first().name
+        assert response.data["missing_fields"] == ["confidentiality"]
+        assert orm_incomplete_product.schema_url in response.data["schema_url"]
+        for table in response.data["tables"]:
+            assert table in response.data["schema_url"]
+        for scope in response.data["scopes"]:
+            assert scope in response.data["schema_url"]
+
+    def test_contract_detail_no_tables_in_schema_url(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        contract_id = orm_draft_product.contracts.first().id
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}"
+        )
+
+        assert response.status_code == 200
+        assert response.data["name"] == orm_draft_product.contracts.first().name
+        assert response.data["missing_fields"] == []
+        assert (
+            response.data["schema_url"]
+            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?scopes=['bomen_beheer']"
+        )
 
     def test_contract_detail_unavailable_when_draft(self, orm_product, api_client):
         contract_id = orm_product.contracts.last().id
@@ -627,7 +680,8 @@ class TestViews:
     ):
         contract_id = orm_product.contracts.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}", data={"name": "New Name"}
+            f"/products/{orm_product.id}/contracts/{contract_id}",
+            data={"name": "New Name"},
         )
         assert response.status_code == 400
         assert orm_product.contracts.first().name != "New Name"
@@ -729,7 +783,8 @@ class TestViews:
         contract_id = orm_product.contracts.first().id
         data = {"format": "TEST", "type": "F"}
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
+            data=data,
         )
         assert response.status_code == 201
 
@@ -737,7 +792,8 @@ class TestViews:
         contract_id = orm_product.contracts.first().id
         data = {}
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
+            data=data,
         )
         assert response.status_code == 201
 
@@ -745,7 +801,8 @@ class TestViews:
         contract_id = orm_product.contracts.first().id
         data = {"format": "TEST", "type": "F"}
         response = client_with_token([orm_other_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions", data=data
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
+            data=data,
         )
         assert response.status_code == 401
 
@@ -884,7 +941,10 @@ class TestViews:
     def test_service_create(self, orm_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
             f"/products/{orm_product.id}/services",
-            data={"type": "REST", "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2"},
+            data={
+                "type": "REST",
+                "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2",
+            },
         )
         assert response.status_code == 201
 
@@ -898,7 +958,8 @@ class TestViews:
     def test_service_update(self, orm_draft_product, orm_team, client_with_token):
         service_id = orm_draft_product.services.first().id
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_draft_product.id}/services/{service_id}", data={"type": "WMS"}
+            f"/products/{orm_draft_product.id}/services/{service_id}",
+            data={"type": "WMS"},
         )
         assert response.status_code == 200
 

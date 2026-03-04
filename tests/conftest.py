@@ -64,7 +64,9 @@ def orm_product(orm_team) -> Product:
     )
 
     service = DataService.objects.create(
-        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
     )
 
     contract = DataContract.objects.create(
@@ -78,6 +80,7 @@ def orm_product(orm_team) -> Product:
         confidentiality="I",
         start_date="2025-01-01",
         retainment_period=12,
+        tables=["stamgegevens", "takgegevens"],
     )
     # Add draft contract
     DataContract.objects.create(
@@ -126,7 +129,9 @@ def orm_draft_product(orm_team) -> Product:
     )
 
     service = DataService.objects.create(
-        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
     )
 
     contract = DataContract.objects.create(
@@ -175,7 +180,9 @@ def orm_product2(orm_other_team) -> Product:
     )
 
     service = DataService.objects.create(
-        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
     )
 
     contract = DataContract.objects.create(
@@ -273,7 +280,9 @@ def orm_incomplete_product(orm_team) -> Product:
     )
 
     service = DataService.objects.create(
-        product=product, type="REST", endpoint_url="https://api.data.amsterdam.nl/v1/bomen"
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
     )
 
     contract = DataContract.objects.create(
@@ -284,6 +293,7 @@ def orm_incomplete_product(orm_team) -> Product:
         description="contract voor data nodig voor het beheer van bomen",
         privacy_level="NPI",
         scopes=["bomen_beheer"],
+        tables=["stamgegevens", "takgegevens"],
         start_date="2025-01-01",
         retainment_period=12,
     )

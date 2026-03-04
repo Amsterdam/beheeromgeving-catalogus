@@ -305,9 +305,37 @@ class DataContract(models.Model):
         help_text="De ids van de tabellen binnen de dataset die onder dit contract vallen. "
         "Laat leeg om alle tabellen op te nemen.",
     )
+    schema_url = models.CharField(
+        _("Amsterdam Schema Datacontract verwijzing (url) met scopes en tables"),
+        blank=True,
+        null=True,
+        help_text="Verwijzing naar een dataset beschreven in Amsterdam Schema. Dit is alleen een "
+        "vervanging voor het schema, niet de rest van het Data Contract. Als het 'Schema' veld is "
+        "ingevuld en je geen gebruik maakt van Amsterdam Schema, dan blijft dit veld leeg",
+    )
 
     def __str__(self):
         return self.name or str(self.pk)
+
+    @property
+    def computed_schema_url(self) -> str | None:
+        if self.product.schema_url:
+            base_url = self.product.schema_url
+        if self.scopes:
+            scopes = self.scopes
+        if self.tables:
+            tables = self.tables
+
+        if self.product.schema_url and self.scopes and self.tables:
+            return f"{base_url}?scopes={scopes}&tables={tables}"
+        elif self.product.schema_url and self.scopes:
+            return f"{base_url}?scopes={scopes}"
+        else:
+            return None
+
+    @computed_schema_url.setter
+    def computed_schema_url(self, value: str | None):
+        self.schema_url = value if value else None
 
     def to_domain(self):
         return objects.DataContract(
@@ -322,6 +350,7 @@ class DataContract(models.Model):
             confidentiality=self.confidentiality,
             start_date=self.start_date,
             retainment_period=self.retainment_period,
+            schema_url=self.computed_schema_url,
             distributions=[d.to_domain() for d in self.distributions.order_by("id")],
             tables=self.tables,
         )

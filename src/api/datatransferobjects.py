@@ -141,6 +141,7 @@ class DataContractList(ModelMixin, BaseModel):
     publication_status: enums.PublicationStatus | None = None
     name: str | None = None
     description: str | None = None
+    confidentiality: enums.ConfidentialityLevel | None = None
 
 
 class DataContractCreateOrUpdate(ModelMixin, BaseModel):
@@ -162,6 +163,7 @@ class DataContract(IdMixin, DataContractCreateOrUpdate):
 
     publication_status: enums.PublicationStatus
     missing_fields: list[str] | None = None
+    schema_url: str | None = None
 
 
 class MyContract(ModelMixin, BaseModel):

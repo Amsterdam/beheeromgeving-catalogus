@@ -104,6 +104,7 @@ class DataContract(BaseObject):
     start_date: date | None = None
     retainment_period: int | None = None
     distributions: list[Distribution] = field(default_factory=list)
+    schema_url: str | None = None
     tables: list[str] | None = None
 
     _skip_keys = {"contact_email", "distributions"}
@@ -199,7 +200,15 @@ class Product(BaseObject):
     sinks: list[int] = field(default_factory=list)
     team_id: int
 
-    _skip_keys = {"contracts", "team", "owner", "refresh_period", "sources", "sinks", "services"}
+    _skip_keys = {
+        "contracts",
+        "team",
+        "owner",
+        "refresh_period",
+        "sources",
+        "sinks",
+        "services",
+    }
 
     def __post_init__(self):
         self.validate = ProductValidator(self)
