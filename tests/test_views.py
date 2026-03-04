@@ -503,6 +503,10 @@ class TestViews:
             response.data["schema_url"]
             == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset"
         )
+        assert (
+            response.data["schema_url"]
+            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset"
+        )
 
     def test_product_detail_missing_fields(
         self, orm_incomplete_product, orm_team, client_with_token
@@ -677,13 +681,6 @@ class TestViews:
 
         assert response.status_code == 200
         assert len(response.data) == 2
-
-    def test_contract_list_shows_confidentiality(self, orm_product, api_client):
-        response = api_client.get(f"/products/{orm_product.id}/contracts")
-
-        assert response.status_code == 200
-        assert len(response.data) == 1
-        assert response.data[0]["confidentiality"] == "I"
 
     def test_contract_list_shows_confidentiality(self, orm_product, api_client):
         response = api_client.get(f"/products/{orm_product.id}/contracts")
