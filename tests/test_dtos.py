@@ -35,8 +35,8 @@ class TestQueryParams:
                 "team=1&theme=NM,B",
                 QueryParams(team=1, theme="NM,B"),  # ty:ignore[invalid-argument-type]
                 {
-                    "team": 1,
-                    "theme": [enums.Theme.NATUUR_EN_MILIEU, enums.Theme.BESTUUR],
+                    "team_id": 1,
+                    "themes__overlap": [enums.Theme.NATUUR_EN_MILIEU, enums.Theme.BESTUUR],
                     "publication_status": enums.PublicationStatus.PUBLISHED,
                 },
                 None,
@@ -48,8 +48,8 @@ class TestQueryParams:
                     confidentiality=enums.ConfidentialityLevel.OPENBAAR,
                 ),
                 {
-                    "type": [enums.DistributionType.API],
-                    "confidentiality": enums.ConfidentialityLevel.OPENBAAR,
+                    "contracts__distributions__type__in": [enums.DistributionType.API],
+                    "contracts__confidentiality": enums.ConfidentialityLevel.OPENBAAR,
                     "publication_status": enums.PublicationStatus.PUBLISHED,
                 },
                 None,

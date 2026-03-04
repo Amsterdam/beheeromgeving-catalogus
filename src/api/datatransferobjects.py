@@ -303,17 +303,24 @@ class QueryParams(BaseModel):
     @property
     def filter(self) -> dict:
         result = {}
-        for attr in [
-            "team",
-            "theme",
-            "type",
-            "confidentiality",
-            "language",
-            "publication_status",
-            "is_geo",
-            "has_schema_url",
-        ]:
+        for attr, lookup in {
+            "team": "team_id",
+            "theme": "themes__overlap",
+            "type": "contracts__distributions__type__in",
+            "confidentiality": "contracts__confidentiality",
+            "language": "language",
+            "publication_status": "publication_status",
+            "is_geo": "is_geo",
+        }.items():
             attr_value = getattr(self, attr)
             if attr_value is not None and attr_value != "*":
-                result[attr] = getattr(self, attr)
+                result[lookup] = attr_value
         return result
+
+    @property
+    def exclude(self) -> dict:
+        if self.has_schema_url is True:
+            return {"schema_url__exact": ""}
+        elif self.has_schema_url is False:
+            return {"schema_url__regex": r"schema"}
+        return {}
