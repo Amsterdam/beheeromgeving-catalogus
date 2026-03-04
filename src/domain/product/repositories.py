@@ -15,7 +15,9 @@ class ProductRepository(AbstractRepository[Product]):
     manager: Manager[orm.Product]
 
     def __init__(self):
-        self.manager = orm.Product.objects
+        self.manager = orm.Product.objects.select_related("team").prefetch_related(
+            "sources__pk", "team", "contracts", "contracts__distributions", "services"
+        )
 
     def get(self, id: int) -> Product:
         try:
