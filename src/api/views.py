@@ -183,6 +183,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         products = product_service.get_products(
             query=params.query,
             filter=params.filter,
+            exclude=params.exclude,
             order=params.order,
         )
 
@@ -500,7 +501,10 @@ def me(request):
     scopes = request.get_token_scopes
     teams = team_service.get_teams_from_scopes(scopes)
     products = product_service.get_my_products(
-        teams=teams, filter=params.filter, order=params.order or ("last_updated", True)
+        teams=teams,
+        filter=params.filter,
+        exclude=params.exclude,
+        order=params.order or ("last_updated", True),
     )
     product_data = dtos.to_response_object(products, dto_type="me")
     pagination = Pagination()

@@ -62,18 +62,21 @@ class ProductRepository(AbstractRepository[Product]):
         *,
         query: str | None = None,
         filter: dict | None = None,
+        exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
     ) -> list_[Product]:
+        products = self.manager.all()
+        if filter:
+            products = products.filter(**filter).distinct()
+        if exclude:
+            products = products.exclude(**exclude).distinct()
+        if order:
+            products = products.order_by(f"{'-' if order[1] else ''}{order[0]}")
         if query:
-            products = {p.pk: p.to_domain(published_only=True) for p in self.manager.all()}
+            products = {p.pk: p.to_domain(published_only=True) for p in products if p is not None}
             products = self.search(products, query)
         else:
-            products = [p.to_domain(published_only=True) for p in self.manager.all()]
-        products = [p for p in products if p is not None]
-        if filter:
-            products = self.filter(products, filter)
-        if order:
-            products = self.order(products, order)
+            products = [p.to_domain(published_only=True) for p in products if p is not None]
         return products
 
     def list_mine(
@@ -81,20 +84,24 @@ class ProductRepository(AbstractRepository[Product]):
         *,
         query: str | None = None,
         filter: dict | None = None,
+        exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
         teams: list_[Team],
     ) -> list_[Product]:
+        team_ids = [team.id for team in teams]
+        products = self.manager.filter(team_id__in=team_ids)
+        if filter:
+            products = products.filter(**filter).distinct()
+        if exclude:
+            products = products.exclude(**exclude).distinct()
+        if order:
+            products = products.order_by(f"{'-' if order[1] else ''}{order[0]}")
         if query:
-            products = {p.pk: p.to_domain() for p in self.manager.all()}
+            products = {p.pk: p.to_domain() for p in products}
             products = self.search(products, query)
         else:
-            products = [p.to_domain() for p in self.manager.all()]
-        if filter:
-            products = self.filter(products, filter)
-        if order:
-            products = self.order(products, order)
-        team_ids = [team.id for team in teams]
-        return [product for product in products if product.team_id in team_ids]
+            products = [p.to_domain() for p in products]
+        return products
 
     def search(self, products: dict[int, Product], query: str) -> list_[Product]:
         query_words = query.lower().split(" ")
@@ -110,17 +117,6 @@ class ProductRepository(AbstractRepository[Product]):
             for p_id, count in sorted(results.items(), key=lambda item: item[1], reverse=True)
             if count > 0
         ]
-
-    def order(self, products: list_[Product], order: tuple[str, bool]) -> list_[Product]:
-        order_field, reversed = order
-
-        def lookup(product):
-            return getattr(product, order_field)
-
-        return sorted(products, key=lookup, reverse=reversed)
-
-    def filter(self, products: list_[Product], filter: dict) -> list_[Product]:
-        return [product for product in products if product.matches_filter(filter)]
 
     def save(self, item: Product) -> Product:
         try:

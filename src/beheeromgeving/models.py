@@ -180,8 +180,8 @@ class Product(models.Model):
             contact_email=self.contact_email,
             data_steward=self.data_steward,
             services=[s.to_domain() for s in self.services.order_by("id")],
-            sources=[s.pk for s in self.sources.all()],
-            sinks=[s.pk for s in self.sinks.all()],
+            sources=list(self.sources.values_list("pk", flat=True)),
+            sinks=list(self.sinks.values_list("pk", flat=True)),
         )
 
     @classmethod

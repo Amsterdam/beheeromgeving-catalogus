@@ -355,49 +355,6 @@ class Product(BaseObject):
                 result += contract.description + " "
         return result.lower()
 
-    def matches_filter(self, filter: dict) -> bool:
-        """
-        Filter on several attributes.
-
-        These attributes are mutually additive - if multiple are given, all must apply.
-        However, if multiple values are available on a product for a certain attribute,
-        only one needs to match.
-        """
-        team_id = filter.get("team")
-        if team_id is not None and team_id != self.team_id:
-            return False
-        themes = filter.get("theme")
-        if themes is not None and not any(theme in (self.themes or []) for theme in themes):
-            return False
-        language = filter.get("language")
-        if language is not None and self.language != language:
-            return False
-        publication_status = filter.get("publication_status")
-        if publication_status is not None and self.publication_status != publication_status:
-            return False
-        confidentiality = filter.get("confidentiality")
-        if confidentiality is not None and not any(
-            contract.confidentiality == confidentiality for contract in self.contracts
-        ):
-            return False
-        dist_type = filter.get("type")
-        if dist_type is not None and not any(  # noqa: SIM103
-            distribution.type in dist_type
-            for contract in self.contracts
-            for distribution in contract.distributions
-        ):
-            return False
-        is_geo = filter.get("is_geo")
-        if is_geo is not None and self.is_geo != is_geo:
-            return False
-        has_schema_url = filter.get("has_schema_url")
-        if has_schema_url is True and self.schema_url == "":  # noqa: SIM103
-            return False
-        if has_schema_url is False and self.schema_url != "":  # noqa: SIM103
-            return False
-
-        return True
-
     @property
     def missing_fields(self) -> list[str]:
         return self.validate.get_missing_fields()
