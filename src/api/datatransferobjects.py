@@ -141,6 +141,7 @@ class DataContractList(ModelMixin, BaseModel):
     publication_status: enums.PublicationStatus | None = None
     name: str | None = None
     description: str | None = None
+    confidentiality: enums.ConfidentialityLevel | None = None
 
 
 class DataContractCreateOrUpdate(ModelMixin, BaseModel):
@@ -155,6 +156,7 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     retainment_period: int | None = None
     distributions: list[Distribution] | None = None
     tables: list[str] | None = None
+    schema_url: str | None = None
 
 
 class DataContract(IdMixin, DataContractCreateOrUpdate):
