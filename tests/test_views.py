@@ -408,10 +408,6 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_product.name
         assert response.data["missing_fields"] == []
-        assert (
-            response.data["schema_url"]
-            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset"
-        )
 
     def test_product_detail_missing_fields(
         self, orm_incomplete_product, orm_team, client_with_token
@@ -587,7 +583,11 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_product.contracts.first().name
         assert response.data["missing_fields"] == []
-        assert orm_product.schema_url in response.data["schema_url"]
+        assert (
+            response.data["schema_url"]
+            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?scopes=['bomen_beheer']"
+            "&tables=['stamgegevens', 'takgegevens']"
+        )
 
     def test_contract_detail_missing_fields(
         self, orm_incomplete_product, orm_team, client_with_token
