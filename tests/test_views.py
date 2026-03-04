@@ -1119,3 +1119,14 @@ class TestViews:
         response = client_with_token([orm_team.scope]).get("/me?publication_status=D")
         assert response.status_code == 200
         assert response.data["products"]["count"] == 1
+
+    def test_me_can_search(self, many_orm_products, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get("/me?q=z")
+        assert response.status_code == 200
+        assert response.data["products"]["count"] == 1
+        assert response.data["products"]["results"][0]["name"] == "naam z"
+
+    def test_me_can_filter_on_schema_url(self, many_orm_products, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get("/me?has_schema_url=false")
+        assert response.status_code == 200
+        assert response.data["products"]["count"] == 0

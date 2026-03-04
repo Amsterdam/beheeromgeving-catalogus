@@ -502,6 +502,7 @@ def me(request):
     teams = team_service.get_teams_from_scopes(scopes)
     products = product_service.get_my_products(
         teams=teams,
+        query=params.query,
         filter=params.filter,
         exclude=params.exclude,
         order=params.order or ("last_updated", True),
