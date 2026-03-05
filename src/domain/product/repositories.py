@@ -1,4 +1,4 @@
-from django.db.models import F, Manager, Value
+from django.db.models import F, Manager, Q, Value
 from django.db.utils import IntegrityError
 
 from beheeromgeving import models as orm
@@ -66,18 +66,36 @@ class ProductRepository(AbstractRepository[Product]):
         order: tuple[str, bool] | None = ("name", False),
     ) -> list_[Product]:
         products = self.manager.all()
+        if query:
+            # Multi-word search in product name, description, and related contract name/description
+            words = query.split()
+            q_obj = Q()
+            for word in words:
+                q_obj |= (
+                    Q(name__icontains=word)
+                    | Q(description__icontains=word)
+                    | Q(contracts__name__icontains=word)
+                    | Q(contracts__description__icontains=word)
+                )
+            products = products.filter(q_obj).distinct()
+
+            # Annotate with occurrence count
+            def count_occurrences(product):
+                text = f"{product.name} {product.description} "
+                text += " ".join([c.name + " " + c.description for c in product.contracts.all()])
+                text_lower = text.lower()
+                return sum(1 if word.lower() in text_lower else 0 for word in words)
+
         if filter:
             products = products.filter(**filter).distinct()
         if exclude:
             products = products.exclude(**exclude).distinct()
         if order:
             products = products.order_by(f"{'-' if order[1] else ''}{order[0]}")
+        # If query was used, sort by occurrence count
         if query:
-            products = {p.pk: p.to_domain(published_only=True) for p in products if p is not None}
-            products = self.search(products, query)
-        else:
-            products = [p.to_domain(published_only=True) for p in products if p is not None]
-        return products
+            products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
+        return [p.to_domain(published_only=True) for p in products if p is not None]
 
     def list_mine(
         self,
@@ -90,6 +108,24 @@ class ProductRepository(AbstractRepository[Product]):
     ) -> list_[Product]:
         team_ids = [team.id for team in teams]
         products = self.manager.filter(team_id__in=team_ids)
+        if query:
+            words = query.split()
+            q_obj = Q()
+            for word in words:
+                q_obj |= (
+                    Q(name__icontains=word)
+                    | Q(description__icontains=word)
+                    | Q(contracts__name__icontains=word)
+                    | Q(contracts__description__icontains=word)
+                )
+            products = products.filter(q_obj).distinct()
+
+            # Annotate with occurrence count
+            def count_occurrences(product):
+                text = f"{product.name} {product.description} "
+                text += " ".join([c.name + " " + c.description for c in product.contracts.all()])
+                return sum(text.lower().count(word.lower()) for word in words)
+
         if filter:
             products = products.filter(**filter).distinct()
         if exclude:
@@ -97,26 +133,8 @@ class ProductRepository(AbstractRepository[Product]):
         if order:
             products = products.order_by(f"{'-' if order[1] else ''}{order[0]}")
         if query:
-            products = {p.pk: p.to_domain() for p in products}
-            products = self.search(products, query)
-        else:
-            products = [p.to_domain() for p in products]
-        return products
-
-    def search(self, products: dict[int, Product], query: str) -> list_[Product]:
-        query_words = query.lower().split(" ")
-        # count how many occurences each word of the query are in the product's
-        # search fields.
-        results = {
-            p_id: sum(1 for q in query_words if q in p.search_string)
-            for p_id, p in products.items()
-        }
-        # sort them so the highest count appears first, and remove if count is 0.
-        return [
-            products[p_id]
-            for p_id, count in sorted(results.items(), key=lambda item: item[1], reverse=True)
-            if count > 0
-        ]
+            products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
+        return [p.to_domain() for p in products]
 
     def save(self, item: Product) -> Product:
         try:
