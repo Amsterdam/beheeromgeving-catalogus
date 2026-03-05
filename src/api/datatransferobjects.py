@@ -156,7 +156,6 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     retainment_period: int | None = None
     distributions: list[Distribution] | None = None
     tables: list[str] | None = None
-    schema_url: str | None = None
 
 
 class DataContract(IdMixin, DataContractCreateOrUpdate):
@@ -164,6 +163,7 @@ class DataContract(IdMixin, DataContractCreateOrUpdate):
 
     publication_status: enums.PublicationStatus
     missing_fields: list[str] | None = None
+    schema_url: str | None = None
 
 
 class MyContract(ModelMixin, BaseModel):

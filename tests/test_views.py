@@ -645,10 +645,11 @@ class TestViews:
         assert response.data["name"] == orm_incomplete_product.contracts.first().name
         assert response.data["missing_fields"] == ["confidentiality"]
         assert orm_incomplete_product.schema_url in response.data["schema_url"]
-        for table in response.data["tables"]:
-            assert table in response.data["schema_url"]
-        for scope in response.data["scopes"]:
-            assert scope in response.data["schema_url"]
+        assert (
+            response.data["schema_url"]
+            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?"
+            "scopes=bomen_beheer&tables=stamgegevens,takgegevens"
+        )
 
     def test_contract_detail_no_tables_in_schema_url(
         self, orm_draft_product, orm_team, client_with_token
@@ -663,7 +664,7 @@ class TestViews:
         assert response.data["missing_fields"] == []
         assert (
             response.data["schema_url"]
-            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?scopes=['bomen_beheer']"
+            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?scopes=bomen_beheer"
         )
 
     def test_contract_detail_unavailable_when_draft(self, orm_product, api_client):
