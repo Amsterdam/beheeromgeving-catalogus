@@ -325,10 +325,6 @@ class DataContract(models.Model):
         else:
             return None
 
-    # @schema_url.setter  # dit kon weg?
-    # def schema_url(self, value: str | None):
-    #     self.schema_url = value if value else None
-
     def to_domain(self):
         return objects.DataContract(
             id=self.pk,
@@ -349,10 +345,8 @@ class DataContract(models.Model):
 
     @classmethod
     def from_domain(cls, contract: objects.DataContract, product_id: int):
-        defaults = contract.items()
-        defaults.pop("schema_url", None)
         instance, _created = cls.objects.filter(pk=contract.id).update_or_create(
-            defaults={**defaults, "product_id": product_id}
+            defaults={**contract.items(), "product_id": product_id}
         )
         # Handle distributions, they may potentially all be deleted:
         to_delete = instance.distributions.all()
