@@ -1,6 +1,7 @@
 from django.db.models import F, Q, QuerySet, Value
 from django.db.utils import IntegrityError
 
+from api.datatransferobjects import MyProduct, ProductList
 from beheeromgeving import models as orm
 from domain import exceptions
 from domain.base import AbstractRepository
@@ -64,10 +65,9 @@ class ProductRepository(AbstractRepository[Product]):
         filter: dict | None = None,
         exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
-    ) -> list_:
+    ) -> list_[dict]:
         products = self.manager.all()
         if query:
-            # Multi-word search in product name, description, and related contract name/description
             words = query.split()
             q_obj = Q()
             for word in words:
@@ -79,8 +79,7 @@ class ProductRepository(AbstractRepository[Product]):
                 )
             products = products.filter(q_obj).distinct()
 
-            # Annotate with occurrence count
-            def count_occurrences(product):
+            def count_occurrences(product: orm.Product) -> int:
                 text = f"{product.name} {product.description} "
                 text += " ".join([c.name + " " + c.description for c in product.contracts.all()])
                 text_lower = text.lower()
@@ -96,7 +95,7 @@ class ProductRepository(AbstractRepository[Product]):
         if query:
             products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
         return [
-            p.to_dto("list").model_dump()
+            ProductList.from_django(p).model_dump()
             for p in products
             if p.publication_status == enums.PublicationStatus.PUBLISHED.value
         ]
@@ -124,8 +123,7 @@ class ProductRepository(AbstractRepository[Product]):
                 )
             products = products.filter(q_obj).distinct()
 
-            # Annotate with occurrence count
-            def count_occurrences(product):
+            def count_occurrences(product: orm.Product) -> int:
                 text = f"{product.name} {product.description} "
                 text += " ".join([c.name + " " + c.description for c in product.contracts.all()])
                 return sum(text.lower().count(word.lower()) for word in words)
@@ -139,7 +137,7 @@ class ProductRepository(AbstractRepository[Product]):
         if query:
             products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
 
-        return [p.to_dto("me").model_dump() for p in products]
+        return [MyProduct.from_django(p).model_dump() for p in products]
 
     def save(self, item: Product) -> Product:
         try:
