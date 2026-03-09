@@ -16,15 +16,9 @@ class ProductService(AbstractService):
     def __init__(self, repo: AbstractRepository[Product]):
         self.repository = repo
 
-    def get_products(self, **kwargs) -> list[dict]:
-        return self.repository.list(**kwargs)
-
     @authorize.is_admin
     def get_all_products(self, **kwargs) -> list[Product]:
         return self.repository.list_all()
-
-    def get_my_products(self, **kwargs) -> list[dict]:
-        return self.repository.list_mine(**kwargs)
 
     @authorize.is_team_member
     def get_product(self, product_id: int, **kwargs) -> Product:
@@ -33,6 +27,7 @@ class ProductService(AbstractService):
     def get_published_product(self, product_id: int) -> Product:
         return self.repository.get_published(product_id)
 
+    @authorize.is_admin
     @authorize.is_team_member
     def get_product_by_name(self, name: str, **kwargs) -> Product:
         return self.repository.get_by_name(name)
