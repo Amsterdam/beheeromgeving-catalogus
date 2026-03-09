@@ -16,14 +16,14 @@ class ProductService(AbstractService):
     def __init__(self, repo: AbstractRepository[Product]):
         self.repository = repo
 
-    def get_products(self, **kwargs) -> list[Product]:
+    def get_products(self, **kwargs) -> list[dict]:
         return self.repository.list(**kwargs)
 
     @authorize.is_admin
     def get_all_products(self, **kwargs) -> list[Product]:
         return self.repository.list_all()
 
-    def get_my_products(self, **kwargs) -> list[Product]:
+    def get_my_products(self, **kwargs) -> list[dict]:
         return self.repository.list_mine(**kwargs)
 
     @authorize.is_team_member

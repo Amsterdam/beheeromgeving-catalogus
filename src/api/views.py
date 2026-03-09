@@ -180,14 +180,13 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             data = dtos.to_response_object(product)
             return Response(data, status=200)
 
-        products = product_service.get_products(
+        data = product_service.get_products(
             query=params.query,
             filter=params.filter,
             exclude=params.exclude,
             order=params.order,
         )
 
-        data = dtos.to_response_object(products)
         pagination = Pagination()
         paginated_data = pagination.paginate(data, request)
         return pagination.get_paginated_response(paginated_data)
@@ -500,14 +499,13 @@ def me(request):
     product_service = ProductService(repo=ProductRepository())
     scopes = request.get_token_scopes
     teams = team_service.get_teams_from_scopes(scopes)
-    products = product_service.get_my_products(
+    product_data = product_service.get_my_products(
         teams=teams,
         query=params.query,
         filter=params.filter,
         exclude=params.exclude,
         order=params.order or ("last_updated", True),
     )
-    product_data = dtos.to_response_object(products, dto_type="me")
     pagination = Pagination()
     try:
         product_data = pagination.paginate(product_data, request)

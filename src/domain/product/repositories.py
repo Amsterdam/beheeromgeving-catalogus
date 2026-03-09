@@ -1,10 +1,10 @@
-from django.db.models import F, Manager, Q, Value
+from django.db.models import F, Q, QuerySet, Value
 from django.db.utils import IntegrityError
 
 from beheeromgeving import models as orm
 from domain import exceptions
 from domain.base import AbstractRepository
-from domain.product import Product
+from domain.product import Product, enums
 from domain.team import Team
 
 # alias for typing
@@ -12,7 +12,7 @@ list_ = list
 
 
 class ProductRepository(AbstractRepository[Product]):
-    manager: Manager[orm.Product]
+    manager: QuerySet[orm.Product]
 
     def __init__(self):
         self.manager = orm.Product.objects.select_related("team").prefetch_related(
@@ -64,7 +64,7 @@ class ProductRepository(AbstractRepository[Product]):
         filter: dict | None = None,
         exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
-    ) -> list_[Product]:
+    ) -> list_:
         products = self.manager.all()
         if query:
             # Multi-word search in product name, description, and related contract name/description
@@ -95,7 +95,11 @@ class ProductRepository(AbstractRepository[Product]):
         # If query was used, sort by occurrence count
         if query:
             products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
-        return [p.to_domain(published_only=True) for p in products if p is not None]
+        return [
+            p.to_dto("list").model_dump()
+            for p in products
+            if p.publication_status == enums.PublicationStatus.PUBLISHED.value
+        ]
 
     def list_mine(
         self,
@@ -105,7 +109,7 @@ class ProductRepository(AbstractRepository[Product]):
         exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
         teams: list_[Team],
-    ) -> list_[Product]:
+    ) -> list_:
         team_ids = [team.id for team in teams]
         products = self.manager.filter(team_id__in=team_ids)
         if query:
@@ -134,7 +138,8 @@ class ProductRepository(AbstractRepository[Product]):
             products = products.order_by(f"{'-' if order[1] else ''}{order[0]}")
         if query:
             products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
-        return [p.to_domain() for p in products]
+
+        return [p.to_dto("me").model_dump() for p in products]
 
     def save(self, item: Product) -> Product:
         try:
