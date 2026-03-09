@@ -8,6 +8,7 @@ from domain.product import (
     DataService,
     Distribution,
     Product,
+    ProductQueryHandler,
     ProductService,
     RefreshPeriod,
     enums,
@@ -124,5 +125,15 @@ def team_service(team, init_auth, auth_repo) -> TeamService:
 
 
 @pytest.fixture()
-def product_service(product, init_auth, auth_repo) -> ProductService:
-    return ProductService(repo=DummyRepository([product], auth_repo=auth_repo))
+def dummy_repo(product, init_auth, auth_repo) -> DummyRepository:
+    return DummyRepository([product], auth_repo=auth_repo)
+
+
+@pytest.fixture()
+def product_service(product, dummy_repo) -> ProductService:
+    return ProductService(repo=dummy_repo)
+
+
+@pytest.fixture()
+def product_query_handler(product, dummy_repo):
+    return ProductQueryHandler(repository=dummy_repo)

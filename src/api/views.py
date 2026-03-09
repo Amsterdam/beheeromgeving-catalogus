@@ -10,7 +10,7 @@ from api import datatransferobjects as dtos
 from api.pagination import NotFound, Pagination
 from domain import exceptions
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
-from domain.product import ProductRepository, ProductService
+from domain.product import ProductQueryHandler, ProductRepository, ProductService
 from domain.team import TeamRepository, TeamService
 
 
@@ -41,6 +41,7 @@ class ExceptionHandlerMixin:
 
 auth_service: AuthorizationService
 product_service: ProductService
+product_query_handler: ProductQueryHandler
 team_service: TeamService
 is_initialized = False
 
@@ -50,10 +51,11 @@ def initialize():
     Instantiate all necessary services. ViewSets are instantiated for each request,
     so we share the same services throughout the lifecycle of the application.
     """
-    global auth_service, product_service, team_service
+    global auth_service, product_service, product_query_handler, team_service
     auth_service = AuthorizationService(AuthorizationRepository())
     authorize.set_auth_service(auth_service)
     product_service = ProductService(repo=ProductRepository())
+    product_query_handler = ProductQueryHandler(ProductRepository())
     team_service = TeamService(repo=TeamRepository())
 
 
@@ -180,7 +182,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             data = dtos.to_response_object(product)
             return Response(data, status=200)
 
-        data = product_service.get_products(
+        data = product_query_handler.list_products(
             query=params.query,
             filter=params.filter,
             exclude=params.exclude,
@@ -496,10 +498,9 @@ def me(request):
     except ValidationError as e:
         return Response(status=400, data=str(e))
     team_service = TeamService(repo=TeamRepository())
-    product_service = ProductService(repo=ProductRepository())
     scopes = request.get_token_scopes
     teams = team_service.get_teams_from_scopes(scopes)
-    product_data = product_service.get_my_products(
+    product_data = product_query_handler.list_my_products(
         teams=teams,
         query=params.query,
         filter=params.filter,

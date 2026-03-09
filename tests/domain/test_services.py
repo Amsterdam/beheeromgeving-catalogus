@@ -132,12 +132,14 @@ class TestTeamService:
         team_service.delete_team(team_id=1337, scopes=ADMIN_SCOPE)  # non-existent
 
 
-class TestProductService:
-    def test_get_products(self, product_service: ProductService, product: Product):
-        result = product_service.get_products()
+class TestProductQueryHandler:
+    def test_get_products(self, product_query_handler, product: Product):
+        result = product_query_handler.list_products()
 
         assert result == [product]
 
+
+class TestProductService:
     def test_get_product(self, product_service: ProductService, product: Product):
         assert product.id
         result = product_service.get_published_product(product.id)
@@ -148,11 +150,15 @@ class TestProductService:
     def test_get_product_non_existent(self, product_service: ProductService):
         product_service.get_published_product(1337)  # non-existent
 
-    def test_create_product(self, product_service: ProductService, team: Team):
+    def test_create_product(
+        self, product_service: ProductService, product_query_handler, team: Team
+    ):
         data = {"type": "D", "team_id": team.id}
         result = product_service.create_product(data=data, scopes=[team.scope])
 
-        assert len(product_service.get_products()) == 2  # service initialized with 1 product
+        assert (
+            len(product_query_handler.list_products()) == 2
+        )  # service initialized with 1 product
         assert result.type == "D"
 
     @pytest.mark.xfail(raises=NotAuthorized)
@@ -176,11 +182,13 @@ class TestProductService:
         data = {"description": "a fancy product"}
         product_service.update_product(product_id=1337, data=data, scopes=[team.scope])
 
-    def test_delete_product(self, product_service: ProductService, product: Product, team: Team):
+    def test_delete_product(
+        self, product_service: ProductService, product_query_handler, product: Product, team: Team
+    ):
         assert product.id
         product_service.delete_product(product_id=product.id, scopes=[team.scope])
 
-        assert len(product_service.get_products()) == 0
+        assert len(product_query_handler.list_products()) == 0
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_delete_product_non_existent(self, product_service: ProductService, team: Team):
