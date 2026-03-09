@@ -309,6 +309,22 @@ class DataContract(models.Model):
     def __str__(self):
         return self.name or str(self.pk)
 
+    @property
+    def schema_url(self) -> str | None:
+        if self.product.schema_url:
+            base_url = self.product.schema_url
+        if self.scopes:
+            scopes = ",".join(self.scopes)
+        if self.tables:
+            tables = ",".join(self.tables)
+
+        if self.product.schema_url and self.scopes and self.tables:
+            return f"{base_url}?scopes={scopes}&tables={tables}"
+        elif self.product.schema_url and self.scopes:
+            return f"{base_url}?scopes={scopes}"
+        else:
+            return None
+
     def to_domain(self):
         return objects.DataContract(
             id=self.pk,
@@ -324,6 +340,7 @@ class DataContract(models.Model):
             retainment_period=self.retainment_period,
             distributions=[d.to_domain() for d in self.distributions.order_by("id")],
             tables=self.tables,
+            schema_url=self.schema_url,
         )
 
     @classmethod

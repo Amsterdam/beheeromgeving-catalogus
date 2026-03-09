@@ -80,6 +80,7 @@ def orm_product(orm_team) -> Product:
         confidentiality="I",
         start_date="2025-01-01",
         retainment_period=12,
+        tables=["stamgegevens", "takgegevens"],
     )
     # Add draft contract
     DataContract.objects.create(
@@ -294,6 +295,7 @@ def orm_incomplete_product(orm_team) -> Product:
         scopes=["bomen_beheer"],
         start_date="2025-01-01",
         retainment_period=12,
+        tables=["stamgegevens", "takgegevens"],
     )
 
     Distribution.objects.create(

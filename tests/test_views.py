@@ -605,6 +605,13 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 2
 
+    def test_contract_list_shows_confidentiality(self, orm_product, api_client):
+        response = api_client.get(f"/products/{orm_product.id}/contracts")
+
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]["confidentiality"] == "I"
+
     def test_contract_detail(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
         response = api_client.get(f"/products/{orm_product.id}/contracts/{contract_id}")
@@ -612,6 +619,8 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_product.contracts.first().name
         assert response.data["missing_fields"] == []
+        # orm_product has no schema_url so contract schema_url is none
+        assert response.data["schema_url"] is None
 
     def test_contract_detail_missing_fields(
         self, orm_incomplete_product, orm_team, client_with_token
@@ -624,6 +633,39 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_incomplete_product.contracts.first().name
         assert response.data["missing_fields"] == ["confidentiality"]
+        assert orm_incomplete_product.schema_url in response.data["schema_url"]
+
+    def test_contract_detail_schema_url(self, orm_incomplete_product, orm_team, client_with_token):
+        contract_id = orm_incomplete_product.contracts.first().id
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_incomplete_product.id}/contracts/{contract_id}"
+        )
+
+        assert response.status_code == 200
+        assert response.data["name"] == orm_incomplete_product.contracts.first().name
+        assert response.data["missing_fields"] == ["confidentiality"]
+        assert orm_incomplete_product.schema_url in response.data["schema_url"]
+        assert (
+            response.data["schema_url"]
+            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?"
+            "scopes=bomen_beheer&tables=stamgegevens,takgegevens"
+        )
+
+    def test_contract_detail_no_tables_in_schema_url(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        contract_id = orm_draft_product.contracts.first().id
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}"
+        )
+
+        assert response.status_code == 200
+        assert response.data["name"] == orm_draft_product.contracts.first().name
+        assert response.data["missing_fields"] == []
+        assert (
+            response.data["schema_url"]
+            == "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?scopes=bomen_beheer"
+        )
 
     def test_contract_detail_unavailable_when_draft(self, orm_product, api_client):
         contract_id = orm_product.contracts.last().id

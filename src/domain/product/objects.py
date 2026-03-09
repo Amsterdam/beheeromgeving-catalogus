@@ -105,8 +105,9 @@ class DataContract(BaseObject):
     retainment_period: int | None = None
     distributions: list[Distribution] = field(default_factory=list)
     tables: list[str] | None = None
+    schema_url: str | None = None
 
-    _skip_keys = {"contact_email", "distributions"}
+    _skip_keys = {"contact_email", "distributions", "schema_url"}
 
     def __post_init__(self):
         self.validate = ContractValidator(self)
