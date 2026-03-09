@@ -99,7 +99,7 @@ class TestProductRepository:
         result = repo.list()
 
         assert len(result) == 1
-        assert result[0].id == orm_product.id
+        assert result[0]["id"] == orm_product.id
 
     def test_delete(self, orm_product):
         repo = ProductRepository()
@@ -212,16 +212,25 @@ class TestProductRepository:
                 datetime(2025, 12, 25, 0, 34, tzinfo=UTC),
             ),
             (("last_updated", True), datetime(2025, 12, 25, 0, 59, tzinfo=UTC)),
-            (("created_at", False), datetime(2025, 12, 25, 0, 34, tzinfo=UTC)),
-            (("created_at", True), datetime(2025, 12, 25, 0, 59, tzinfo=UTC)),
         ],
     )
     def test_order_products_list(self, many_orm_products: list[ORMProduct], order, expect_value):
         repo = ProductRepository()
         products = repo.list(order=order)
-        assert getattr(products[0], order[0]) == expect_value
+        print(products[0])
+        assert products[0].get(order[0]) == expect_value
+
+    def test_order_products_list_by_created_at(self, many_orm_products: list[ORMProduct]):
+        repo = ProductRepository()
+        products = repo.list(order=("created_at", False))
+        assert products[0]["last_updated"] == datetime(2025, 12, 25, 0, 34, tzinfo=UTC)
+
+    def test_order_products_list_by_created_at_reversed(self, many_orm_products: list[ORMProduct]):
+        repo = ProductRepository()
+        products = repo.list(order=("created_at", True))
+        assert products[0]["last_updated"] == datetime(2025, 12, 25, 0, 59, tzinfo=UTC)
 
     def test_default_order_products_list(self, many_orm_products):
         repo = ProductRepository()
         products = repo.list()
-        assert products[0].name == "naam a"
+        assert products[0]["name"] == "naam a"
