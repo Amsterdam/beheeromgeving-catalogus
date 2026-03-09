@@ -2,6 +2,8 @@
 
 ## Changelog
 
+2026-03-09: Use queries for /products and /me endpoints.
+
 2025-09-15: Added Authorization.
 
 2025-09-09: Minor tweaks after finishing up domain layer.
@@ -62,6 +64,15 @@ view -> service -> domain -> repository -> ORM / Django models.
 
 The (domain) service is the interface between the domain and the presentation layer. The
 repository is the interface between the domain and the ORM.
+
+**Updated (2026-03-09) flow for /products and /me endpoints:**
+
+view -> query handler -> repository -> ORM / Django models -> DTO (API layer)
+
+Recent changes introduced basic CQRS (Command Query Responsibility Segregation) for the /products
+and /me list endpoints. These now bypass the domain layer for better performance.
+
+In the future other read only endpoints may go through this path too.
 
 ### Advantages and drawbacks
 
