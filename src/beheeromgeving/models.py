@@ -5,7 +5,6 @@ from django.core.validators import EmailValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from api.datatransferobjects import MyContract, MyProduct, ProductList
 from domain.product import enums, objects
 from domain.team import Team as DomainTeam
 
@@ -146,45 +145,6 @@ class Product(models.Model):
             self._owner = value
         else:
             self._owner = None
-
-    def to_dto(self, dto_type: str):
-        if dto_type == "me":
-            return MyProduct(
-                id=self.pk,
-                team_id=self.team.pk,
-                name=self.name,
-                type=self.type,
-                last_updated=self.last_updated,
-                publication_status=self.publication_status,
-                contracts=[c.to_dto() for c in self.contracts.order_by("id")],
-            )
-        else:
-            return ProductList(
-                id=self.pk,
-                name=self.name,
-                description=self.description,
-                type=self.type,
-                owner=self.owner,
-                themes=self.themes,
-                last_updated=self.last_updated,
-                language=self.language,
-                is_geo=self.is_geo,
-                schema_url=self.schema_url,
-                publication_status=self.publication_status,
-                contract_count=self.contracts.filter(
-                    publication_status=enums.PublicationStatus.PUBLISHED.value
-                ).count(),
-                team_id=self.team.pk,
-                summary={
-                    "services": [s.type for s in self.services.all() if s.type is not None],
-                    "distributions": [
-                        d.type
-                        for c in self.contracts.all()
-                        for d in c.distributions.all()
-                        if d.type is not None and d.type != enums.DistributionType.API.value
-                    ],
-                },
-            )
 
     def to_domain(self, published_only: bool = False):
         if published_only and self.publication_status != enums.PublicationStatus.PUBLISHED.value:
@@ -364,20 +324,6 @@ class DataContract(models.Model):
             return f"{base_url}?scopes={scopes}"
         else:
             return None
-
-    def to_dto(self, dto_type: str = "me"):
-        if dto_type == "me":
-            return MyContract(
-                id=self.pk,
-                name=self.name,
-                privacy_level=self.privacy_level,
-                confidentiality=self.confidentiality,
-                last_updated=self.last_updated,
-                publication_status=self.publication_status,
-            )
-        else:
-            # Only used on the /me endpoint
-            raise NotImplementedError("Only 'me' dto type is implemented for DataContract")
 
     def to_domain(self):
         return objects.DataContract(

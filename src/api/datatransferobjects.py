@@ -1,12 +1,16 @@
 from collections.abc import Sequence
 from datetime import date, datetime
-from typing import Literal, overload
+from typing import TYPE_CHECKING, Literal, overload
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from domain.base import BaseObject
 from domain.product import enums, objects
 from domain.team import Team as DomainTeam
+
+if TYPE_CHECKING:
+    from beheeromgeving.models import DataContract as ORMDataContract
+    from beheeromgeving.models import Product as ORMProduct
 
 
 @overload
@@ -174,6 +178,17 @@ class MyContract(ModelMixin, BaseModel):
     last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
 
+    @classmethod
+    def from_django(cls, contract: ORMDataContract) -> MyContract:
+        return cls(
+            id=contract.pk,
+            name=contract.name,
+            privacy_level=contract.privacy_level,
+            confidentiality=contract.confidentiality,
+            last_updated=contract.last_updated,
+            publication_status=contract.publication_status,
+        )
+
 
 class MyProduct(ModelMixin, BaseModel):
     team_id: int
@@ -183,6 +198,18 @@ class MyProduct(ModelMixin, BaseModel):
     last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
     contracts: list[MyContract]
+
+    @classmethod
+    def from_django(cls, product: ORMProduct) -> MyProduct:
+        return cls(
+            id=product.pk,
+            team_id=product.team.pk,
+            name=product.name,
+            type=product.type,
+            last_updated=product.last_updated,
+            publication_status=product.publication_status,
+            contracts=[MyContract.from_django(c) for c in product.contracts.order_by("id")],
+        )
 
 
 class ProductCreate(ModelMixin, BaseModel):
@@ -251,6 +278,35 @@ class ProductList(ModelMixin, BaseModel):
     publication_status: enums.PublicationStatus | None
     contract_count: int
     team_id: int
+
+    @classmethod
+    def from_django(cls, product: ORMProduct) -> ProductList:
+        return cls(
+            id=product.pk,
+            name=product.name,
+            description=product.description,
+            type=product.type,
+            owner=product.owner,
+            themes=product.themes,
+            last_updated=product.last_updated,
+            language=product.language,
+            is_geo=product.is_geo,
+            schema_url=product.schema_url,
+            publication_status=product.publication_status,
+            contract_count=product.contracts.filter(
+                publication_status=enums.PublicationStatus.PUBLISHED.value
+            ).count(),
+            team_id=product.team.pk,
+            summary={
+                "services": [s.type for s in product.services.all() if s.type is not None],
+                "distributions": [
+                    d.type
+                    for c in product.contracts.all()
+                    for d in c.distributions.all()
+                    if d.type is not None and d.type != enums.DistributionType.API.value
+                ],
+            },
+        )
 
 
 class PaginatedResponse[T](BaseModel):
