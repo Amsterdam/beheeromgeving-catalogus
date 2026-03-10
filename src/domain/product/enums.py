@@ -70,6 +70,7 @@ class ConfidentialityLevel(StrChoicesEnum):
 class DataServiceType(StrChoicesEnum):
     REST = "REST"
     WMS = "WMS"
+    WMTS = "WMTS"
     WFS = "WFS"
     MVT = "MVT"
     ATOM = "ATOM"
