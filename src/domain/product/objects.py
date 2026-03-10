@@ -75,8 +75,25 @@ class ContractValidator:
         ]
         return [field for field in required_fields if getattr(self.contract, field) is None]
 
-    def can_change_publication_status(self, data: dict) -> bool:
+    def is_only_published_contract(self, published_contracts: list) -> bool:
+        contracts_list = [
+            contract for contract in published_contracts if isinstance(contract, DataContract)
+        ]
+
+        return len(contracts_list) == 1 and contracts_list[0] is self.contract
+
+    def most_recent_contract(self, published_contracts: list):
+        if published_contracts and len(published_contracts) >= 1:
+            return max(published_contracts, key=lambda contract: contract.start_date)
+        else:
+            return None
+
+    def can_change_publication_status(
+        self, data: dict, product_status: str, published_contracts: list[DataContract]
+    ) -> bool:
         missing_fields = self.get_missing_fields()
+        only_published_contract = self.is_only_published_contract(published_contracts)
+        most_recent_contract = self.most_recent_contract(published_contracts)
         if (
             data.get("publication_status") == "P"
             and missing_fields
@@ -85,6 +102,28 @@ class ContractValidator:
             raise ValidationError(
                 "Cannot update publication status, contract is missing the following fields:"
                 f"[{', '.join(missing_fields)}]"
+            )
+        elif (
+            data.get("publication_status") != "P"
+            and only_published_contract
+            and product_status == "P"
+            and self.contract.publication_status == enums.PublicationStatus.PUBLISHED
+        ):
+            raise ValidationError(
+                "Cannot update publication status, published product needs "
+                "at least one published contract"
+            )
+        elif (
+            data.get("publication_status") != "P"
+            and not only_published_contract
+            and most_recent_contract
+            and self.contract == most_recent_contract
+            and product_status == "P"
+            and self.contract.publication_status == enums.PublicationStatus.PUBLISHED
+        ):
+            raise ValidationError(
+                "Cannot update publication status, most recent contract on "
+                "a published product needs to be published"
             )
 
         return True
@@ -160,8 +199,17 @@ class ProductValidator:
             missing_fields.append("crs")
         return missing_fields
 
+    def has_published_contract(self) -> bool:
+        contract_list = self.product.contracts
+        if contract_list is not None:
+            for contract in contract_list:
+                if isinstance(contract, DataContract) and contract.publication_status == "P":
+                    return True
+        return False
+
     def can_change_publication_status(self, data: dict) -> bool:
         missing_fields = self.get_missing_fields()
+        published_contract = self.has_published_contract()
 
         if (
             data.get("publication_status") == "P"
@@ -171,6 +219,14 @@ class ProductValidator:
             raise ValidationError(
                 "Cannot update publication status, product is missing the following fields:"
                 f"[{', '.join(missing_fields)}]"
+            )
+        elif (
+            data.get("publication_status") == "P"
+            and not published_contract
+            and self.product.publication_status != enums.PublicationStatus.PUBLISHED
+        ):
+            raise ValidationError(
+                "Cannot publish product, product needs at least one published contract"
             )
 
         return True
@@ -225,6 +281,13 @@ class Product(BaseObject):
                 f"contract with id {contract_id} does not exist on product {self.id}"
             ) from None
 
+    def get_published_contracts(self) -> list:
+        return [
+            contract
+            for contract in self.contracts
+            if contract.publication_status == enums.PublicationStatus.PUBLISHED
+        ]
+
     def get_service(self, service_id: int):
         try:
             return next(service for service in self.services if service.id == service_id)
@@ -251,7 +314,12 @@ class Product(BaseObject):
 
     def update_contract_state(self, contract_id: int, data: dict) -> DataContract:
         contract = self.get_contract(contract_id)
-        if contract.validate.can_change_publication_status(data):
+        published_contracts = self.get_published_contracts()
+        product_status = self.publication_status
+
+        if contract.validate.can_change_publication_status(
+            data, product_status, published_contracts
+        ):
             contract.update_from_dict(data)
         return contract
 
