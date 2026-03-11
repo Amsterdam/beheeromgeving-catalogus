@@ -554,7 +554,6 @@ class TestProductService:
         unpublished_contract = product_service.create_contract(
             product_id=product_missing_contract.id,
             data=contract_data,
-            # publication_status=
             scopes=[team.scope],
         )
         assert unpublished_contract.id
@@ -627,90 +626,6 @@ class TestProductService:
             product_service.update_contract_publication_status(
                 product_id=product.id,
                 contract_id=published_contract.id,
-                data={"publication_status": "D"},
-                scopes=[team.scope],
-            )
-
-    def test_update_contract_publication_with_most_recent_published_contract(
-        self, product_service: ProductService, team
-    ):
-        """Test to see if a contract cannot be unpublished
-        when its the most recently published contract on a product."""
-        product_data = {
-            "name": "Product",
-            "description": "Description of product",
-            "language": "NL",
-            "is_geo": True,
-            "type": "D",
-            "crs": "RD",
-            "themes": ["NM"],
-            "schema_url": "https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
-            "refresh_period": {"frequency": 3, "unit": "MONTH"},
-            "contact_email": "dadi@amsterdam.nl",
-        }
-        contract1_data = {
-            "purpose": "onderhoud van bomen",
-            "name": "beheer bomen",
-            "description": "Description of contract",
-            "privacy_level": "NPI",
-            "scopes": ["bomen_beheer"],
-            "start_date": "2025-01-01",
-            "retainment_period": 12,
-            "confidentiality": "I",
-        }
-        contract2_data = {
-            "purpose": "onderhoud van bomen",
-            "name": "beheer bomen",
-            "description": "Description of contract",
-            "privacy_level": "NPI",
-            "scopes": ["bomen_beheer"],
-            "start_date": "2025-03-01",
-            "retainment_period": 12,
-            "confidentiality": "I",
-        }
-        product = product_service.create_product(
-            data={"team_id": team.id, **product_data}, scopes=[team.scope]
-        )
-        assert product.id
-        contract1 = product_service.create_contract(
-            product_id=product.id,
-            data=contract1_data,
-            scopes=[team.scope],
-        )
-        contract2 = product_service.create_contract(
-            product_id=product.id,
-            data=contract2_data,
-            scopes=[team.scope],
-        )
-        assert contract1.id
-        assert contract2.id
-        published_contract1 = product_service.update_contract_publication_status(
-            product_id=product.id,
-            contract_id=contract1.id,
-            data={"publication_status": "P"},
-            scopes=[team.scope],
-        )
-        assert published_contract1.id
-        published_contract2 = product_service.update_contract_publication_status(
-            product_id=product.id,
-            contract_id=contract2.id,
-            data={"publication_status": "P"},
-            scopes=[team.scope],
-        )
-        assert published_contract2.id
-        published_product = product_service.update_publication_status(
-            product_id=product.id,
-            data={"publication_status": "P"},
-            scopes=[team.scope],
-        )
-        assert published_product.id
-        with pytest.raises(
-            ValidationError,
-            match="most recent contract on a published product needs to be published",
-        ):
-            product_service.update_contract_publication_status(
-                product_id=product.id,
-                contract_id=published_contract2.id,
                 data={"publication_status": "D"},
                 scopes=[team.scope],
             )

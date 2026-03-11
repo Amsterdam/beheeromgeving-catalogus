@@ -571,24 +571,30 @@ class TestViews:
         assert orm_product.publication_status == data["publication_status"]
         assert response.data["publication_status"] == orm_product.publication_status
 
-    @pytest.mark.parametrize(
-        "data",
-        [
-            {"publication_status": "D"},
-            {"publication_status": "P"},
-        ],
-    )
-    def test_set_state_contract(self, orm_product, orm_team, data, client_with_token):
-        contract_id = orm_product.contracts.last().id
-        response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/set-state", data=data
+    def test_set_state_contract(self, orm_product, orm_team, client_with_token):
+        first_contract_id = orm_product.contracts.first().id
+        second_contract_id = orm_product.contracts.last().id
+        update_to_published = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{second_contract_id}/set-state",
+            data={"publication_status": "P"},
         )
-        assert response.status_code == 200
+        assert update_to_published.status_code == 200
         orm_product.refresh_from_db()
-
-        assert orm_product.contracts.last().publication_status == data["publication_status"]
+        update_to_draft = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{first_contract_id}/set-state",
+            data={"publication_status": "D"},
+        )
+        assert update_to_draft.status_code == 200
+        orm_product.refresh_from_db()
+        assert orm_product.contracts.first().publication_status == "D"
+        assert orm_product.contracts.last().publication_status == "P"
         assert (
-            response.data["publication_status"] == orm_product.contracts.last().publication_status
+            update_to_published.data["publication_status"]
+            == orm_product.contracts.last().publication_status
+        )
+        assert (
+            update_to_draft.data["publication_status"]
+            == orm_product.contracts.first().publication_status
         )
 
     def test_contract_list_shows_only_published_contracts(self, orm_product, api_client):
