@@ -183,7 +183,11 @@ class TestProductService:
         product_service.update_product(product_id=1337, data=data, scopes=[team.scope])
 
     def test_delete_product(
-        self, product_service: ProductService, product_query_handler, product: Product, team: Team
+        self,
+        product_service: ProductService,
+        product_query_handler,
+        product: Product,
+        team: Team,
     ):
         assert product.id
         product_service.delete_product(product_id=product.id, scopes=[team.scope])
@@ -251,7 +255,7 @@ class TestProductService:
         )
 
         assert isinstance(contract, DataContract)
-        assert len(product_service.get_contracts(product.id)) == 2
+        assert len(product_service.get_contracts(product.id)) == 3
 
     @pytest.mark.parametrize(
         "data,missing_fields",
@@ -315,7 +319,7 @@ class TestProductService:
             scopes=[team.scope],
         )
 
-        assert len(product_service.get_contracts(product.id)) == 1
+        assert len(product_service.get_contracts(product.id)) == 2
         assert result.name == "behoud bomen"
 
     def test_update_contract_keep_distributions_intact(
@@ -359,7 +363,7 @@ class TestProductService:
             scopes=[team.scope],
         )
 
-        assert len(product_service.get_contracts(product.id)) == 0
+        assert len(product_service.get_contracts(product.id)) == 1
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_delete_contract_non_existent(
@@ -426,7 +430,7 @@ class TestProductService:
             scopes=[team.scope],
         )
 
-        assert len(product_service.get_contracts(product.id)) == 1
+        assert len(product_service.get_contracts(product.id)) == 2
         assert result.publication_status == updated_status
 
     def test_update_product_publication_missing_fields(
@@ -484,6 +488,145 @@ class TestProductService:
                 product_id=new_product.id,
                 contract_id=contract_missing_fields.id,
                 data={"publication_status": "P"},
+                scopes=[team.scope],
+            )
+
+    def test_update_product_publication_without_contracts(
+        self, product_service: ProductService, team
+    ):
+        """Test to see if a product's publication status cannot be updated to published
+        when the product has no contracts."""
+
+        data = {
+            "name": "Product",
+            "description": "Description of product",
+            "language": "NL",
+            "is_geo": True,
+            "crs": "RD",
+            "themes": ["NM"],
+            "schema_url": "https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+            "refresh_period": {"frequency": 3, "unit": "MONTH"},
+            "contact_email": "dadi@amsterdam.nl",
+        }
+        product_missing_contract = product_service.create_product(
+            data={"team_id": team.id, **data}, scopes=[team.scope]
+        )
+        assert product_missing_contract.id
+        with pytest.raises(ValidationError, match="product needs at least one published contract"):
+            product_service.update_publication_status(
+                product_id=product_missing_contract.id,
+                data={"publication_status": "P"},
+                scopes=[team.scope],
+            )
+
+    def test_update_product_publication_without_published_contracts(
+        self, product_service: ProductService, team
+    ):
+        """Test to see if a product's publication status cannot be updated to published
+        when the product is missing at least one published contract."""
+
+        product_data = {
+            "name": "Product",
+            "description": "Description of product",
+            "language": "NL",
+            "is_geo": True,
+            "type": "D",
+            "crs": "RD",
+            "themes": ["NM"],
+            "schema_url": "https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+            "refresh_period": {"frequency": 3, "unit": "MONTH"},
+            "contact_email": "dadi@amsterdam.nl",
+        }
+        contract_data = {
+            "purpose": "onderhoud van bomen",
+            "name": "beheer bomen",
+            "description": "Description of contract",
+            "privacy_level": "NPI",
+            "scopes": ["bomen_beheer"],
+            "start_date": "2025-01-01",
+            "retainment_period": 12,
+            "confidentiality": "I",
+        }
+        product_missing_contract = product_service.create_product(
+            data={"team_id": team.id, **product_data}, scopes=[team.scope]
+        )
+        assert product_missing_contract.id
+        unpublished_contract = product_service.create_contract(
+            product_id=product_missing_contract.id,
+            data=contract_data,
+            scopes=[team.scope],
+        )
+        assert unpublished_contract.id
+        with pytest.raises(ValidationError, match="product needs at least one published contract"):
+            product_service.update_publication_status(
+                product_id=product_missing_contract.id,
+                data={"publication_status": "P"},
+                scopes=[team.scope],
+            )
+
+    def test_update_contract_publication_without_other_published_contracts(
+        self, product_service: ProductService, team
+    ):
+        """Test to see if a contract cannot be unpublished
+        when the product has no other published contracts."""
+        product_data = {
+            "name": "Product",
+            "description": "Description of product",
+            "language": "NL",
+            "is_geo": True,
+            "type": "D",
+            "crs": "RD",
+            "themes": ["NM"],
+            "schema_url": "https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+            "refresh_period": {"frequency": 3, "unit": "MONTH"},
+            "contact_email": "dadi@amsterdam.nl",
+        }
+        contract_data = {
+            "purpose": "onderhoud van bomen",
+            "name": "beheer bomen",
+            "description": "Description of contract",
+            "privacy_level": "NPI",
+            "scopes": ["bomen_beheer"],
+            "start_date": "2025-01-01",
+            "retainment_period": 12,
+            "confidentiality": "I",
+        }
+        product = product_service.create_product(
+            data={"team_id": team.id, **product_data}, scopes=[team.scope]
+        )
+        assert product.id
+        contract1 = product_service.create_contract(
+            product_id=product.id,
+            data=contract_data,
+            scopes=[team.scope],
+        )
+        contract2 = product_service.create_contract(
+            product_id=product.id,
+            data=contract_data,
+            scopes=[team.scope],
+        )
+        assert contract1.id
+        assert contract2.id
+        published_contract = product_service.update_contract_publication_status(
+            product_id=product.id,
+            contract_id=contract1.id,
+            data={"publication_status": "P"},
+            scopes=[team.scope],
+        )
+        published_product = product_service.update_publication_status(
+            product_id=product.id,
+            data={"publication_status": "P"},
+            scopes=[team.scope],
+        )
+        assert published_product.id
+        with pytest.raises(
+            ValidationError,
+            match="product needs at least one published contract",
+        ):
+            product_service.update_contract_publication_status(
+                product_id=product.id,
+                contract_id=published_contract.id,
+                data={"publication_status": "D"},
                 scopes=[team.scope],
             )
 

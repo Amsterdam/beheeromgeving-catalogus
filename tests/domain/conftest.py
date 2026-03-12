@@ -98,7 +98,26 @@ def product(team: Team) -> Product:
                         filename="beheer.csv",
                     ),
                 ],
-            )
+            ),
+            DataContract(
+                id=2,
+                publication_status=enums.PublicationStatus.PUBLISHED,
+                purpose="onderhoud van bomen",
+                name="contract naam",
+                description="contract voor data nodig voor het beheer van bomen",
+                privacy_level=enums.PrivacyLevel.NIET_PERSOONLIJK_IDENTIFICEERBAAR,
+                scopes=["bomen_beheer"],
+                confidentiality=enums.ConfidentialityLevel.INTERN,
+                start_date=datetime.fromisoformat("2025-01-01T00:00:00+00"),
+                retainment_period=12,
+                distributions=[
+                    Distribution(
+                        id=1,
+                        access_service_id=1,
+                        type=enums.DistributionType.API,
+                    ),
+                ],
+            ),
         ],
     )
 
