@@ -45,7 +45,6 @@ class TestViews:
         assert response.data[0]["acronym"] == "DADI"
 
     def test_teams_detail(self, orm_team, api_client):
-        response = api_client.get("/teams")
         response = api_client.get(f"/teams/{orm_team.id}")
         assert response.status_code == 200
         assert response.data["acronym"] == "DADI"

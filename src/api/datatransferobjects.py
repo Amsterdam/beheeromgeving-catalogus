@@ -86,8 +86,15 @@ class TeamCreate(ModelMixin, BaseModel):
     scope: str
 
 
-class Team(IdMixin, TeamCreate):
+class Team(IdMixin, ModelMixin, BaseModel):
     """Team Detail view"""
+
+    description: str | None = None
+    name: str
+    acronym: str
+    po_name: str
+    contact_email: str
+    scope: str
 
 
 class TeamPartial(ModelMixin, BaseModel):
