@@ -193,7 +193,7 @@ def orm_product2(orm_other_team) -> Product:
         description="contract voor data nodig voor het de fietspaaltjes op de fietspaden",
         privacy_level="NPI",
         scopes=["fietspaaltjes_beheer"],
-        confidentiality="R",
+        confidentiality="V",
         start_date="2025-01-01",
         retainment_period=12,
     )

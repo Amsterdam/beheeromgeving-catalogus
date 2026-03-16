@@ -254,6 +254,16 @@ class TestViews:
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["team_id"] == orm_product.team.id
 
+    def test_product_list_filter_matches_team_multiple(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can filter the products on team id."""
+        response = api_client.get(f"/products?team={orm_product.team.id},{orm_product2.team.id}")
+        assert response.status_code == 200
+
+        # both products are returned
+        assert len(response.data["results"]) == 2
+
     def test_product_list_filter_matches_theme(self, orm_product, orm_product2, api_client):
         """Assert that we can filter the products on theme."""
         response = api_client.get("/products?theme=MI")
@@ -281,6 +291,15 @@ class TestViews:
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == orm_product.name
 
+    def test_product_list_filter_matches_confidentiality_multiple(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can filter the contracts on multiple confidentiality levels."""
+        response = api_client.get("/products?confidentiality=I,V")
+        assert response.status_code == 200
+        # both products are returned
+        assert len(response.data["results"]) == 2
+
     def test_product_list_filter_matches_type(self, orm_product, orm_product2, api_client):
         """Assert that we can filter the products on distribution type."""
         response = api_client.get("/products?type=F")
@@ -299,12 +318,21 @@ class TestViews:
         assert len(response.data["results"]) == 2
 
     def test_product_list_filter_matches_language(self, orm_product, orm_product2, api_client):
-        """Assert that we can filter the products on distribution type."""
+        """Assert that we can filter the products on language."""
         response = api_client.get("/products?language=NL")
         assert response.status_code == 200
         # only product1 is returned
         assert len(response.data["results"]) == 1
         assert response.data["results"][0]["name"] == orm_product.name
+
+    def test_product_list_filter_matches_language_multiple(
+        self, orm_product, orm_product2, api_client
+    ):
+        """Assert that we can filter the products on multiple languages."""
+        response = api_client.get("/products?language=NL,EN")
+        assert response.status_code == 200
+        # both products are returned
+        assert len(response.data["results"]) == 2
 
     @pytest.mark.parametrize(
         "order,expected_name",
