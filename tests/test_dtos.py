@@ -26,16 +26,16 @@ class TestQueryParams:
                 "language=EN",
                 QueryParams(language="EN"),  # ty:ignore[invalid-argument-type]
                 {
-                    "language": enums.Language.ENGLISH,
+                    "language__in": [enums.Language.ENGLISH],
                     "publication_status": enums.PublicationStatus.PUBLISHED,
                 },
                 None,
             ),
             (
                 "team=1&theme=NM,B",
-                QueryParams(team=1, theme="NM,B"),  # ty:ignore[invalid-argument-type]
+                QueryParams(team="1", theme="NM,B"),  # ty:ignore[invalid-argument-type]
                 {
-                    "team_id": 1,
+                    "team_id__in": [1],
                     "themes__overlap": [enums.Theme.NATUUR_EN_MILIEU, enums.Theme.BESTUUR],
                     "publication_status": enums.PublicationStatus.PUBLISHED,
                 },
@@ -45,11 +45,11 @@ class TestQueryParams:
                 "type=A&confidentiality=O",
                 QueryParams(
                     type="A",  # ty:ignore[invalid-argument-type]
-                    confidentiality=enums.ConfidentialityLevel.OPENBAAR,
+                    confidentiality=enums.ConfidentialityLevel.OPENBAAR,  # ty:ignore[invalid-argument-type]
                 ),
                 {
                     "contracts__distributions__type__in": [enums.DistributionType.API],
-                    "contracts__confidentiality": enums.ConfidentialityLevel.OPENBAAR,
+                    "contracts__confidentiality__in": [enums.ConfidentialityLevel.OPENBAAR],
                     "publication_status": enums.PublicationStatus.PUBLISHED,
                 },
                 None,

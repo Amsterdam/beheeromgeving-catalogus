@@ -333,12 +333,12 @@ class MeDetail(BaseModel):
 
 class QueryParams(BaseModel):
     name: str | None = None
-    team: int | None = None
+    team: list[int] | None = None
     theme: list[enums.Theme] | None = None
     type: list[enums.DistributionType] | None = None
-    confidentiality: enums.ConfidentialityLevel | None = None
+    confidentiality: list[enums.ConfidentialityLevel] | None = None
     publication_status: enums.PublicationStatus | Literal["*"] = enums.PublicationStatus.PUBLISHED
-    language: enums.Language | None = None
+    language: list[enums.Language] | None = None
     order: tuple[str, bool] | None = None
     query: str | None = Field(alias="q", default=None)
     is_geo: bool | None = None
@@ -346,6 +346,24 @@ class QueryParams(BaseModel):
 
     @field_validator("theme", mode="before")
     def validate_themes(cls, raw):
+        if not raw:
+            return None
+        return raw.split(",")
+
+    @field_validator("confidentiality", mode="before")
+    def validate_confidentiality(cls, raw):
+        if not raw:
+            return None
+        return raw.split(",")
+
+    @field_validator("language", mode="before")
+    def validate_language(cls, raw):
+        if not raw:
+            return None
+        return raw.split(",")
+
+    @field_validator("team", mode="before")
+    def validate_team(cls, raw):
         if not raw:
             return None
         return raw.split(",")
@@ -370,11 +388,11 @@ class QueryParams(BaseModel):
     def filter(self) -> dict:
         result = {}
         for attr, lookup in {
-            "team": "team_id",
+            "team": "team_id__in",
             "theme": "themes__overlap",
             "type": "contracts__distributions__type__in",
-            "confidentiality": "contracts__confidentiality",
-            "language": "language",
+            "confidentiality": "contracts__confidentiality__in",
+            "language": "language__in",
             "publication_status": "publication_status",
             "is_geo": "is_geo",
         }.items():
