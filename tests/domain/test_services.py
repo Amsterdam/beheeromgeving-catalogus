@@ -150,11 +150,12 @@ class TestProductService:
     def test_get_product_non_existent(self, product_service: ProductService):
         product_service.get_published_product(1337)  # non-existent
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_create_product(
-        self, product_service: ProductService, product_query_handler, team: Team
+        self, product_service: ProductService, product_query_handler, team: Team, scope: str
     ):
         data = {"type": "D", "team_id": team.id}
-        result = product_service.create_product(data=data, scopes=[team.scope])
+        result = product_service.create_product(data=data, scopes=[scope])
 
         assert (
             len(product_query_handler.list_products()) == 2
@@ -168,10 +169,13 @@ class TestProductService:
         data = {"type": "D", "publication_status": "D", "team_id": team.id}
         product_service.create_product(data=data, scopes=[other_team.scope])
 
-    def test_update_product(self, product_service: ProductService, product: Product, team: Team):
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_update_product(
+        self, product_service: ProductService, product: Product, team: Team, scope: str
+    ):
         assert product.id
         data = {"description": "a fancy product"}
-        product_service.update_product(product_id=product.id, data=data, scopes=[team.scope])
+        product_service.update_product(product_id=product.id, data=data, scopes=[scope])
 
         result = product_service.get_published_product(product.id)
 
@@ -182,15 +186,17 @@ class TestProductService:
         data = {"description": "a fancy product"}
         product_service.update_product(product_id=1337, data=data, scopes=[team.scope])
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_delete_product(
         self,
         product_service: ProductService,
         product_query_handler,
         product: Product,
         team: Team,
+        scope: str,
     ):
         assert product.id
-        product_service.delete_product(product_id=product.id, scopes=[team.scope])
+        product_service.delete_product(product_id=product.id, scopes=[scope])
 
         assert len(product_query_handler.list_products()) == 0
 
@@ -246,12 +252,15 @@ class TestProductService:
         assert new_product.id
         product_service.get_published_contract(new_product.id, product.contracts[0].id)
 
-    def test_create_contract(self, product_service: ProductService, product: Product, team: Team):
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_create_contract(
+        self, product_service: ProductService, product: Product, team: Team, scope: str
+    ):
         assert product.id
         contract = product_service.create_contract(
             product_id=product.id,
             data={"purpose": "onderhoud van bomen"},
-            scopes=[team.scope],
+            scopes=[scope],
         )
 
         assert isinstance(contract, DataContract)
@@ -282,21 +291,22 @@ class TestProductService:
                 scopes=[team.scope],
             )
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_create_contract_no_missing_fields(
-        self, auth_service, product_service: ProductService, team: Team
+        self, auth_service, product_service: ProductService, team: Team, scope: str
     ):
         """Test whether a contract can be created when all necessary fields are present on the
         product."""
         product = product_service.create_product(
             data={"team_id": team.id, "name": "Product", "type": "D"},
-            scopes=[team.scope],
+            scopes=[scope],
         )
         assert product.id
 
         contract = product_service.create_contract(
             product_id=product.id,
             data={"purpose": "onderhoud van bomen"},
-            scopes=[team.scope],
+            scopes=[scope],
         )
         assert contract.purpose == "onderhoud van bomen"
 
@@ -308,7 +318,10 @@ class TestProductService:
             product_id=1337, data={"publication_status": "D"}, scopes=[team.scope]
         )
 
-    def test_update_contract(self, product_service: ProductService, product: Product, team: Team):
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_update_contract(
+        self, product_service: ProductService, product: Product, team: Team, scope: str
+    ):
         assert product.id
         assert product.contracts[0].id
 
@@ -316,14 +329,15 @@ class TestProductService:
             product_id=product.id,
             contract_id=product.contracts[0].id,
             data={"name": "behoud bomen"},
-            scopes=[team.scope],
+            scopes=[scope],
         )
 
         assert len(product_service.get_contracts(product.id)) == 2
         assert result.name == "behoud bomen"
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_update_contract_keep_distributions_intact(
-        self, product_service: ProductService, product: Product, team: Team
+        self, product_service: ProductService, product: Product, team: Team, scope: str
     ):
         """Ensure that an update to the contract keeps distributions intact."""
         assert product.id
@@ -333,7 +347,7 @@ class TestProductService:
             product_id=product.id,
             contract_id=product.contracts[0].id,
             data={"retainment_period": 1000},
-            scopes=[team.scope],
+            scopes=[scope],
         )
 
         assert result.distributions == current_distributions
@@ -354,13 +368,16 @@ class TestProductService:
             scopes=[team.scope],
         )
 
-    def test_delete_contract(self, product_service: ProductService, product: Product, team: Team):
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_delete_contract(
+        self, product_service: ProductService, product: Product, team: Team, scope: str
+    ):
         assert product.id
         assert product.contracts[0].id
         product_service.delete_contract(
             product_id=product.id,
             contract_id=product.contracts[0].id,
-            scopes=[team.scope],
+            scopes=[scope],
         )
 
         assert len(product_service.get_contracts(product.id)) == 1
@@ -384,10 +401,12 @@ class TestProductService:
         )
 
     @pytest.mark.parametrize(
-        "data,updated_status",
+        "data,updated_status,scope",
         [
-            ({"publication_status": "P"}, "P"),
-            ({"publication_status": "D"}, "D"),
+            ({"publication_status": "P"}, "P", "scope_dadi"),
+            ({"publication_status": "P"}, "P", "test_admin"),
+            ({"publication_status": "D"}, "D", "scope_dadi"),
+            ({"publication_status": "D"}, "D", "test_admin"),
         ],
     )
     def test_update_product_publication(
@@ -397,20 +416,23 @@ class TestProductService:
         product_service: ProductService,
         product: Product,
         team: Team,
+        scope: str,
     ):
         """Test to see if a product's publication status is updated accordingly."""
         assert product.id
         result = product_service.update_publication_status(
-            product_id=product.id, data=data, scopes=[team.scope]
+            product_id=product.id, data=data, scopes=[scope]
         )
 
         assert result.publication_status == updated_status
 
     @pytest.mark.parametrize(
-        "data,updated_status",
+        "data,updated_status,scope",
         [
-            ({"publication_status": "P"}, "P"),
-            ({"publication_status": "D"}, "D"),
+            ({"publication_status": "P"}, "P", "scope_dadi"),
+            ({"publication_status": "P"}, "P", "test_admin"),
+            ({"publication_status": "D"}, "D", "scope_dadi"),
+            ({"publication_status": "D"}, "D", "test_admin"),
         ],
     )
     def test_update_contract_publication(
@@ -420,6 +442,7 @@ class TestProductService:
         product_service: ProductService,
         product: Product,
         team: Team,
+        scope: str,
     ):
         assert product.id
         assert product.contracts[0].id
@@ -427,14 +450,15 @@ class TestProductService:
             product_id=product.id,
             contract_id=product.contracts[0].id,
             data=data,
-            scopes=[team.scope],
+            scopes=[scope],
         )
 
         assert len(product_service.get_contracts(product.id)) == 2
         assert result.publication_status == updated_status
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_update_product_publication_missing_fields(
-        self, product_service: ProductService, team
+        self, product_service: ProductService, team: Team, scope: str
     ):
         """Test to see if a product's publication status cannot be updated to published
         when the product is missing necessary fields."""
@@ -449,18 +473,19 @@ class TestProductService:
         }
         missing_fields = r"\[schema_url, refresh_period, contact_email\]"
         product_missing_fields = product_service.create_product(
-            data={"team_id": team.id, **data}, scopes=[team.scope]
+            data={"team_id": team.id, **data}, scopes=[scope]
         )
         assert product_missing_fields.id
         with pytest.raises(ValidationError, match=missing_fields):
             product_service.update_publication_status(
                 product_id=product_missing_fields.id,
                 data={"publication_status": "P"},
-                scopes=[team.scope],
+                scopes=[scope],
             )
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_update_contract_publication_missing_fields(
-        self, product_service: ProductService, team: Team
+        self, product_service: ProductService, team: Team, scope: str
     ):
         """Test to see if a contract's publication status cannot be updated to published
         when the contract is missing necessary fields."""
@@ -476,11 +501,11 @@ class TestProductService:
 
         new_product = product_service.create_product(
             data={"team_id": team.id, "name": "Product", "type": "D"},
-            scopes=[team.scope],
+            scopes=[scope],
         )
         assert new_product.id
         contract_missing_fields = product_service.create_contract(
-            product_id=new_product.id, data=data, scopes=[team.scope]
+            product_id=new_product.id, data=data, scopes=[scope]
         )
         assert contract_missing_fields.id
         with pytest.raises(ValidationError, match=missing_fields):
@@ -488,7 +513,7 @@ class TestProductService:
                 product_id=new_product.id,
                 contract_id=contract_missing_fields.id,
                 data={"publication_status": "P"},
-                scopes=[team.scope],
+                scopes=[scope],
             )
 
     def test_update_product_publication_without_contracts(
@@ -619,6 +644,7 @@ class TestProductService:
             scopes=[team.scope],
         )
         assert published_product.id
+        assert published_contract.id
         with pytest.raises(
             ValidationError,
             match="product needs at least one published contract",
@@ -721,8 +747,9 @@ class TestProductService:
             distribution_id=1337,
         )
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_create_distribution(
-        self, product_service: ProductService, product: Product, team: Team
+        self, product_service: ProductService, product: Product, team: Team, scope: str
     ):
         assert product.id
         assert product.contracts[0].id
@@ -731,7 +758,7 @@ class TestProductService:
             product_id=product.id,
             contract_id=product.contracts[0].id,
             data=data,
-            scopes=[team.scope],
+            scopes=[scope],
         )
         assert distribution.id
         updated_product = product_service.get_published_product(product.id)
@@ -741,8 +768,9 @@ class TestProductService:
         assert saved_distribution.format == "TEST"
         assert saved_distribution.filename == "file.test"
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_create_distribution_for_access_service(
-        self, product_service: ProductService, product: Product, team: Team
+        self, product_service: ProductService, product: Product, team: Team, scope: str
     ):
         assert product.id
         assert product.contracts[0].id
@@ -756,7 +784,7 @@ class TestProductService:
             product_id=product.id,
             contract_id=product.contracts[0].id,
             data=data,
-            scopes=[team.scope],
+            scopes=[scope],
         )
         assert distribution.id
         updated_product = product_service.get_published_product(product.id)
@@ -779,8 +807,9 @@ class TestProductService:
             scopes=[],
         )
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_update_distribution(
-        self, product_service: ProductService, product: Product, team: Team
+        self, product_service: ProductService, product: Product, team: Team, scope: str
     ):
         assert product.id
         assert product.contracts[0].id
@@ -793,7 +822,7 @@ class TestProductService:
             contract_id=contract_id,
             distribution_id=distribution_id,
             data=data,
-            scopes=[team.scope],
+            scopes=[scope],
         )
         updated_distribution = product_service.get_published_product(product.id).get_distribution(
             contract_id, distribution_id
@@ -816,8 +845,9 @@ class TestProductService:
             scopes=[],
         )
 
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_delete_distribution(
-        self, product_service: ProductService, product: Product, team: Team
+        self, product_service: ProductService, product: Product, team: Team, scope: str
     ):
         assert product.id
         assert product.contracts[0].id
@@ -828,7 +858,7 @@ class TestProductService:
             product_id=product.id,
             contract_id=contract_id,
             distribution_id=distribution_id,
-            scopes=[team.scope],
+            scopes=[scope],
         )
         product = product_service.get_published_product(product_id=product.id)
         distribution_ids = [d.id for d in product.contracts[0].distributions]
@@ -897,10 +927,13 @@ class TestProductService:
         assert product.services[0].id
         product_service.get_published_service(new_product.id, product.services[0].id)
 
-    def test_create_service(self, product_service: ProductService, product: Product, team: Team):
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_create_service(
+        self, product_service: ProductService, product: Product, team: Team, scope: str
+    ):
         assert product.id
         result = product_service.create_service(
-            product_id=product.id, data={"type": "WMS"}, scopes=[team.scope]
+            product_id=product.id, data={"type": "WMS"}, scopes=[scope]
         )
 
         assert isinstance(result, DataService)
@@ -912,14 +945,17 @@ class TestProductService:
     ):
         product_service.create_service(product_id=1337, data={"type": "WMS"}, scopes=[team.scope])
 
-    def test_update_service(self, product_service: ProductService, product: Product, team: Team):
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_update_service(
+        self, product_service: ProductService, product: Product, team: Team, scope: str
+    ):
         assert product.id
         assert product.services[0].id
         result = product_service.update_service(
             product_id=product.id,
             service_id=product.services[0].id,
             data={"type": "WMS"},
-            scopes=[team.scope],
+            scopes=[scope],
         )
 
         assert len(product_service.get_services(product.id)) == 1
@@ -941,12 +977,13 @@ class TestProductService:
             scopes=[team.scope],
         )
 
-    def test_delete_service(self, product_service, product: Product, team: Team):
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_delete_service(self, product_service, product: Product, team: Team, scope: str):
         product.contracts = []
         product_service.delete_service(
             product_id=product.id,
             service_id=product.services[0].id,
-            scopes=[team.scope],
+            scopes=[scope],
         )
 
         assert len(product_service.get_services(product.id)) == 0
