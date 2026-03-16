@@ -5,6 +5,7 @@ from beheeromgeving.migration_utils import (
     SEPARATORS,
     fix_distribution_format,
     revert_team_scopes,
+    set_po_name,
     update_team_scopes,
 )
 from beheeromgeving.models import Distribution
@@ -39,3 +40,9 @@ class TestMigrationUtils:
         for team in [orm_team, orm_other_team]:
             team.refresh_from_db()
             assert team.scope == f"publisher-p-{team.acronym.lower()}"
+
+    def test_set_po_name(self, orm_team, orm_other_team):
+        set_po_name(apps, None)
+        for team in [orm_team, orm_other_team]:
+            team.refresh_from_db()
+            assert team.po_name == f"PO team {team.acronym}"
