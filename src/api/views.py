@@ -500,6 +500,7 @@ def me(request):
     team_service = TeamService(repo=TeamRepository())
     scopes = request.get_token_scopes
     teams = team_service.get_teams_from_scopes(scopes)
+    product_query_handler = ProductQueryHandler(ProductRepository())
     product_data = product_query_handler.list_my_products(
         teams=teams,
         query=params.query,
