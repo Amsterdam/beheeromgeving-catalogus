@@ -353,10 +353,26 @@ class Command(BaseCommand):
             confidentiality=conf_level_map[product_dict["vertrouwelijkheidsniveau"]],
             start_date=product_dict["startDatumContract"],
             retainment_period=retainment_period,
+            tables=[
+                table.get("as_id", table["name"]) for table in product_dict["schema"]["tables"]
+            ]
+            if product_dict.get("schema") and product_dict["schema"].get("tables")
+            else None,
         )
-        return self.service.create_contract(
-            product_id=created_product.id, data=c.model_dump(), scopes=[team.scope]
-        )
+        try:
+            existing_contract = next(
+                contract for contract in created_product.contracts if contract.name == c.name
+            )
+            return self.service.update_contract(
+                product_id=created_product.id,
+                contract_id=existing_contract.id,
+                data=c.model_dump(),
+                scopes=[team.scope],
+            )
+        except StopIteration:
+            return self.service.create_contract(
+                product_id=created_product.id, data=c.model_dump(), scopes=[team.scope]
+            )
 
     def _create_distributions(self, product: dict, new_product, new_contract, services, team):
         distributions = []
