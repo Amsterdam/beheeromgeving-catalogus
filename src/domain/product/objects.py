@@ -49,6 +49,7 @@ class Distribution(BaseObject):
     filename: str | None = None
     type: enums.DistributionType | None = None
     refresh_period: RefreshPeriod | None = None
+    crs: list[enums.CoordRefSystem] | None = None
 
     _skip_keys = {"refresh_period"}
 
