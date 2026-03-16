@@ -741,6 +741,30 @@ class TestProductService:
         assert saved_distribution.format == "TEST"
         assert saved_distribution.filename == "file.test"
 
+    def test_create_distribution_for_access_service(
+        self, product_service: ProductService, product: Product, team: Team
+    ):
+        assert product.id
+        assert product.contracts[0].id
+        access_service = product.services[0]
+        data = {
+            "type": "A",
+            "access_service_id": access_service.id,
+            "crs": ["RD", "WGS84", "ETRS89", "UTM35S"],
+        }
+        distribution = product_service.create_distribution(
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            data=data,
+            scopes=[team.scope],
+        )
+        assert distribution.id
+        updated_product = product_service.get_published_product(product.id)
+        saved_distribution = updated_product.get_distribution(
+            contract_id=product.contracts[0].id, distribution_id=distribution.id
+        )
+        assert saved_distribution.crs == ["RD", "WGS84", "ETRS89", "UTM35S"]
+
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_distribution_not_allowed(
         self, product_service: ProductService, product: Product
