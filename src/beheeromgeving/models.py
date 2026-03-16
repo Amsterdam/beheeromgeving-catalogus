@@ -436,6 +436,18 @@ class Distribution(models.Model):
         blank=True,
         help_text="Om de hoeveel tijd de data in het Data Product ververst wordt",
     )
+    crs = ArrayField(
+        models.CharField(
+            _("Geo coördinaatreferentiesysteem"),
+            choices=enums.CoordRefSystem.choices(upper=True),
+        ),
+        blank=True,
+        null=True,
+        help_text="Geo-informatie is direct gekoppeld aan een locatie op aarde. De manier waarop "
+        "die koppeling wordt gelegd, wordt beschreven in het coördinaatreferentiesysteem (CRS). "
+        "Hierin worden coördinaten van een locatie vastgelegd. Een distributie kan meerdere "
+        "CRS'en ondersteunen.",
+    )
 
     def __str__(self):
         return f"{self.type}"
