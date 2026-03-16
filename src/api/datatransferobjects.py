@@ -141,6 +141,7 @@ class DistributionCreateOrUpdate(ModelMixin, BaseModel):
     filename: str | None = None
     type: enums.DistributionType | None = None
     refresh_period: RefreshPeriod | None = None  # Hoort volgens DCAT op Dataset
+    crs: list[enums.CoordRefSystem] | None = None
 
 
 class Distribution(IdMixin, DistributionCreateOrUpdate):

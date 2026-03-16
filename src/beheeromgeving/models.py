@@ -466,6 +466,7 @@ class Distribution(models.Model):
                 if self.refresh_period
                 else None
             ),
+            crs=[enums.CoordRefSystem[crs] for crs in self.crs] if self.crs else None,
         )
 
     @classmethod
