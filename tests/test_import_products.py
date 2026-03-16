@@ -122,6 +122,9 @@ class TestImportProducts:
 
         marketplace_detail_json["beschrijving"] = "Nieuwe beschrijving"
         marketplace_detail_json["amsterdamSchemaDatasetVerwijzing"]["scope"] = "FP/MDW"
+        marketplace_detail_json["schema"]["tables"].append(
+            {"as_id": "saplings", "name": "zaailingen"}
+        )
         requests_mock.get(
             f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
         )
@@ -133,7 +136,9 @@ class TestImportProducts:
         assert updated_product.contracts.count() == 1
         updated_contract = updated_product.contracts.first()
         assert updated_contract
+        # scope and tables are updated.
         assert updated_contract.scopes == ["fp/mdw"]
+        assert updated_contract.tables == ["stamgegevens", "saplings"]
 
     def test_import_products_does_not_update_from_schema_api(
         self, requests_mock, schema_api_json, orm_team
