@@ -149,13 +149,16 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
                 description="Page size for the paginated results. Max = 100.",
                 default=10,
             ),
-            OpenApiParameter("team", description="Filter on team (name)."),
+            OpenApiParameter("team", description="Filter on teams (name), comma-separated list."),
             OpenApiParameter("theme", description="Filter on theme(s), comma-separated list."),
-            OpenApiParameter("confidentiality", description="Filter on confidentiality level."),
+            OpenApiParameter(
+                "confidentiality",
+                description="Filter on confidentiality level, comma-separated list.",
+            ),
             OpenApiParameter(
                 "type", description="Filter on distribution type, comma-separated list."
             ),
-            OpenApiParameter("language", description="Filter on language."),
+            OpenApiParameter("language", description="Filter on language, comma-separated list."),
             OpenApiParameter(
                 "order",
                 description="Order products on field (prefix with '-' to reverse).",
