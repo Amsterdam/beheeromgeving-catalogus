@@ -1,6 +1,13 @@
 SEPARATORS = ["_", " ", ";", ","]
 
 
+def set_po_name(apps, schema_editor):
+    Team = apps.get_model("beheeromgeving", "Team")
+    for team in Team.objects.all():
+        team.po_name = f"PO team {team.acronym}"
+        team.save()
+
+
 def fix_distribution_format(apps, schema_editor):
     Distribution = apps.get_model("beheeromgeving", "Distribution")
     for distribution in Distribution.objects.all():
