@@ -277,12 +277,17 @@ if CLOUD_ENV.startswith("azure"):
         print("OpenTelemetry has been enabled")
 
         def response_hook(span, request, response):
-            if (
-                span.is_recording()
-                and hasattr(request, "get_token_claims")
-                and (email := request.get_token_claims.get("email", request.get_token_subject))
-            ):
-                span.set_attribute("user.AuthenticatedId", email)
+            if span.is_recording():
+                # Attach user email if available
+                if hasattr(request, "get_token_claims"):
+                    email = request.get_token_claims.get("email", request.get_token_subject)
+                    if email:
+                        span.set_attribute("user.AuthenticatedId", email)
+                # Attach all request headers
+                if hasattr(request, "headers"):
+                    for header, value in request.headers.items():
+                        # Prefix to avoid collisions and for clarity
+                        span.set_attribute(f"request.header.{header}", value)
 
         DjangoInstrumentor().instrument(response_hook=response_hook)
         print("Django instrumentor enabled")
