@@ -81,7 +81,9 @@ class ProductRepository(AbstractRepository[Product]):
 
             def count_occurrences(product: orm.Product) -> int:
                 text = f"{product.name} {product.description} "
-                text += " ".join([c.name + " " + c.description for c in product.contracts.all()])
+                text += " ".join(
+                    [(c.name or "") + " " + (c.description or "") for c in product.contracts.all()]
+                )
                 text_lower = text.lower()
                 return sum(1 if word.lower() in text_lower else 0 for word in words)
 
