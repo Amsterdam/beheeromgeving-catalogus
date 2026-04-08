@@ -457,6 +457,57 @@ class TestProductService:
         assert result.publication_status == updated_status
 
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_publish_product_sets_publication_date(
+        self, product_service: ProductService, product: Product, scope: str
+    ):
+        """Test to see if a product's publication date is set when the product is published."""
+        assert product.id
+        result = product_service.update_publication_status(
+            product_id=product.id,
+            data={"publication_status": "P"},
+            scopes=[scope],
+        )
+
+        assert result.publication_status == "P"
+        assert result.publication_date is not None
+
+        # Depublishing a product should not remove the publication date.
+        result = product_service.update_publication_status(
+            product_id=product.id,
+            data={"publication_status": "D"},
+            scopes=[scope],
+        )
+        assert result.publication_status == "D"
+        assert result.publication_date is not None
+
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_publish_contract_sets_publication_date(
+        self, product_service: ProductService, product: Product, scope: str
+    ):
+        """Test to see if a contract's publication date is set when the contract is published."""
+        assert product.id
+        assert product.contracts[0].id
+        result = product_service.update_contract_publication_status(
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            data={"publication_status": "P"},
+            scopes=[scope],
+        )
+
+        assert result.publication_status == "P"
+        assert result.publication_date is not None
+
+        # Depublishing a contract should not remove the publication date.
+        result = product_service.update_contract_publication_status(
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            data={"publication_status": "D"},
+            scopes=[scope],
+        )
+        assert result.publication_status == "D"
+        assert result.publication_date is not None
+
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_update_product_publication_missing_fields(
         self, product_service: ProductService, team: Team, scope: str
     ):

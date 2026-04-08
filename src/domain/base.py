@@ -1,5 +1,6 @@
 import abc
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -19,6 +20,9 @@ class BaseObject:
     def update_from_dict(self, data: dict):
         for k, v in data.items():
             setattr(self, k, v)
+            # when published, set the publication_date.
+            if k == "publication_status" and v == "P":
+                self.publication_date = datetime.now(tz=UTC)
 
 
 # alias for typing

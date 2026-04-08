@@ -597,6 +597,7 @@ class TestViews:
         orm_product.refresh_from_db()
 
         assert orm_product.publication_status == data["publication_status"]
+        assert orm_product.publication_date is not None
         assert response.data["publication_status"] == orm_product.publication_status
 
     def test_set_state_contract(self, orm_product, orm_team, client_with_token):
@@ -616,6 +617,7 @@ class TestViews:
         orm_product.refresh_from_db()
         assert orm_product.contracts.first().publication_status == "D"
         assert orm_product.contracts.last().publication_status == "P"
+        assert orm_product.contracts.last().publication_date is not None
         assert (
             update_to_published.data["publication_status"]
             == orm_product.contracts.last().publication_status
