@@ -58,6 +58,7 @@ class PublicationStatus(StrChoicesEnum):
     APPROVED = "A"
     PUBLISHED = "P"
     EXPIRED = "E"
+    DELETED = "X"
 
 
 class ConfidentialityLevel(StrChoicesEnum):

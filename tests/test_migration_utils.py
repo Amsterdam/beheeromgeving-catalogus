@@ -6,6 +6,7 @@ from beheeromgeving.migration_utils import (
     fix_distribution_format,
     revert_team_scopes,
     set_po_name,
+    set_publication_dates,
     update_team_scopes,
 )
 from beheeromgeving.models import Distribution
@@ -46,3 +47,19 @@ class TestMigrationUtils:
         for team in [orm_team, orm_other_team]:
             team.refresh_from_db()
             assert team.po_name == f"PO team {team.acronym}"
+
+    def test_set_publication_dates(self, orm_product):
+        # Set publication status to 'Published' without publication date
+        orm_contract = orm_product.contracts.first()
+        orm_contract.publication_status = "P"
+        orm_contract.save()
+        orm_product.publication_status = "P"
+        orm_product.save()
+
+        set_publication_dates(apps, None)
+
+        orm_contract.refresh_from_db()
+        orm_product.refresh_from_db()
+
+        assert orm_contract.publication_date is not None
+        assert orm_product.publication_date is not None

@@ -44,3 +44,16 @@ def transfer_scopes_backward(apps, schema_editor):  # pragma: no cover
     for contract in DataContract.objects.all():
         contract._scope = (",").join(contract.scopes)
         contract.save()
+
+
+def set_publication_dates(apps, schema_editor):
+    DataContract = apps.get_model("beheeromgeving", "DataContract")
+    Product = apps.get_model("beheeromgeving", "Product")
+    for contract in DataContract.objects.filter(publication_status="P"):
+        if not contract.publication_date:
+            contract.publication_date = contract.last_updated
+            contract.save()
+    for product in Product.objects.filter(publication_status="P"):
+        if not product.publication_date:
+            product.publication_date = product.last_updated
+            product.save()

@@ -78,6 +78,12 @@ class Product(models.Model):
         null=True,
         blank=True,
     )
+    publication_date = models.DateTimeField(
+        _("Publicatiedatum"),
+        blank=True,
+        null=True,
+        help_text="Datum waarop het Data Product voor het eerst is gepubliceerd.",
+    )
     refresh_period = models.JSONField(
         _("Ververstermijn"),
         null=True,
@@ -242,6 +248,12 @@ class DataContract(models.Model):
         blank=True,
         null=True,
         choices=enums.PublicationStatus.choices(),
+    )
+    publication_date = models.DateTimeField(
+        _("Publicatiedatum"),
+        blank=True,
+        null=True,
+        help_text="Datum waarop het Data Contract voor het eerst is gepubliceerd.",
     )
     purpose = models.TextField(
         _("Doelbinding"),
