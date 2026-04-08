@@ -373,6 +373,7 @@ class DataContract(models.Model):
 
 
 class Team(models.Model):
+    products: models.Manager[Product]
     name = models.CharField(_("Name"), max_length=128, unique=True)
     description = models.CharField(_("Description"), max_length=512, blank=True, null=True)
     acronym = models.CharField(_("Acronym"), max_length=10, unique=True)

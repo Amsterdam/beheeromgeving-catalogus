@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import QuerySet
 
 from beheeromgeving import models as orm
 from domain.auth import AuthorizationConfiguration
@@ -7,7 +8,7 @@ from domain.base import AbstractAuthRepository
 
 class AuthorizationRepository(AbstractAuthRepository):
     def __init__(self):
-        self.queryset = orm.Team.objects.all()
+        self.queryset: QuerySet[orm.Team] = orm.Team.objects.all()
         self.admin_role: str = settings.ADMIN_ROLE_NAME
         self.feature_enabled: bool = settings.FEATURE_FLAG_USE_AUTH
 
@@ -19,9 +20,9 @@ class AuthorizationRepository(AbstractAuthRepository):
         team_scopes = {}
 
         for t in self.queryset:
-            team_scopes[t.id] = t.scope
+            team_scopes[t.pk] = t.scope
             for p in t.products.all():
-                product_scopes[p.id] = t.scope
+                product_scopes[p.pk] = t.scope
                 if p.name:
                     product_scopes[p.name.lower()] = t.scope
         return AuthorizationConfiguration(
