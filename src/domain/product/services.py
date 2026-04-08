@@ -62,6 +62,9 @@ class ProductService(AbstractService):
         product = self.get_product(product_id=product_id, **kwargs)
         if product.publication_date is not None:
             product.update_state({"publication_status": enums.PublicationStatus.DELETED})
+            for contract in product.contracts:
+                if contract.id:
+                    product.delete_contract(contract.id)
             self._persist(product)
         else:
             self.repository.delete(product_id)

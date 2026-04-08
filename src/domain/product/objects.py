@@ -307,8 +307,14 @@ class Product(BaseObject):
 
     def delete_contract(self, contract_id: int) -> int:
         contract = self.get_contract(contract_id)  # Raise if it doesn't exist.
-        contract.validate.can_update()
-        self.contracts = [contract for contract in self.contracts if contract.id != contract_id]
+        if contract.publication_date is not None:
+            self.update_contract_state(
+                contract_id, {"publication_status": enums.PublicationStatus.DELETED}
+            )
+        else:
+            self.contracts = [
+                contract for contract in self.contracts if contract.id != contract_id
+            ]
         return contract_id
 
     def get_distribution(self, contract_id: int, distribution_id: int):
@@ -390,7 +396,13 @@ class Product(BaseObject):
 
     @property
     def contract_count(self) -> int:
-        return len(self.contracts)
+        return len(
+            [
+                contract
+                for contract in self.contracts
+                if contract.publication_status == enums.PublicationStatus.PUBLISHED
+            ]
+        )
 
     @property
     def missing_fields(self) -> list[str]:

@@ -7,12 +7,12 @@ django ORM models). This is done in the api_client fixture, so any time a orm_* 
 the api_client or client_with_token fixtures need to be the last one.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from django.conf import settings
 
-from beheeromgeving.models import Product, Team
+from beheeromgeving.models import DataContract, Product, Team
 
 
 @pytest.mark.django_db
@@ -781,15 +781,21 @@ class TestViews:
 
         assert len(orm_draft_product.contracts.all()) == 0
 
-    def test_contract_delete_fails_on_published_contract(
-        self, orm_product, orm_team, client_with_token
-    ):
-        contract = orm_product.contracts.first()
-        response = client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_product.id}/contracts/{contract.id}"
+    def test_published_contract_is_soft_deleted(self, orm_product, orm_team, client_with_token):
+        published_contract = DataContract.objects.create(
+            product=orm_product,
+            name="published contract",
+            publication_status="P",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
         )
 
-        assert response.status_code == 400
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{published_contract.pk}"
+        )
+
+        assert response.status_code == 204
+        published_contract.refresh_from_db()
+        assert published_contract.publication_status == "X"  # DELETED
 
     def test_distribution_list(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id

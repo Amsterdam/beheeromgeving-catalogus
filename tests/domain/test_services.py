@@ -401,6 +401,47 @@ class TestProductService:
         )
 
         assert len(product_service.get_contracts(product.id)) == 1
+        assert product.contract_count == 1
+
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_published_contract_is_soft_deleted(
+        self, product_service: ProductService, product: Product, team: Team, scope: str
+    ):
+        assert product.id
+        assert product.contracts[1].id
+        contract_id = product.contracts[1].id
+        product_service.delete_contract(
+            product_id=product.id,
+            contract_id=contract_id,
+            scopes=[scope],
+        )
+        assert (
+            product_service.get_contract(
+                product_id=product.id, contract_id=contract_id, scopes=[scope]
+            ).publication_status
+            == enums.PublicationStatus.DELETED
+        )
+        assert product.contract_count == 0  # only draft contract remains.
+
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_previously_published_contract_is_soft_deleted(
+        self, product_service: ProductService, product: Product, team: Team, scope: str
+    ):
+        assert product.id
+        contract = product.contracts[1]
+        assert contract.id
+        contract.publication_status = enums.PublicationStatus.DRAFT
+        product_service.delete_contract(
+            product_id=product.id,
+            contract_id=contract.id,
+            scopes=[scope],
+        )
+        assert (
+            product_service.get_contract(
+                product_id=product.id, contract_id=contract.id, scopes=[scope]
+            ).publication_status
+            == enums.PublicationStatus.DELETED
+        )
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_delete_contract_non_existent(

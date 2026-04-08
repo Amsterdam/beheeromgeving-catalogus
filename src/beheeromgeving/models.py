@@ -205,14 +205,14 @@ class Product(models.Model):
         # Create/update services
         to_delete = instance.services.all()
         for service in product.services or []:
-            service_id = DataService.from_domain(service, instance.id)
+            service_id = DataService.from_domain(service, instance.pk)
             to_delete = to_delete.exclude(pk=service_id)
         to_delete.delete()
 
         # Create/update contracts
         to_delete = instance.contracts.all()
         for contract in product.contracts or []:
-            contract = DataContract.from_domain(contract, instance.id)
+            contract = DataContract.from_domain(contract, instance.pk)
             to_delete = to_delete.exclude(pk=contract.id)
         to_delete.delete()
 
@@ -365,7 +365,7 @@ class DataContract(models.Model):
         # Handle distributions, they may potentially all be deleted:
         to_delete = instance.distributions.all()
         for distribution in contract.distributions or []:
-            distro_id = Distribution.from_domain(distribution, instance.id)
+            distro_id = Distribution.from_domain(distribution, instance.pk)
             # Exclude the distribution that still exists.
             to_delete = to_delete.exclude(pk=distro_id)
         to_delete.delete()
@@ -492,7 +492,7 @@ class Distribution(models.Model):
             distribution.refresh_period.to_string if distribution.refresh_period else None
         )
         instance.save()
-        return instance.id
+        return instance.pk
 
 
 class DataService(models.Model):
@@ -523,4 +523,4 @@ class DataService(models.Model):
         instance, _created = cls.objects.filter(pk=service.id).update_or_create(
             defaults={**service.items(), "product_id": product_id}
         )
-        return instance.id
+        return instance.pk
