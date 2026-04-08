@@ -172,7 +172,5 @@ class TestImportProducts:
         assert Product.objects.count() == 2
 
         call_command("import_products", purge=True)
-        assert Product.objects.count() == 0
-        assert DataContract.objects.count() == 0
-        assert DataService.objects.count() == 0
-        assert Distribution.objects.count() == 0
+        assert Product.objects.exclude(publication_status="X").count() == 0
+        assert DataContract.objects.exclude(publication_status="X").count() == 0

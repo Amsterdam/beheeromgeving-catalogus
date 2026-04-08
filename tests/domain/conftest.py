@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -102,6 +102,7 @@ def product(team: Team) -> Product:
             DataContract(
                 id=2,
                 publication_status=enums.PublicationStatus.PUBLISHED,
+                publication_date=datetime(2025, 1, 1, tzinfo=UTC),
                 purpose="onderhoud van bomen",
                 name="contract naam",
                 description="contract voor data nodig voor het beheer van bomen",
