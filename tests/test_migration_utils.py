@@ -1,5 +1,6 @@
 import pytest
 from django.apps import apps
+from importlib import import_module
 
 from beheeromgeving.migration_utils import (
     SEPARATORS,
@@ -8,7 +9,7 @@ from beheeromgeving.migration_utils import (
     set_po_name,
     update_team_scopes,
 )
-from beheeromgeving.models import Distribution
+from beheeromgeving.models import Distribution, ProductPublishedSnapshot
 
 
 @pytest.mark.django_db
@@ -46,3 +47,11 @@ class TestMigrationUtils:
         for team in [orm_team, orm_other_team]:
             team.refresh_from_db()
             assert team.po_name == f"PO team {team.acronym}"
+
+    def test_migration_0021_snapshot_backfill(self, orm_product):
+        module = import_module("beheeromgeving.migrations.0021_backfill_productpublishedsnapshot")
+        ProductPublishedSnapshot.objects.filter(product_id=orm_product.id).delete()
+        module.backfill_published_snapshots(apps, None)
+        record = ProductPublishedSnapshot.objects.get(product_id=orm_product.id)
+        assert record.snapshot["id"] == orm_product.id
+        assert record.snapshot["_snapshot_version"] == 1

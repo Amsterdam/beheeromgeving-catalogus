@@ -111,6 +111,7 @@ class ProductService(AbstractService):
         product = self.get_product(product_id=product_id, **kwargs)
         updated_contract = product.update_contract_state(contract_id, data)
         self._persist(product)
+        self.repository.sync_published_snapshot(product_id)
         return updated_contract
 
     @authorize.is_admin
@@ -125,7 +126,9 @@ class ProductService(AbstractService):
     def update_publication_status(self, product_id: int, data: dict, **kwargs) -> Product:
         existing_product = self.repository.get(product_id)
         existing_product.update_state(data)
-        return self._persist(existing_product)
+        result = self._persist(existing_product)
+        self.repository.sync_published_snapshot(product_id)
+        return result
 
     def get_distributions(self, product_id: int, contract_id: int) -> list[Distribution]:
         product = self.get_published_product(product_id)

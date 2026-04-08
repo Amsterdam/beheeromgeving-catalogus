@@ -213,6 +213,26 @@ class Product(models.Model):
         return instance.to_domain()
 
 
+class ProductPublishedSnapshot(models.Model):
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="published_snapshot_record",
+    )
+    snapshot = models.JSONField(
+        _("Gepubliceerde snapshot"),
+        null=True,
+        blank=True,
+        help_text="Most recently published content for the public catalogue; " # Please translate this
+        "edits are in this row until republished.", # Please translate this
+    )
+    published_at = models.DateTimeField(
+        _("Time of last snapshot publication"), # Please translate this
+        null=True,
+        blank=True,
+    )
+
+
 class DataContract(models.Model):
     distributions: models.Manager[Distribution]
 

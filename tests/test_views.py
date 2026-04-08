@@ -547,16 +547,16 @@ class TestViews:
             assert getattr(orm_draft_product, key) == val
         assert response.data["last_updated"] == orm_draft_product.last_updated
 
-    def test_product_update_fails_on_published_product(
+    def test_product_update_succeeds_on_published_product(
         self, orm_product, orm_team, client_with_token
     ):
         response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}",
             data={"name": "New Name"},
         )
-        assert response.status_code == 400
+        assert response.status_code == 200
         orm_product.refresh_from_db()
-        assert orm_product.name != "New Name"
+        assert orm_product.name == "New Name"
 
     def test_product_update_reflected_in_me_view(
         self, orm_draft_product, orm_team, client_with_token
@@ -568,6 +568,16 @@ class TestViews:
         assert response.status_code == 200
         product_list = client_with_token([orm_team.scope]).get("/me")
         assert product_list.data["products"]["results"][0]["name"] == "New Name"
+
+    def test_product_detail_includes_has_unpublished_changes(self, orm_product, api_client):
+        response = api_client.get(f"/products/{orm_product.id}")
+        assert response.status_code == 200
+        assert "has_unpublished_changes" in response.data
+
+    def test_me_includes_has_unpublished_changes(self, orm_product, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get("/me")
+        assert response.status_code == 200
+        assert "has_unpublished_changes" in response.data["products"]["results"][0]
 
     def test_product_update_refresh_period(self, orm_draft_product, orm_team, client_with_token):
         data = {"refresh_period": {"unit": "MONTH", "frequency": 2}}

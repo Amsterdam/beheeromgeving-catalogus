@@ -1,11 +1,13 @@
 from django.db.models import F, Q, QuerySet, Value
 from django.db.utils import IntegrityError
+from django.utils import timezone
 
 from api.datatransferobjects import MyProduct, ProductList
 from beheeromgeving import models as orm
 from domain import exceptions
 from domain.base import AbstractRepository
 from domain.product import Product, enums
+from domain.product.snapshot import product_to_snapshot_dict, snapshot_dict_to_product
 from domain.team import Team
 
 # alias for typing
@@ -28,9 +30,18 @@ class ProductRepository(AbstractRepository[Product]):
 
     def get_published(self, id: int) -> Product:
         try:
-            product = self.manager.get(pk=id).to_domain(published_only=True)
+            orm_product = self.manager.get(pk=id)
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
+        if orm_product.publication_status == enums.PublicationStatus.PUBLISHED.value:
+            record = (
+                orm.ProductPublishedSnapshot.objects.filter(product_id=orm_product.pk)
+                .only("snapshot")
+                .first()
+            )
+            if record and record.snapshot:
+                return snapshot_dict_to_product(record.snapshot)
+        product = orm_product.to_domain(published_only=True)
         if product is None:
             raise exceptions.ObjectDoesNotExist
         return product
@@ -50,7 +61,16 @@ class ProductRepository(AbstractRepository[Product]):
         return product.to_domain()
 
     def get_published_by_name(self, name: str) -> Product:
-        product = self._get_by_name(name).to_domain(published_only=True)
+        orm_product = self._get_by_name(name)
+        if orm_product.publication_status == enums.PublicationStatus.PUBLISHED.value:
+            record = (
+                orm.ProductPublishedSnapshot.objects.filter(product_id=orm_product.pk)
+                .only("snapshot")
+                .first()
+            )
+            if record and record.snapshot:
+                return snapshot_dict_to_product(record.snapshot)
+        product = orm_product.to_domain(published_only=True)
         if not product:
             raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.")
         return product
@@ -153,3 +173,28 @@ class ProductRepository(AbstractRepository[Product]):
             raise exceptions.ObjectDoesNotExist
 
         return id
+
+    def save_published_snapshot(self, product_id: int) -> None:
+        orm_product = orm.Product.objects.get(pk=product_id)
+        domain = orm_product.to_domain(published_only=True)
+        if domain is None:
+            raise exceptions.ObjectDoesNotExist(
+                f"Product {product_id} is not in a publishable state for a public snapshot."
+            )
+        orm.ProductPublishedSnapshot.objects.update_or_create(
+            product_id=product_id,
+            defaults={
+                "snapshot": product_to_snapshot_dict(domain),
+                "published_at": timezone.now(),
+            },
+        )
+
+    def clear_published_snapshot(self, product_id: int) -> None:
+        orm.ProductPublishedSnapshot.objects.filter(product_id=product_id).delete()
+
+    def sync_published_snapshot(self, product_id: int) -> None:
+        orm_product = orm.Product.objects.get(pk=product_id)
+        if orm_product.publication_status == enums.PublicationStatus.PUBLISHED.value:
+            self.save_published_snapshot(product_id)
+        else:
+            self.clear_published_snapshot(product_id)

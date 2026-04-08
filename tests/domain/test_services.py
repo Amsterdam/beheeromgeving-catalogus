@@ -456,6 +456,27 @@ class TestProductService:
         assert len(product_service.get_contracts(product.id)) == 2
         assert result.publication_status == updated_status
 
+    def test_update_product_publication_syncs_snapshot(self, product_service: ProductService, product):
+        called = []
+        product_service.repository.sync_published_snapshot = lambda product_id: called.append(product_id)
+        product_service.update_publication_status(
+            product_id=product.id, data={"publication_status": "D"}, scopes=["scope_dadi"]
+        )
+        assert called == [product.id]
+
+    def test_update_contract_publication_syncs_snapshot(
+        self, product_service: ProductService, product: Product
+    ):
+        called = []
+        product_service.repository.sync_published_snapshot = lambda product_id: called.append(product_id)
+        product_service.update_contract_publication_status(
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            data={"publication_status": "D"},
+            scopes=["scope_dadi"],
+        )
+        assert called == [product.id]
+
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_update_product_publication_missing_fields(
         self, product_service: ProductService, team: Team, scope: str

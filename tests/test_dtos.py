@@ -1,7 +1,8 @@
 import pytest
 from django.http import QueryDict
 
-from api.datatransferobjects import QueryParams
+from api.datatransferobjects import QueryParams, has_unpublished_changes_for_orm
+from beheeromgeving.models import ProductPublishedSnapshot
 from domain.product import enums
 
 
@@ -82,3 +83,21 @@ class TestQueryParams:
         qd = QueryDict(query_string)
         qp = QueryParams(**qd.dict())
         assert qp.order == expected_order
+
+
+@pytest.mark.django_db
+class TestSnapshotDtoState:
+    def test_has_unpublished_changes_false_without_snapshot(self, orm_product):
+        ProductPublishedSnapshot.objects.filter(product_id=orm_product.id).delete()
+        orm_product.refresh_from_db()
+        assert has_unpublished_changes_for_orm(orm_product) is False
+
+    def test_has_unpublished_changes_true_after_edit(self, orm_product):
+        record = ProductPublishedSnapshot.objects.get(product_id=orm_product.id)
+        ProductPublishedSnapshot.objects.filter(pk=record.pk).update(
+            published_at=orm_product.last_updated
+        )
+        orm_product.description = "new value after publish"
+        orm_product.save()
+        orm_product.refresh_from_db()
+        assert has_unpublished_changes_for_orm(orm_product) is True

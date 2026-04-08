@@ -101,6 +101,15 @@ class DummyRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object with id {id} does not exist") from e
 
+    def save_published_snapshot(self, product_id: int) -> None:
+        return None
+
+    def clear_published_snapshot(self, product_id: int) -> None:
+        return None
+
+    def sync_published_snapshot(self, product_id: int) -> None:
+        return None
+
 
 class DummyAuthRepo(AbstractAuthRepository):
     def __init__(self, teams: list[DummyRepoItem], products: list[DummyRepoItem]):

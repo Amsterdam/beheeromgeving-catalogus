@@ -122,8 +122,6 @@ class ProductValidator:
         self.product = prod
 
     def can_update(self) -> bool:
-        if self.product.publication_status == enums.PublicationStatus.PUBLISHED:
-            raise ValidationError("Cannot update published product.")
         return True
 
     def can_create_contract(self) -> bool:

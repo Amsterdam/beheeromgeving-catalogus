@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from beheeromgeving.models import Product as ORMProduct
+from beheeromgeving.models import ProductPublishedSnapshot
 from beheeromgeving.models import Team as ORMTeam
 from domain.exceptions import ObjectDoesNotExist
 from domain.product import (
@@ -234,3 +235,41 @@ class TestProductRepository:
         repo = ProductRepository()
         products = repo.list()
         assert products[0]["name"] == "naam a"
+
+    def test_get_published_uses_snapshot_when_available(self, orm_product):
+        repo = ProductRepository()
+        repo.save_published_snapshot(orm_product.id)
+        ProductPublishedSnapshot.objects.filter(product_id=orm_product.id).update(
+            snapshot={
+                "_snapshot_version": 1,
+                "id": orm_product.id,
+                "name": "Snapshot Name",
+                "description": orm_product.description,
+                "language": orm_product.language,
+                "is_geo": orm_product.is_geo,
+                "crs": orm_product.crs,
+                "schema_url": orm_product.schema_url,
+                "type": orm_product.type,
+                "contracts": [],
+                "themes": orm_product.themes,
+                "last_updated": orm_product.last_updated.isoformat(),
+                "created_at": orm_product.created_at.isoformat(),
+                "refresh_period": {"frequency": 3, "unit": "MONTH"},
+                "publication_status": orm_product.publication_status,
+                "owner": orm_product.owner,
+                "contact_email": orm_product.contact_email,
+                "data_steward": orm_product.data_steward,
+                "services": [],
+                "sources": [],
+                "sinks": [],
+                "team_id": orm_product.team_id,
+            }
+        )
+        published = repo.get_published(orm_product.id)
+        assert published.name == "Snapshot Name"
+
+    def test_get_published_by_name_uses_fallback_without_snapshot(self, orm_product):
+        repo = ProductRepository()
+        ProductPublishedSnapshot.objects.filter(product_id=orm_product.id).delete()
+        published = repo.get_published_by_name("Bomen")
+        assert published.id == orm_product.id

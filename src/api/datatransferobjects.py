@@ -13,6 +13,16 @@ if TYPE_CHECKING:
     from beheeromgeving.models import Product as ORMProduct
 
 
+def has_unpublished_changes_for_orm(product: ORMProduct) -> bool:
+    """True when working copy is newer than the last published snapshot."""
+    record = getattr(product, "published_snapshot_record", None)
+    if not record or not record.published_at:
+        return False
+    if product.last_updated > record.published_at:
+        return True
+    return any(c.last_updated > record.published_at for c in product.contracts.order_by("id"))
+
+
 @overload
 def to_response_object(obj: Sequence[BaseObject], dto_type: str | None = None) -> list[dict]: ...
 
@@ -26,7 +36,18 @@ def to_response_object(
 ) -> dict | list[dict]:
     if not isinstance(obj, BaseObject):
         return [to_dto(el, dto_type=dto_type or "list").model_dump() for el in obj]
-    return to_dto(obj, dto_type=dto_type or "detail").model_dump()
+    dt = dto_type or "detail"
+    dto = to_dto(obj, dto_type=dt)
+    data = dto.model_dump()
+    if isinstance(obj, objects.Product) and dt == "detail" and obj.id is not None:
+        from beheeromgeving.models import Product as ORMProduct
+
+        try:
+            orm_p = ORMProduct.objects.select_related("published_snapshot_record").get(pk=obj.id)
+            data["has_unpublished_changes"] = has_unpublished_changes_for_orm(orm_p)
+        except ORMProduct.DoesNotExist:
+            pass
+    return data
 
 
 def to_dto(domain_object: BaseObject, dto_type: str = "detail") -> BaseModel:
@@ -206,9 +227,11 @@ class MyProduct(ModelMixin, BaseModel):
     last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
     contracts: list[MyContract]
+    has_unpublished_changes: bool = False
 
     @classmethod
     def from_django(cls, product: ORMProduct) -> MyProduct:
+        dirty = has_unpublished_changes_for_orm(product)
         return cls(
             id=product.pk,
             team_id=product.team.pk,
@@ -217,6 +240,7 @@ class MyProduct(ModelMixin, BaseModel):
             last_updated=product.last_updated,
             publication_status=product.publication_status,
             contracts=[MyContract.from_django(c) for c in product.contracts.order_by("id")],
+            has_unpublished_changes=dirty,
         )
 
 
@@ -246,6 +270,7 @@ class ProductDetail(IdMixin, ProductCreate):
 
     publication_status: enums.PublicationStatus
     missing_fields: list[str] | None = None
+    has_unpublished_changes: bool = False
 
 
 class ProductUpdate(ModelMixin, BaseModel):

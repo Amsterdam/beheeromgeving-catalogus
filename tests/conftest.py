@@ -6,7 +6,14 @@ import pytest
 from rest_framework.test import APIClient
 
 from beheeromgeving.models import DataContract, DataService, Distribution, Product, Team
+from domain.product.repositories import ProductRepository
 from tests.utils import build_jwt_token
+
+
+def _ensure_published_snapshot(product: Product) -> None:
+    """ORM fixtures set publication_status=P; production fills snapshot on publish."""
+    if product.publication_status == "P":
+        ProductRepository().save_published_snapshot(product.pk)
 
 
 @pytest.fixture()
@@ -108,6 +115,7 @@ def orm_product(orm_team) -> Product:
         type="F",
     )
 
+    _ensure_published_snapshot(product)
     return product
 
 
@@ -210,6 +218,7 @@ def orm_product2(orm_other_team) -> Product:
         type="A",
     )
 
+    _ensure_published_snapshot(product)
     return product
 
 
@@ -237,6 +246,7 @@ def many_orm_products(orm_team) -> list[Product]:
             last_updated=datetime.fromisoformat(f"2025-12-25T00:{59 - index}+00:00"),
             created_at=datetime.fromisoformat(f"2025-12-25T00:{59 - index}+00:00"),
         )
+        _ensure_published_snapshot(result[-1])
     return result
 
 
