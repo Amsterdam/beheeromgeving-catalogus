@@ -60,8 +60,11 @@ class ProductService(AbstractService):
     @authorize.is_team_member
     def delete_product(self, *, product_id: int, **kwargs) -> None:
         product = self.get_product(product_id=product_id, **kwargs)
-        product.validate.can_update()
-        self.repository.delete(product_id)
+        if product.publication_date is not None:
+            product.update_state({"publication_status": enums.PublicationStatus.DELETED})
+            self._persist(product)
+        else:
+            self.repository.delete(product_id)
 
     def get_contracts(self, product_id: int) -> list[DataContract]:
         return self.repository.get_published(product_id).contracts

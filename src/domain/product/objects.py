@@ -94,6 +94,7 @@ class ContractValidator:
 class DataContract(BaseObject):
     id: int | None = None
     publication_status: enums.PublicationStatus | None = None
+    publication_date: datetime | None = None
     purpose: str | None = None
     name: str | None = None
     description: str | None = None
@@ -188,12 +189,12 @@ class ProductValidator:
         return target_contract and len(published_contracts) == 1
 
     def can_change_publication_status(self, data: dict) -> bool:
-        missing_fields = self.get_missing_fields()
-        published_contract = self.has_published_contract()
         if (
             data.get("publication_status") == "P"
             and self.product.publication_status != enums.PublicationStatus.PUBLISHED
         ):
+            missing_fields = self.get_missing_fields()
+            published_contract = self.has_published_contract()
             if missing_fields:
                 raise ValidationError(
                     "Cannot update publication status, product is missing the following fields:"
@@ -238,6 +239,7 @@ class Product(BaseObject):
     created_at: datetime | None = None
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
+    publication_date: datetime | None = None
     owner: str | None = None
     contact_email: str | None = None
     data_steward: str | None = None

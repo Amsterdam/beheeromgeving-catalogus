@@ -7,7 +7,7 @@ from domain.base import (
     AbstractRepository,
     BaseObject,
 )
-from domain.product import Product
+from domain.product import Product, enums
 from domain.team import Team
 
 # alias for typing
@@ -87,12 +87,16 @@ class DummyRepository(AbstractRepository):
         return self.get_by_name(name)
 
     def list(self):
-        return list(self._items.values())
+        return [
+            item
+            for item in self._items.values()
+            if getattr(item, "publication_status", "P") != enums.PublicationStatus.DELETED.value
+        ]
 
     def save(self, item: DummyRepoItem):
         self._add_ids(item)
         self._items[item.id] = item
-        self.auth_repo.add_object(item)  # ty:ignore[possibly-missing-attribute]
+        self.auth_repo.add_object(item)  # ty:ignore[unresolved-attribute]
         return item
 
     def delete(self, id):

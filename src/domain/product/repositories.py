@@ -66,7 +66,9 @@ class ProductRepository(AbstractRepository[Product]):
         exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
     ) -> list_[dict]:
-        products = self.manager.all()
+        products = self.manager.exclude(
+            publication_status=enums.PublicationStatus.DELETED.value
+        )  # Exclude deleted products
         if query:
             words = query.split()
             q_obj = Q()

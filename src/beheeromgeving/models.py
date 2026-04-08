@@ -182,6 +182,7 @@ class Product(models.Model):
                 else None
             ),
             publication_status=self.publication_status,
+            publication_date=self.publication_date,
             owner=self.owner,
             contact_email=self.contact_email,
             data_steward=self.data_steward,
@@ -341,6 +342,7 @@ class DataContract(models.Model):
         return objects.DataContract(
             id=self.pk,
             publication_status=self.publication_status,
+            publication_date=self.publication_date,
             purpose=self.purpose,
             name=self.name,
             description=self.description,
