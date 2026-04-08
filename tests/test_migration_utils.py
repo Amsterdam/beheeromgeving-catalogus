@@ -48,18 +48,18 @@ class TestMigrationUtils:
             team.refresh_from_db()
             assert team.po_name == f"PO team {team.acronym}"
 
-    def test_set_publication_dates(self, orm_product):
+    def test_set_publication_dates(self, orm_product2):
         # Set publication status to 'Published' without publication date
-        orm_contract = orm_product.contracts.first()
+        orm_contract = orm_product2.contracts.first()
         orm_contract.publication_status = "P"
         orm_contract.save()
-        orm_product.publication_status = "P"
-        orm_product.save()
+        orm_product2.publication_status = "P"
+        orm_product2.save()
 
         set_publication_dates(apps, None)
 
         orm_contract.refresh_from_db()
-        orm_product.refresh_from_db()
+        orm_product2.refresh_from_db()
 
         assert orm_contract.publication_date is not None
-        assert orm_product.publication_date is not None
+        assert orm_product2.publication_date is not None

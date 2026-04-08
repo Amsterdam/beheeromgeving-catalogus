@@ -346,38 +346,26 @@ class QueryParams(BaseModel):
 
     @field_validator("theme", mode="before")
     def validate_themes(cls, raw):
-        if not raw:
-            return None
         return raw.split(",")
 
     @field_validator("confidentiality", mode="before")
     def validate_confidentiality(cls, raw):
-        if not raw:
-            return None
         return raw.split(",")
 
     @field_validator("language", mode="before")
     def validate_language(cls, raw):
-        if not raw:
-            return None
         return raw.split(",")
 
     @field_validator("team", mode="before")
     def validate_team(cls, raw):
-        if not raw:
-            return None
         return raw.split(",")
 
     @field_validator("type", mode="before")
     def validate_type(cls, raw):
-        if not raw:
-            return None
         return raw.split(",")
 
     @field_validator("order", mode="before")
     def validate_order(cls, raw):
-        if not raw:
-            return None
         reversed = raw.startswith("-")
         if reversed:
             return raw[1:], reversed
