@@ -496,11 +496,11 @@ class TestViews:
         with pytest.raises(Product.DoesNotExist):
             orm_draft_product.refresh_from_db()
 
-    def test_product_delete_fails_on_published_product(
-        self, orm_team, orm_product, client_with_token
-    ):
+    def test_published_product_is_soft_deleted(self, orm_team, orm_product, client_with_token):
         response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}")
-        assert response.status_code == 400
+        assert response.status_code == 204
+        orm_product.refresh_from_db()
+        assert orm_product.publication_status == "X"  # DELETED
 
     def test_product_delete_unauthorized(self, orm_product, client_with_token):
         response = client_with_token([]).delete(f"/products/{orm_product.id}")

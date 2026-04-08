@@ -1,8 +1,10 @@
+import datetime
+
 import pytest
 from django.conf import settings
 
 from domain.exceptions import NotAuthorized, ObjectDoesNotExist, ValidationError
-from domain.product import DataContract, DataService, Product, ProductService
+from domain.product import DataContract, DataService, Product, ProductService, enums
 from domain.team import Team, TeamService
 
 ADMIN_SCOPE = [settings.ADMIN_ROLE_NAME]
@@ -198,6 +200,24 @@ class TestProductService:
         assert product.id
         product_service.delete_product(product_id=product.id, scopes=[scope])
 
+        assert len(product_query_handler.list_products()) == 0
+
+    @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
+    def test_delete_published_product(
+        self,
+        product_service: ProductService,
+        product_query_handler,
+        product: Product,
+        team: Team,
+        scope: str,
+    ):
+        assert product.id
+        product.publication_status = enums.PublicationStatus.PUBLISHED
+        product.publication_date = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
+        product_service.delete_product(product_id=product.id, scopes=[scope])
+        # product exists and is marked as deleted
+        assert product.publication_status == enums.PublicationStatus.DELETED
+        # product doesn't show up in the list of products
         assert len(product_query_handler.list_products()) == 0
 
     @pytest.mark.xfail(raises=NotAuthorized)
