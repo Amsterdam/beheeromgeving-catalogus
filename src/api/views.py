@@ -227,7 +227,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(dtos.to_response_object(product), status=200)
 
-    @extend_schema()
+    @extend_schema(
+        summary="Delete a product",
+        description="Deletes a product. If the product is published, it will get the "
+        'publication_status "X" (deleted) instead of being removed from the database.',
+    )
     def destroy(self, request, pk: str):
         product_service.delete_product(product_id=int(pk), scopes=request.get_token_scopes)
         return Response(status=204)
@@ -328,7 +332,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(updated_contract)
         return Response(data, status=200)
 
-    @extend_schema()
+    @extend_schema(
+        summary="Delete a contract",
+        description="Deletes a contract. If the contract is published, it will get the "
+        'publication_status "X" (deleted) instead of being removed from the database.',
+    )
     @contract_detail.mapping.delete
     def delete_contract(self, request, pk: str, contract_id: str):
         product_service.delete_contract(

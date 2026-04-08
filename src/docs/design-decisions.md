@@ -2,6 +2,8 @@
 
 ## Changelog
 
+2026-04-08: Added note on soft deletion.
+
 2026-03-09: Use queries for /products and /me endpoints.
 
 2025-09-15: Added Authorization.
@@ -65,7 +67,8 @@ view -> service -> domain -> repository -> ORM / Django models.
 The (domain) service is the interface between the domain and the presentation layer. The
 repository is the interface between the domain and the ORM.
 
-**Updated (2026-03-09) flow for /products and /me endpoints:**
+**Updated (2026-03-09)**
+Flow for /products and /me endpoints:
 
 view -> query handler -> repository -> ORM / Django models -> DTO (API layer)
 
@@ -149,4 +152,9 @@ CRUD /products
 
 CRUD /products/<id>/contracts(/<contract_id>)
 
+CRUD /products/<id>/contracts(/<contract_id>)/distributions(/<distribution_id>)
+
 CRUD /products/<id>/services(/<service_id>)
+
+Note: once a product or contract has been published, it will not be deleted from the
+database. Instead, it will be soft deleted (publication_status == "X" / Deleted).
