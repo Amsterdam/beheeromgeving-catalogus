@@ -174,6 +174,7 @@ class DataContract(IdMixin, DataContractCreateOrUpdate):
     """DataContract detail view"""
 
     publication_status: enums.PublicationStatus
+    publication_date: datetime | None = None
     missing_fields: list[str] | None = None
     schema_url: str | None = None
 
@@ -245,6 +246,7 @@ class ProductDetail(IdMixin, ProductCreate):
     """Product detail view"""
 
     publication_status: enums.PublicationStatus
+    publication_date: datetime | None = None
     missing_fields: list[str] | None = None
 
 
