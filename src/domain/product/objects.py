@@ -99,6 +99,7 @@ class DataContract(BaseObject):
     name: str | None = None
     description: str | None = None
     last_updated: datetime | None = None
+    last_editor: str | None = None
     privacy_level: enums.PrivacyLevel | None = None
     scopes: list[str] | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
@@ -236,6 +237,7 @@ class Product(BaseObject):
     contracts: list[DataContract] = field(default_factory=list)
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
+    last_editor: str | None = None
     created_at: datetime | None = None
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None
@@ -295,6 +297,10 @@ class Product(BaseObject):
         contract = self.get_contract(contract_id)
         if contract.validate.can_update():
             contract.update_from_dict(data)
+        # Bij een update wordt automatisch last_editor aangepast naar de gebruiker of systeem
+        # account die de update doet
+        # last_editor = self.get_editor(contract_id)
+        # is dit dan het team id? Of hoe haal ik een specifieke user/system account op?
         return contract
 
     def update_contract_state(self, contract_id: int, data: dict) -> DataContract:

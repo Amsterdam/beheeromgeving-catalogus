@@ -16,7 +16,11 @@ from api.datatransferobjects import (
     ProductUpdate,
     RefreshPeriod,
 )
-from beheeromgeving.management.commands.refresh_periods import FREQUENCY_MAP, REFRESH_MAP, UNIT_MAP
+from beheeromgeving.management.commands.refresh_periods import (
+    FREQUENCY_MAP,
+    REFRESH_MAP,
+    UNIT_MAP,
+)
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
 from domain.exceptions import NotAuthorized, ObjectDoesNotExist, ValidationError
 from domain.product import ProductRepository, ProductService, enums
@@ -208,6 +212,7 @@ class Command(BaseCommand):
                     schema_url=f"{SCHEMA_API_URL}/{to_snake_case(dataset['id'])}",
                     type=enums.ProductType.DATAPRODUCT,
                     owner=dataset["owner"][:64] if dataset.get("owner") else None,
+                    last_editor="import",
                 )
                 if not product.id:
                     raise RuntimeError(f"Product {product.name} is missing id") from None
@@ -216,12 +221,17 @@ class Command(BaseCommand):
                     name=f"{name} {auth.get('name')}"[:64],
                     description=product.description,
                     scope=f"scope_{auth.get('id').lower()}",
-                    confidentiality=enums.ConfidentialityLevel.OPENBAAR
-                    if auth.get("id") == "OPENBAAR"
-                    else None,
+                    confidentiality=(
+                        enums.ConfidentialityLevel.OPENBAAR
+                        if auth.get("id") == "OPENBAAR"
+                        else None
+                    ),
+                    last_editor="import",
                 )
                 contract = self.service.create_contract(
-                    product_id=product.id, data=contract.model_dump(), scopes=[team.scope]
+                    product_id=product.id,
+                    data=contract.model_dump(),
+                    scopes=[team.scope],
                 )
                 if not contract.id:
                     raise RuntimeError(f"Contract {contract.name} doesn't have an id") from None
@@ -252,7 +262,8 @@ class Command(BaseCommand):
             try:
                 refresh_parts = refresh_period_input.split(" ")
                 refresh_period = RefreshPeriod(
-                    frequency=FREQUENCY_MAP[refresh_parts[0]], unit=UNIT_MAP[refresh_parts[-1]]
+                    frequency=FREQUENCY_MAP[refresh_parts[0]],
+                    unit=UNIT_MAP[refresh_parts[-1]],
                 )
             except KeyError:
                 refresh_period = None
@@ -303,7 +314,10 @@ class Command(BaseCommand):
         if not domain_product.id:
             raise RuntimeError(f"Product {domain_product.name} is missing id")
         return self.service.update_product(
-            product_id=domain_product.id, data=update_dto.model_dump(), scopes=[team.scope]
+            product_id=domain_product.id,
+            data=update_dto.model_dump(),
+            scopes=[team.scope],
+            last_editor="import",
         )
 
     def _create_services(self, product, new_product, team):
@@ -353,11 +367,11 @@ class Command(BaseCommand):
             confidentiality=conf_level_map[product_dict["vertrouwelijkheidsniveau"]],
             start_date=product_dict["startDatumContract"],
             retainment_period=retainment_period,
-            tables=[
-                table.get("as_id", table["name"]) for table in product_dict["schema"]["tables"]
-            ]
-            if product_dict.get("schema") and product_dict["schema"].get("tables")
-            else None,
+            tables=(
+                [table.get("as_id", table["name"]) for table in product_dict["schema"]["tables"]]
+                if product_dict.get("schema") and product_dict["schema"].get("tables")
+                else None
+            ),
         )
         try:
             existing_contract = next(
@@ -368,10 +382,14 @@ class Command(BaseCommand):
                 contract_id=existing_contract.id,
                 data=c.model_dump(),
                 scopes=[team.scope],
+                last_editor="import",
             )
         except StopIteration:
             return self.service.create_contract(
-                product_id=created_product.id, data=c.model_dump(), scopes=[team.scope]
+                product_id=created_product.id,
+                data=c.model_dump(),
+                scopes=[team.scope],
+                last_editor="import",
             )
 
     def _create_distributions(self, product: dict, new_product, new_contract, services, team):
