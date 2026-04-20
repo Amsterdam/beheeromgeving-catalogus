@@ -53,6 +53,8 @@ class ProductService(AbstractService):
         existing_product = self.get_product(product_id=product_id, **kwargs)
         if data.get("refresh_period"):
             data["refresh_period"] = RefreshPeriod.from_dict(data["refresh_period"])
+        if kwargs.get("last_editor"):
+            data["last_editor"] = kwargs["last_editor"]
         existing_product.update(data)
         return self._persist(existing_product)
 
@@ -105,6 +107,8 @@ class ProductService(AbstractService):
         self, product_id: int, contract_id: int, data: dict, **kwargs
     ) -> DataContract:
         product = self.get_product(product_id=product_id, **kwargs)
+        if kwargs.get("last_editor"):
+            data["last_editor"] = kwargs["last_editor"]
         contract = product.update_contract(contract_id, data)
         self._persist(product)
         return contract

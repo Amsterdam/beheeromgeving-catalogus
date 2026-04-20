@@ -92,6 +92,13 @@ class Product(models.Model):
         'waarbij periodStr iets is als "uur", "dag", "week", "maand", "jaar"',
     )
     last_updated = models.DateTimeField(auto_now=True)
+    # opgeslagen in db?
+    last_editor = models.CharField(
+        _("Last Editor"),
+        null=True,
+        blank=True,
+        help_text="De gebruiker of systeem account die de update doet",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Only for Dataproducts (type = "D")
@@ -152,6 +159,10 @@ class Product(models.Model):
         else:
             self._owner = None
 
+    # @property
+    # def last_editor(self) -> str | None:
+    #     return self._owner or self.team.po_name
+
     def to_domain(self, published_only: bool = False):
         if published_only and self.publication_status != enums.PublicationStatus.PUBLISHED.value:
             return None
@@ -175,6 +186,7 @@ class Product(models.Model):
             contracts=contracts,
             themes=self.themes,
             last_updated=self.last_updated,
+            last_editor=self.last_editor,
             created_at=self.created_at,
             refresh_period=(
                 objects.RefreshPeriod.from_string(self.refresh_period)
@@ -274,6 +286,13 @@ class DataContract(models.Model):
         help_text="Het privacyniveau van het contract",
     )
     last_updated = models.DateTimeField(auto_now=True)
+    # opgeslagen in db?
+    last_editor = models.CharField(
+        _("Last Editor"),
+        null=True,
+        blank=True,
+        help_text="De gebruiker of systeem account die de update doet",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     confidentiality = models.CharField(
@@ -338,6 +357,10 @@ class DataContract(models.Model):
         else:
             return None
 
+    # @property
+    # def last_editor(self) -> str | None:
+    #     return self.product._owner or self.product.team.po_name
+
     def to_domain(self):
         return objects.DataContract(
             id=self.pk,
@@ -347,6 +370,7 @@ class DataContract(models.Model):
             name=self.name,
             description=self.description,
             last_updated=self.last_updated,
+            last_editor=self.last_editor,
             privacy_level=self.privacy_level,
             scopes=self.scopes,
             confidentiality=self.confidentiality,

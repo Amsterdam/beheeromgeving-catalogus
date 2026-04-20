@@ -3,8 +3,13 @@ import json
 import pytest
 from django.core.management import call_command
 
-from beheeromgeving.management.commands.import_products import MARKETPLACE_URL, SCHEMA_API_URL
-from beheeromgeving.management.commands.import_products import Command as ImportProductsCommand
+from beheeromgeving.management.commands.import_products import (
+    MARKETPLACE_URL,
+    SCHEMA_API_URL,
+)
+from beheeromgeving.management.commands.import_products import (
+    Command as ImportProductsCommand,
+)
 from beheeromgeving.models import DataContract, DataService, Distribution, Product
 from domain.product import enums
 
@@ -15,7 +20,9 @@ class TestImportProducts:
         import_products = ImportProductsCommand()
 
         new_product = import_products._create_product(
-            orm_team, product_json["naam"], **import_products._get_product_kwargs(product_json)
+            orm_team,
+            product_json["naam"],
+            **import_products._get_product_kwargs(product_json),
         )
         assert new_product.name == product_json["naam"]
 
@@ -43,7 +50,8 @@ class TestImportProducts:
     ):
         requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         requests_mock.get(SCHEMA_API_URL, text=json.dumps(schema_api_json))
         call_command("import_products", source="all")
@@ -80,7 +88,8 @@ class TestImportProducts:
     ):
         requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         requests_mock.get(SCHEMA_API_URL, text=json.dumps(schema_api_json))
         call_command("import_products", source="all")
@@ -116,7 +125,8 @@ class TestImportProducts:
     ):
         requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         call_command("import_products")
 
@@ -126,7 +136,8 @@ class TestImportProducts:
             {"as_id": "saplings", "name": "zaailingen"}
         )
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         call_command("import_products")
         assert Product.objects.count() == 1
@@ -165,7 +176,8 @@ class TestImportProducts:
     ):
         requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         requests_mock.get(SCHEMA_API_URL, text=json.dumps(schema_api_json))
         call_command("import_products", source="all")
