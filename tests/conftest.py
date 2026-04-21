@@ -179,6 +179,7 @@ def orm_product2(orm_other_team) -> Product:
         themes=["MI"],
         refresh_period="3.MONTH",
         publication_status="P",
+        last_editor="test@example.com",
     )
 
     service = DataService.objects.create(

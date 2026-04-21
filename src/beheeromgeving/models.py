@@ -92,11 +92,11 @@ class Product(models.Model):
         'waarbij periodStr iets is als "uur", "dag", "week", "maand", "jaar"',
     )
     last_updated = models.DateTimeField(auto_now=True)
-    # opgeslagen in db?
     last_editor = models.CharField(
         _("Last Editor"),
         null=True,
         blank=True,
+        default="import",
         help_text="De gebruiker of systeem account die de update doet",
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -158,10 +158,6 @@ class Product(models.Model):
             self._owner = value
         else:
             self._owner = None
-
-    # @property
-    # def last_editor(self) -> str | None:
-    #     return self._owner or self.team.po_name
 
     def to_domain(self, published_only: bool = False):
         if published_only and self.publication_status != enums.PublicationStatus.PUBLISHED.value:
@@ -286,11 +282,11 @@ class DataContract(models.Model):
         help_text="Het privacyniveau van het contract",
     )
     last_updated = models.DateTimeField(auto_now=True)
-    # opgeslagen in db?
     last_editor = models.CharField(
         _("Last Editor"),
         null=True,
         blank=True,
+        default="import",
         help_text="De gebruiker of systeem account die de update doet",
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -356,10 +352,6 @@ class DataContract(models.Model):
             return f"{base_url}?scopes={scopes}"
         else:
             return None
-
-    # @property
-    # def last_editor(self) -> str | None:
-    #     return self.product._owner or self.product.team.po_name
 
     def to_domain(self):
         return objects.DataContract(

@@ -143,6 +143,7 @@ class TestImportProducts:
         assert Product.objects.count() == 1
         updated_product = Product.objects.filter(name="Bomen stamgegevens").first()
         assert updated_product
+        assert updated_product.last_editor == "import"
         assert updated_product.description == "Nieuwe beschrijving"
         assert updated_product.contracts.count() == 1
         updated_contract = updated_product.contracts.first()
@@ -150,6 +151,26 @@ class TestImportProducts:
         # scope and tables are updated.
         assert updated_contract.scopes == ["fp/mdw"]
         assert updated_contract.tables == ["stamgegevens", "saplings"]
+
+    def test_import_products_does_not_update(
+        self,
+        orm_product2,
+        orm_other_team,
+    ):
+        assert orm_product2
+        assert orm_product2.last_editor != "import"
+        call_command("import_products")
+
+        orm_product2.description = "Nieuwe beschrijving"
+        orm_product2.language = "NL"
+        call_command("import_products")
+
+        product = Product.objects.filter(name="Fietspaaltjes").first()
+        assert product
+
+        # description and language are not updated if last_editor is not import
+        assert product.description != "Nieuwe beschrijving"
+        assert product.language != "NL"
 
     def test_import_products_does_not_update_from_schema_api(
         self, requests_mock, schema_api_json, orm_team

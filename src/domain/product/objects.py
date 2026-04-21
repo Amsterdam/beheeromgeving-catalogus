@@ -297,10 +297,6 @@ class Product(BaseObject):
         contract = self.get_contract(contract_id)
         if contract.validate.can_update():
             contract.update_from_dict(data)
-        # Bij een update wordt automatisch last_editor aangepast naar de gebruiker of systeem
-        # account die de update doet
-        # last_editor = self.get_editor(contract_id)
-        # is dit dan het team id? Of hoe haal ik een specifieke user/system account op?
         return contract
 
     def update_contract_state(self, contract_id: int, data: dict) -> DataContract:

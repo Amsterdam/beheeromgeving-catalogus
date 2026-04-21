@@ -212,7 +212,6 @@ class Command(BaseCommand):
                     schema_url=f"{SCHEMA_API_URL}/{to_snake_case(dataset['id'])}",
                     type=enums.ProductType.DATAPRODUCT,
                     owner=dataset["owner"][:64] if dataset.get("owner") else None,
-                    last_editor="import",
                 )
                 if not product.id:
                     raise RuntimeError(f"Product {product.name} is missing id") from None
@@ -226,7 +225,6 @@ class Command(BaseCommand):
                         if auth.get("id") == "OPENBAAR"
                         else None
                     ),
-                    last_editor="import",
                 )
                 contract = self.service.create_contract(
                     product_id=product.id,
@@ -303,7 +301,10 @@ class Command(BaseCommand):
         if not team.id:
             raise RuntimeError(f"Team {team.name} is missing id")
         product_dto = ProductCreate(team_id=team.id, name=name, **kwargs)
-        return self.service.create_product(data=product_dto.model_dump(), scopes=[team.scope])
+        return self.service.create_product(
+            data=product_dto.model_dump(),
+            scopes=[team.scope],
+        )
 
     def _update_product(self, team: Team, domain_product: Product, product: dict):
         update_dto = ProductUpdate(
@@ -313,12 +314,14 @@ class Command(BaseCommand):
         )
         if not domain_product.id:
             raise RuntimeError(f"Product {domain_product.name} is missing id")
-        return self.service.update_product(
-            product_id=domain_product.id,
-            data=update_dto.model_dump(),
-            scopes=[team.scope],
-            last_editor="import",
-        )
+        if domain_product.last_editor == "import":
+            return self.service.update_product(
+                product_id=domain_product.id,
+                data=update_dto.model_dump(),
+                scopes=[team.scope],
+                last_editor="import",
+            )
+        return domain_product
 
     def _create_services(self, product, new_product, team):
         services = []
@@ -377,19 +380,20 @@ class Command(BaseCommand):
             existing_contract = next(
                 contract for contract in created_product.contracts if contract.name == c.name
             )
-            return self.service.update_contract(
-                product_id=created_product.id,
-                contract_id=existing_contract.id,
-                data=c.model_dump(),
-                scopes=[team.scope],
-                last_editor="import",
-            )
+            if existing_contract.last_editor == "import":
+                return self.service.update_contract(
+                    product_id=created_product.id,
+                    contract_id=existing_contract.id,
+                    data=c.model_dump(),
+                    scopes=[team.scope],
+                    last_editor="import",
+                )
+            return existing_contract
         except StopIteration:
             return self.service.create_contract(
                 product_id=created_product.id,
                 data=c.model_dump(),
                 scopes=[team.scope],
-                last_editor="import",
             )
 
     def _create_distributions(self, product: dict, new_product, new_contract, services, team):

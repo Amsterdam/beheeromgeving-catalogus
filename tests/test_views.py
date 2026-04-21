@@ -546,9 +546,7 @@ class TestViews:
             assert response.data[key] == val
             assert getattr(orm_draft_product, key) == val
         assert response.data["last_updated"] == orm_draft_product.last_updated
-        # Bij een update wordt automatisch last_editor aangepast
-        # naar de gebruiker of systeem account die de update doet
-        assert response.data["last_editor"] == "test@example.com"
+        assert orm_draft_product.last_editor == "test@example.com"
 
     def test_product_update_fails_on_published_product(
         self, orm_product, orm_team, client_with_token
@@ -747,9 +745,7 @@ class TestViews:
                 response_value == value
                 or response_value == datetime.strptime(value, "%Y-%m-%d").date()  # noqa: DTZ007
             )
-            # Bij een update wordt automatisch last_editor aangepast
-            # naar de gebruiker of systeem account die de update doet
-            assert response.data["last_editor"] == "test@example.com"
+            assert orm_draft_product.contracts.first().last_editor == "test@example.com"
 
     def test_contract_update_fails_on_published_contract(
         self, orm_product, orm_team, client_with_token

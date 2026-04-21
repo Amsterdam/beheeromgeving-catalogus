@@ -44,6 +44,7 @@ class ProductService(AbstractService):
             **data,
             refresh_period=(RefreshPeriod.from_dict(refresh_period) if refresh_period else None),
             publication_status=enums.PublicationStatus.DRAFT,
+            last_editor="import",
         )
         return self._persist(product)
 
@@ -96,6 +97,7 @@ class ProductService(AbstractService):
         contract = DataContract(
             **data,
             publication_status=enums.PublicationStatus.DRAFT,
+            last_editor="import",
         )
         product.create_contract(contract)
         updated_product = self._persist(product)
