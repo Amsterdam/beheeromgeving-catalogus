@@ -56,6 +56,7 @@ class PublicationStatus(StrChoicesEnum):
     DRAFT = "D"
     IN_REVIEW = "R"
     APPROVED = "A"
+    INTERNALLY_PUBLISHED = "I"
     PUBLISHED = "P"
     EXPIRED = "E"
     DELETED = "X"
