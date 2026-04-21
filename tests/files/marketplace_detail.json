@@ -1,6 +1,6 @@
 {
   "id": "bomen_stamgegevens_v1",
-  "naam": "Bomen stamgegevens",
+  "naam": "Bomen",
   "versie": "V1",
   "beschrijving": "Deze dataset bevat de vaste boomgegevens van een boom. In de dataset staan bomen in de openbare ruimte die gemeente Amsterdam in beheer heeft.",
   "doelbinding": "Beschikbaar stellen van informatie over de bomen in beheer van Gemeente Amsterdam aan een breed publiek in het kader van transparantie en kennis delen. Daarnaast wordt de data gebruikt voor onderhoud en onderzoek.",

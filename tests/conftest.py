@@ -179,7 +179,6 @@ def orm_product2(orm_other_team) -> Product:
         themes=["MI"],
         refresh_period="3.MONTH",
         publication_status="P",
-        last_editor="test@example.com",
     )
 
     service = DataService.objects.create(
@@ -211,6 +210,58 @@ def orm_product2(orm_other_team) -> Product:
         download_url="https://fietspaaltjes.amsterdam.nl/beheer.csv",
         format="csv",
         type="A",
+    )
+
+    return product
+
+
+@pytest.fixture()
+def orm_product3(orm_other_team) -> Product:
+    product = Product.objects.create(
+        name="Bomen",
+        description="bomen in Amsterdam",
+        team=orm_other_team,
+        data_steward="meneerboom@amsterdam.nl",
+        language="NL",
+        is_geo=True,
+        crs="RD",
+        schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+        type="D",
+        themes=["NM"],
+        refresh_period="3.MONTH",
+        publication_status="D",
+        last_editor="test@example.com",
+    )
+
+    service = DataService.objects.create(
+        product=product,
+        type="REST",
+        endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
+    )
+
+    contract = DataContract.objects.create(
+        product=product,
+        publication_status="D",
+        purpose="onderhoud van bomen",
+        name="beheer bomen",
+        description="contract voor data nodig voor het beheer van bomen",
+        privacy_level="NPI",
+        scopes=["bomen_beheer"],
+        confidentiality="I",
+        start_date="2025-01-01",
+        retainment_period=12,
+    )
+
+    Distribution.objects.create(
+        contract=contract,
+        access_service=service,
+        type="A",
+    )
+    Distribution.objects.create(
+        contract=contract,
+        download_url="https://bomen.amsterdam.nl/beheer.csv",
+        format="csv",
+        type="F",
     )
 
     return product
