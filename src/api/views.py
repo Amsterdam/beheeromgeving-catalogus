@@ -219,11 +219,13 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @extend_schema(request=dtos.ProductUpdate, responses={200: dtos.ProductDetail})
     def partial_update(self, request, pk: str):
         product_dto = self._validate_dto(request.data, dto_type=dtos.ProductUpdate)
+        last_editor = self._get_last_editor(request)
         # ignore contracts/service as these should be updated through their own endpoint
         product = product_service.update_product(
             product_id=int(pk),
             data=product_dto.model_dump(exclude_unset=True, exclude={"contracts", "services"}),
             scopes=request.get_token_scopes,
+            last_editor=last_editor,
         )
         return Response(dtos.to_response_object(product), status=200)
 
@@ -253,6 +255,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         data = dtos.to_response_object(updated_product)
         return Response(data, status=200)
+
+    def _get_last_editor(self, request):
+        if hasattr(request, "get_token_claims"):
+            token_claims = request.get_token_claims
+            user_account = token_claims.get("email", request.get_token_subject)
+            system_account = token_claims.get("appid")
+            return user_account if user_account else system_account
+        return None
 
     @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataContractList]})
     @action(detail=True, methods=["get"], url_path="contracts", url_name="contracts-list")
@@ -304,11 +314,13 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @contract_detail.mapping.patch
     def update_contract(self, request, pk: str, contract_id: str):
         contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
+        last_editor = self._get_last_editor(request)
         contract = product_service.update_contract(
             product_id=int(pk),
             contract_id=int(contract_id),
             data=contract_dto.model_dump(exclude_unset=True),
             scopes=request.get_token_scopes,
+            last_editor=last_editor,
         )
         data = dtos.to_response_object(contract)
         return Response(data, status=200)

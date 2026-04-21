@@ -99,6 +99,7 @@ class DataContract(BaseObject):
     name: str | None = None
     description: str | None = None
     last_updated: datetime | None = None
+    last_editor: str | None = None
     privacy_level: enums.PrivacyLevel | None = None
     scopes: list[str] | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
@@ -236,6 +237,7 @@ class Product(BaseObject):
     contracts: list[DataContract] = field(default_factory=list)
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
+    last_editor: str | None = None
     created_at: datetime | None = None
     refresh_period: RefreshPeriod | None = None
     publication_status: enums.PublicationStatus | None = None

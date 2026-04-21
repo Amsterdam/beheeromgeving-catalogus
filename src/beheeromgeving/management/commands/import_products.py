@@ -16,7 +16,11 @@ from api.datatransferobjects import (
     ProductUpdate,
     RefreshPeriod,
 )
-from beheeromgeving.management.commands.refresh_periods import FREQUENCY_MAP, REFRESH_MAP, UNIT_MAP
+from beheeromgeving.management.commands.refresh_periods import (
+    FREQUENCY_MAP,
+    REFRESH_MAP,
+    UNIT_MAP,
+)
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
 from domain.exceptions import NotAuthorized, ObjectDoesNotExist, ValidationError
 from domain.product import ProductRepository, ProductService, enums
@@ -216,12 +220,16 @@ class Command(BaseCommand):
                     name=f"{name} {auth.get('name')}"[:64],
                     description=product.description,
                     scope=f"scope_{auth.get('id').lower()}",
-                    confidentiality=enums.ConfidentialityLevel.OPENBAAR
-                    if auth.get("id") == "OPENBAAR"
-                    else None,
+                    confidentiality=(
+                        enums.ConfidentialityLevel.OPENBAAR
+                        if auth.get("id") == "OPENBAAR"
+                        else None
+                    ),
                 )
                 contract = self.service.create_contract(
-                    product_id=product.id, data=contract.model_dump(), scopes=[team.scope]
+                    product_id=product.id,
+                    data=contract.model_dump(),
+                    scopes=[team.scope],
                 )
                 if not contract.id:
                     raise RuntimeError(f"Contract {contract.name} doesn't have an id") from None
@@ -252,7 +260,8 @@ class Command(BaseCommand):
             try:
                 refresh_parts = refresh_period_input.split(" ")
                 refresh_period = RefreshPeriod(
-                    frequency=FREQUENCY_MAP[refresh_parts[0]], unit=UNIT_MAP[refresh_parts[-1]]
+                    frequency=FREQUENCY_MAP[refresh_parts[0]],
+                    unit=UNIT_MAP[refresh_parts[-1]],
                 )
             except KeyError:
                 refresh_period = None
@@ -292,7 +301,10 @@ class Command(BaseCommand):
         if not team.id:
             raise RuntimeError(f"Team {team.name} is missing id")
         product_dto = ProductCreate(team_id=team.id, name=name, **kwargs)
-        return self.service.create_product(data=product_dto.model_dump(), scopes=[team.scope])
+        return self.service.create_product(
+            data=product_dto.model_dump(),
+            scopes=[team.scope],
+        )
 
     def _update_product(self, team: Team, domain_product: Product, product: dict):
         update_dto = ProductUpdate(
@@ -302,9 +314,14 @@ class Command(BaseCommand):
         )
         if not domain_product.id:
             raise RuntimeError(f"Product {domain_product.name} is missing id")
-        return self.service.update_product(
-            product_id=domain_product.id, data=update_dto.model_dump(), scopes=[team.scope]
-        )
+        if domain_product.last_editor == "import":
+            return self.service.update_product(
+                product_id=domain_product.id,
+                data=update_dto.model_dump(),
+                scopes=[team.scope],
+                last_editor="import",
+            )
+        return domain_product
 
     def _create_services(self, product, new_product, team):
         services = []
@@ -353,25 +370,30 @@ class Command(BaseCommand):
             confidentiality=conf_level_map[product_dict["vertrouwelijkheidsniveau"]],
             start_date=product_dict["startDatumContract"],
             retainment_period=retainment_period,
-            tables=[
-                table.get("as_id", table["name"]) for table in product_dict["schema"]["tables"]
-            ]
-            if product_dict.get("schema") and product_dict["schema"].get("tables")
-            else None,
+            tables=(
+                [table.get("as_id", table["name"]) for table in product_dict["schema"]["tables"]]
+                if product_dict.get("schema") and product_dict["schema"].get("tables")
+                else None
+            ),
         )
         try:
             existing_contract = next(
                 contract for contract in created_product.contracts if contract.name == c.name
             )
-            return self.service.update_contract(
-                product_id=created_product.id,
-                contract_id=existing_contract.id,
-                data=c.model_dump(),
-                scopes=[team.scope],
-            )
+            if existing_contract.last_editor == "import":
+                return self.service.update_contract(
+                    product_id=created_product.id,
+                    contract_id=existing_contract.id,
+                    data=c.model_dump(),
+                    scopes=[team.scope],
+                    last_editor="import",
+                )
+            return existing_contract
         except StopIteration:
             return self.service.create_contract(
-                product_id=created_product.id, data=c.model_dump(), scopes=[team.scope]
+                product_id=created_product.id,
+                data=c.model_dump(),
+                scopes=[team.scope],
             )
 
     def _create_distributions(self, product: dict, new_product, new_contract, services, team):

@@ -3,8 +3,13 @@ import json
 import pytest
 from django.core.management import call_command
 
-from beheeromgeving.management.commands.import_products import MARKETPLACE_URL, SCHEMA_API_URL
-from beheeromgeving.management.commands.import_products import Command as ImportProductsCommand
+from beheeromgeving.management.commands.import_products import (
+    MARKETPLACE_URL,
+    SCHEMA_API_URL,
+)
+from beheeromgeving.management.commands.import_products import (
+    Command as ImportProductsCommand,
+)
 from beheeromgeving.models import DataContract, DataService, Distribution, Product
 from domain.product import enums
 
@@ -15,7 +20,9 @@ class TestImportProducts:
         import_products = ImportProductsCommand()
 
         new_product = import_products._create_product(
-            orm_team, product_json["naam"], **import_products._get_product_kwargs(product_json)
+            orm_team,
+            product_json["naam"],
+            **import_products._get_product_kwargs(product_json),
         )
         assert new_product.name == product_json["naam"]
 
@@ -43,7 +50,8 @@ class TestImportProducts:
     ):
         requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         requests_mock.get(SCHEMA_API_URL, text=json.dumps(schema_api_json))
         call_command("import_products", source="all")
@@ -80,7 +88,8 @@ class TestImportProducts:
     ):
         requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         requests_mock.get(SCHEMA_API_URL, text=json.dumps(schema_api_json))
         call_command("import_products", source="all")
@@ -116,7 +125,8 @@ class TestImportProducts:
     ):
         requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         call_command("import_products")
 
@@ -126,12 +136,14 @@ class TestImportProducts:
             {"as_id": "saplings", "name": "zaailingen"}
         )
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         call_command("import_products")
         assert Product.objects.count() == 1
-        updated_product = Product.objects.filter(name="Bomen stamgegevens").first()
+        updated_product = Product.objects.filter(name="Bomen").first()
         assert updated_product
+        assert updated_product.last_editor == "import"
         assert updated_product.description == "Nieuwe beschrijving"
         assert updated_product.contracts.count() == 1
         updated_contract = updated_product.contracts.first()
@@ -139,6 +151,46 @@ class TestImportProducts:
         # scope and tables are updated.
         assert updated_contract.scopes == ["fp/mdw"]
         assert updated_contract.tables == ["stamgegevens", "saplings"]
+
+    def test_import_products_does_not_update(
+        self,
+        orm_product3,
+        requests_mock,
+        marketplace_json,
+        marketplace_detail_json,
+        orm_other_team,
+    ):
+        assert orm_product3
+        assert orm_product3.last_editor != "import"
+        requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
+        requests_mock.get(
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
+        )
+        call_command("import_products")
+
+        marketplace_detail_json["beschrijving"] = "Nieuwe beschrijving"
+        marketplace_detail_json["amsterdamSchemaDatasetVerwijzing"]["scope"] = "FP/MDW"
+        marketplace_detail_json["schema"]["tables"].append(
+            {"as_id": "saplings", "name": "zaailingen"}
+        )
+        requests_mock.get(
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
+        )
+        call_command("import_products")
+
+        assert Product.objects.count() == 1
+        updated_product = Product.objects.filter(name="Bomen").first()
+        assert updated_product
+        assert updated_product.last_editor != "import"
+        assert updated_product.description != "Nieuwe beschrijving"
+        assert updated_product.contracts.count() == 2
+        updated_contract = updated_product.contracts.first()
+        assert updated_contract
+        # scope and tables are not updated.
+        assert updated_contract.scopes != ["fp/mdw"]
+        assert updated_contract.tables != ["stamgegevens", "saplings"]
 
     def test_import_products_does_not_update_from_schema_api(
         self, requests_mock, schema_api_json, orm_team
@@ -165,7 +217,8 @@ class TestImportProducts:
     ):
         requests_mock.get(MARKETPLACE_URL, text=json.dumps(marketplace_json))
         requests_mock.get(
-            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1", text=json.dumps(marketplace_detail_json)
+            f"{MARKETPLACE_URL}/bomen_stamgegevens_v1",
+            text=json.dumps(marketplace_detail_json),
         )
         requests_mock.get(SCHEMA_API_URL, text=json.dumps(schema_api_json))
         call_command("import_products", source="all")

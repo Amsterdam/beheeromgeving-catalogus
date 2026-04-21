@@ -92,6 +92,13 @@ class Product(models.Model):
         'waarbij periodStr iets is als "uur", "dag", "week", "maand", "jaar"',
     )
     last_updated = models.DateTimeField(auto_now=True)
+    last_editor = models.CharField(
+        _("Last Editor"),
+        null=True,
+        blank=True,
+        default="import",
+        help_text="De gebruiker of systeem account die de update doet",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Only for Dataproducts (type = "D")
@@ -175,6 +182,7 @@ class Product(models.Model):
             contracts=contracts,
             themes=self.themes,
             last_updated=self.last_updated,
+            last_editor=self.last_editor,
             created_at=self.created_at,
             refresh_period=(
                 objects.RefreshPeriod.from_string(self.refresh_period)
@@ -274,6 +282,13 @@ class DataContract(models.Model):
         help_text="Het privacyniveau van het contract",
     )
     last_updated = models.DateTimeField(auto_now=True)
+    last_editor = models.CharField(
+        _("Last Editor"),
+        null=True,
+        blank=True,
+        default="import",
+        help_text="De gebruiker of systeem account die de update doet",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     confidentiality = models.CharField(
@@ -347,6 +362,7 @@ class DataContract(models.Model):
             name=self.name,
             description=self.description,
             last_updated=self.last_updated,
+            last_editor=self.last_editor,
             privacy_level=self.privacy_level,
             scopes=self.scopes,
             confidentiality=self.confidentiality,
