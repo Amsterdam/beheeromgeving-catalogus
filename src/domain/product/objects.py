@@ -197,7 +197,11 @@ class ProductValidator:
                 raise ValidationError(
                     "Cannot publish product, product needs at least one published contract"
                 )
-
+        if (
+            data.get("publication_status") == "I"
+            and self.product.type != enums.ProductType.DATAPRODUCT
+        ):
+            raise ValidationError("Cannot internally publish DataProduct")
         return True
 
     def can_change_contract_status(self, data: dict, contract_id: int) -> bool:

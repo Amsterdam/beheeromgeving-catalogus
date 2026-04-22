@@ -186,11 +186,23 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             data = dtos.to_response_object(product)
             return Response(data, status=200)
 
-        data = product_query_handler.list_products(
-            query=params.query,
-            filter=params.filter,
-            exclude=params.exclude,
-            order=params.order,
+        try:
+            data = product_query_handler.list_internal_products(
+                query=params.query,
+                filter=params.filter,
+                exclude=params.exclude,
+                order=params.order,
+                scopes=request.get_token_scopes,
+            )
+        except exceptions.NotAuthorized:
+            data = []
+        data.extend(
+            product_query_handler.list_products(
+                query=params.query,
+                filter=params.filter,
+                exclude=params.exclude,
+                order=params.order,
+            )
         )
 
         pagination = Pagination()
@@ -204,7 +216,12 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
                 product_id=int(pk), scopes=request.get_token_scopes
             )
         except exceptions.NotAuthorized:
-            product = product_service.get_published_product(int(pk))
+            try:
+                product = product_service.get_internal_product(
+                    product_id=int(pk), scopes=request.get_token_scopes
+                )
+            except exceptions.NotAuthorized:
+                product = product_service.get_published_product(int(pk))
         return Response(dtos.to_response_object(product), status=200)
 
     @extend_schema(request=dtos.ProductCreate, responses={200: dtos.ProductDetail})

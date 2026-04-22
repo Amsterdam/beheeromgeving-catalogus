@@ -285,6 +285,33 @@ def many_orm_products(orm_team) -> list[Product]:
 
 
 @pytest.fixture()
+def many_orm_information_products(orm_team) -> list[Product]:
+    result = []
+    for index, letter in enumerate("nopqrstuvwxyzabcdefghijklm"):
+        result.append(
+            Product.objects.create(
+                name=f"naam info {letter}",
+                description=f"beschrijving info {letter}",
+                team=orm_team,
+                data_steward=f"mail.info.{letter}@amsterdam.nl",
+                language="NL",
+                is_geo=True,
+                crs="RD",
+                schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+                type="I",
+                themes=["NM"],
+                refresh_period="3.MONTH",
+                publication_status="I",
+            )
+        )
+        Product.objects.filter(id=result[-1].id).update(
+            last_updated=datetime.fromisoformat(f"2025-12-25T00:{59 - index}+00:00"),
+            created_at=datetime.fromisoformat(f"2025-12-25T00:{59 - index}+00:00"),
+        )
+    return result
+
+
+@pytest.fixture()
 def non_published_products(orm_team) -> list[Product]:
     result = []
     for letter in "DRAE":

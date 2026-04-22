@@ -25,6 +25,10 @@ class ProductService(AbstractService):
     def get_product(self, product_id: int, **kwargs) -> Product:
         return self.repository.get(product_id)
 
+    @authorize.is_employee
+    def get_internal_product(self, product_id: int, **kwargs) -> Product:
+        return self.repository.get_internal(product_id)
+
     def get_published_product(self, product_id: int) -> Product:
         return self.repository.get_published(product_id)
 
