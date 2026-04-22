@@ -126,5 +126,8 @@ class DummyAuthRepo(AbstractAuthRepository):
 
     def get_config(self):
         return AuthorizationConfiguration(
-            settings.ADMIN_ROLE_NAME, self.team_scopes, self.product_scopes
+            settings.ADMIN_ROLE_NAME,
+            settings.EMPLOYEE_ROLE_NAME,
+            self.team_scopes,
+            self.product_scopes,
         )
