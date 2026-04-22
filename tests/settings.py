@@ -43,3 +43,4 @@ STORAGES = {
 # App config
 FEATURE_FLAG_USE_AUTH = True  # Tests rely on auth being enabled.
 ADMIN_ROLE_NAME = "test_admin"
+EMPLOYEE_ROLE_NAME = "test_employee"

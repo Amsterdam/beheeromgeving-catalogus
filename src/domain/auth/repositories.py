@@ -10,6 +10,7 @@ class AuthorizationRepository(AbstractAuthRepository):
     def __init__(self):
         self.queryset: QuerySet[orm.Team] = orm.Team.objects.all()
         self.admin_role: str = settings.ADMIN_ROLE_NAME
+        self.employee_role: str = settings.EMPLOYEE_ROLE_NAME
         self.feature_enabled: bool = settings.FEATURE_FLAG_USE_AUTH
 
     def refresh_from_db(self):
@@ -26,5 +27,9 @@ class AuthorizationRepository(AbstractAuthRepository):
                 if p.name:
                     product_scopes[p.name.lower()] = t.scope
         return AuthorizationConfiguration(
-            self.admin_role, team_scopes, product_scopes, feature_enabled=self.feature_enabled
+            self.admin_role,
+            self.employee_role,
+            team_scopes,
+            product_scopes,
+            feature_enabled=self.feature_enabled,
         )

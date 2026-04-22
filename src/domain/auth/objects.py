@@ -14,6 +14,7 @@ class Role(StrEnum):
     ADMIN = "admin"
     TEAM_MEMBER = "team_member"
     ANONYMOUS = "anonymous"
+    EMPLOYEE = "employee"
 
 
 @dataclass
@@ -81,6 +82,7 @@ RULES = [
         ),
     ),
     Rule(decorator_name="is_admin", method_name="require", role=Role.ADMIN),
+    Rule(decorator_name="is_employee", method_name="require", role=Role.EMPLOYEE),
 ]
 
 
@@ -94,6 +96,7 @@ class AuthorizationConfiguration:
     in the settings or the database.
 
     admin_role:     The role for the admin, from the settings.
+    employee_role:  The role for the employee, from the settings.
     team_scopes:    A mapping from team_id to team scope.
     product_scopes: A mapping from product_id to team_scope.
 
@@ -106,6 +109,7 @@ class AuthorizationConfiguration:
     def __init__(
         self,
         admin_role: str,
+        employee_role: str,
         team_scopes: dict[TeamId, Scope],
         product_scopes: dict[ProductId | str, Scope],
         feature_enabled: bool = True,
@@ -113,11 +117,14 @@ class AuthorizationConfiguration:
         self.team_scopes = team_scopes or {}
         self.product_scopes = product_scopes or {}
         self.admin_role = admin_role
+        self.employee_role = employee_role
         self.feature_enabled = feature_enabled
 
     def scope_to_role(self, scope: Scope) -> Role | None:
         if scope == self.admin_role:
             return Role.ADMIN
+        if scope == self.employee_role:
+            return Role.EMPLOYEE
         if scope in self.team_scopes.values():
             return Role.TEAM_MEMBER
         return None
