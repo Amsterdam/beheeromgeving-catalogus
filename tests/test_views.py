@@ -204,6 +204,20 @@ class TestViews:
         # check a property that is only in detail view, as this should return a ProductDetail.
         assert product["contact_email"] == orm_product.contact_email
 
+    def test_product_list_shows_internal_products_for_employee(
+        self, many_orm_information_products, client_with_token
+    ):
+        response = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get("/products")
+        assert response.status_code == 200
+        assert response.data["count"] == len(many_orm_information_products)
+
+    def test_product_list_hides_internal_products_for_non_employee(
+        self, many_orm_information_products, api_client
+    ):
+        response = api_client.get("/products")
+        assert response.status_code == 200
+        assert response.data["count"] == 0
+
     def test_product_list_query_by_name_404(self, api_client, orm_product):
         """Assert query by name returns 404 when we cannot find the product."""
         response = api_client.get("/products?name=fietspaaltjes_v1")
@@ -482,6 +496,21 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == orm_product.name
         assert response.data["missing_fields"] == []
+
+    def test_product_detail_shows_internal_product_for_employee(
+        self, many_orm_information_products, client_with_token
+    ):
+        product_id = many_orm_information_products[0].id
+        response = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get(f"/products/{product_id}")
+        assert response.status_code == 200
+        assert response.data["name"] == many_orm_information_products[0].name
+
+    def test_product_detail_hides_internal_product_for_non_employee(
+        self, many_orm_information_products, api_client
+    ):
+        product_id = many_orm_information_products[0].id
+        response = api_client.get(f"/products/{product_id}")
+        assert response.status_code == 404
 
     def test_product_detail_missing_fields(
         self, orm_incomplete_product, orm_team, client_with_token

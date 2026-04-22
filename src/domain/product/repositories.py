@@ -26,6 +26,12 @@ class ProductRepository(AbstractRepository[Product]):
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
 
+    def get_internal(self, id: int) -> Product:
+        try:
+            return self.manager.get(pk=id, publication_status="I").to_domain()
+        except orm.Product.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist from e
+
     def get_published(self, id: int) -> Product:
         try:
             product = self.manager.get(pk=id).to_domain(published_only=True)
@@ -58,17 +64,15 @@ class ProductRepository(AbstractRepository[Product]):
     def list_all(self, **kwargs):
         return [p.to_domain() for p in self.manager.all()]
 
-    def list(
+    def _apply_filters(
         self,
+        products,
         *,
         query: str | None = None,
         filter: dict | None = None,
         exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
-    ) -> list_[dict]:
-        products = self.manager.exclude(
-            publication_status=enums.PublicationStatus.DELETED.value
-        )  # Exclude deleted products
+    ):
         if query:
             words = query.split()
             q_obj = Q()
@@ -95,6 +99,35 @@ class ProductRepository(AbstractRepository[Product]):
         # If query was used, sort by occurrence count
         if query:
             products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
+        return products
+
+    def list_internal(self, **kwargs):
+        products = self.manager.filter(
+            publication_status=enums.PublicationStatus.INTERNALLY_PUBLISHED.value
+        )
+        if "filter" in kwargs:
+            kwargs["filter"].pop("publication_status", None)
+        self._apply_filters(products, **kwargs)
+        return [ProductList.from_django(p).model_dump() for p in products]
+
+    def list(
+        self,
+        *,
+        query: str | None = None,
+        filter: dict | None = None,
+        exclude: dict | None = None,
+        order: tuple[str, bool] | None = ("name", False),
+    ) -> list_[dict]:
+        products = self.manager.exclude(
+            publication_status=enums.PublicationStatus.DELETED.value
+        )  # Exclude deleted products
+        products = self._apply_filters(
+            products,
+            query=query,
+            filter=filter,
+            exclude=exclude,
+            order=order,
+        )
         return [
             ProductList.from_django(p).model_dump()
             for p in products
@@ -112,30 +145,13 @@ class ProductRepository(AbstractRepository[Product]):
     ) -> list_:
         team_ids = [team.id for team in teams]
         products = self.manager.filter(team_id__in=team_ids)
-        if query:
-            words = query.split()
-            q_obj = Q()
-            for word in words:
-                q_obj |= (
-                    Q(name__icontains=word)
-                    | Q(description__icontains=word)
-                    | Q(contracts__name__icontains=word)
-                )
-            products = products.filter(q_obj).distinct()
-
-            def count_occurrences(product: orm.Product) -> int:
-                text = f"{product.name} {product.description} "
-                text += " ".join([(c.name or "") for c in product.contracts.all()])
-                return sum(text.lower().count(word.lower()) for word in words)
-
-        if filter:
-            products = products.filter(**filter).distinct()
-        if exclude:
-            products = products.exclude(**exclude).distinct()
-        if order:
-            products = products.order_by(f"{'-' if order[1] else ''}{order[0]}")
-        if query:
-            products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
+        products = self._apply_filters(
+            products,
+            query=query,
+            filter=filter,
+            exclude=exclude,
+            order=order,
+        )
 
         return [MyProduct.from_django(p).model_dump() for p in products]
 
