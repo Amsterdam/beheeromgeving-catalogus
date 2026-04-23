@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from domain.auth import authorize
 from domain.base import AbstractRepository, AbstractService
 from domain.team import Team
@@ -20,6 +22,8 @@ class TeamService(AbstractService):
 
     def get_teams_from_scopes(self, scopes) -> list[Team]:
         all_teams = self.get_teams()
+        if settings.ADMIN_ROLE_NAME in scopes:
+            return all_teams
         return [team for team in all_teams if team.scope in scopes]
 
     @authorize.is_admin
