@@ -1,3 +1,5 @@
+import base64
+import binascii
 from collections.abc import Sequence
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Literal, overload
@@ -167,6 +169,16 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     distributions: list[Distribution] | None = None
     tables: list[str] | None = None
 
+    @field_validator("purpose")
+    def decode_base64_purpose(cls, v) -> str | None:
+        """If the purpose is base64 encoded, decode it. Otherwise, return it as is."""
+        if v is not None:
+            try:
+                return str(base64.b64decode(v.encode("utf-8"), validate=True), encoding="utf-8")
+            except binascii.Error, ValueError:
+                return v
+        return v
+
 
 class DataContract(IdMixin, DataContractCreateOrUpdate):
     """DataContract detail view"""
@@ -238,6 +250,16 @@ class ProductCreate(ModelMixin, BaseModel):
     sources: list[int] | None = None
     sinks: list[int] | None = None
 
+    @field_validator("description")
+    def decode_base64_description(cls, v) -> str | None:
+        """If the description is base64 encoded, decode it. Otherwise, return it as is."""
+        if v is not None:
+            try:
+                return str(base64.b64decode(v.encode("utf-8"), validate=True), encoding="utf-8")
+            except binascii.Error, ValueError:
+                return v
+        return v
+
 
 class ProductDetail(IdMixin, ProductCreate):
     """Product detail view"""
@@ -267,6 +289,16 @@ class ProductUpdate(ModelMixin, BaseModel):
     services: list[DataService] | None = None
     sources: list[int] | None = None
     sinks: list[int] | None = None
+
+    @field_validator("description")
+    def decode_base64_description(cls, v) -> str | None:
+        """If the description is base64 encoded, decode it. Otherwise, return it as is."""
+        if v is not None:
+            try:
+                return str(base64.b64decode(v.encode("utf-8"), validate=True), encoding="utf-8")
+            except binascii.Error, ValueError:
+                return v
+        return v
 
 
 class ProductList(ModelMixin, BaseModel):

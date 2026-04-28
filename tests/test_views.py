@@ -7,6 +7,7 @@ django ORM models). This is done in the api_client fixture, so any time a orm_* 
 the api_client or client_with_token fixtures need to be the last one.
 """
 
+import base64
 from datetime import UTC, datetime
 
 import pytest
@@ -490,6 +491,24 @@ class TestViews:
         )
         assert response.status_code == 201
 
+    @pytest.mark.parametrize(
+        "input,output",
+        [
+            ("description", "description"),
+            (base64.b64encode(b"description").decode("utf-8"), "description"),
+            ("ZGVzY3JpcHRpb24=", "description"),  # base64 for "description"
+        ],
+    )
+    def test_product_create_with_description(self, orm_team, client_with_token, input, output):
+        response = client_with_token([orm_team.scope]).post(
+            "/products",
+            data={"type": "D", "team_id": orm_team.id, "description": input},
+        )
+        assert response.status_code == 201
+        assert response.data["description"] == output
+        orm_product = Product.objects.get(id=response.data["id"])
+        assert orm_product.description == output
+
     def test_product_delete(self, orm_team, orm_draft_product, client_with_token):
         response = client_with_token([orm_team.scope]).delete(f"/products/{orm_draft_product.id}")
         assert response.status_code == 204
@@ -544,6 +563,21 @@ class TestViews:
         for key, val in data.items():
             assert response.data[key] == val
             assert getattr(orm_draft_product, key) == val
+        assert response.data["last_updated"] == orm_draft_product.last_updated
+        assert orm_draft_product.last_editor == "test@example.com"
+
+    def test_product_update_base64_description(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        data = {"description": base64.b64encode(b"New Description").decode("utf-8")}
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}",
+            data=data,
+        )
+        assert response.status_code == 200
+        orm_draft_product.refresh_from_db()
+        assert response.data["description"] == "New Description"
+        assert orm_draft_product.description == "New Description"
         assert response.data["last_updated"] == orm_draft_product.last_updated
         assert orm_draft_product.last_editor == "test@example.com"
 
@@ -712,9 +746,15 @@ class TestViews:
     def test_contract_create(self, orm_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
             f"/products/{orm_product.id}/contracts",
-            data={"name": "contract1"},
+            data={
+                "name": "contract1",
+                "purpose": base64.b64encode(b"Purpose of contract").decode("utf-8"),
+            },
         )
         assert response.status_code == 201
+        assert response.data["purpose"] == "Purpose of contract"
+        orm_contract = DataContract.objects.get(id=response.data["id"])
+        assert orm_contract.purpose == "Purpose of contract"
 
     @pytest.mark.parametrize(
         "data",
@@ -744,6 +784,18 @@ class TestViews:
                 or response_value == datetime.strptime(value, "%Y-%m-%d").date()  # noqa: DTZ007
             )
             assert orm_draft_product.contracts.first().last_editor == "test@example.com"
+
+    def test_contract_update_base64_purpose(self, orm_draft_product, orm_team, client_with_token):
+        contract_id = orm_draft_product.contracts.first().id
+        data = {"purpose": base64.b64encode(b"New Purpose").decode("utf-8")}
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}", data=data
+        )
+        assert response.status_code == 200
+        assert response.data["purpose"] == "New Purpose"
+        orm_draft_product.refresh_from_db()
+        assert orm_draft_product.contracts.first().purpose == "New Purpose"
+        assert orm_draft_product.contracts.first().last_editor == "test@example.com"
 
     def test_contract_update_fails_on_published_contract(
         self, orm_product, orm_team, client_with_token
