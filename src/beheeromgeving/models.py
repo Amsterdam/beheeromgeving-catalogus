@@ -123,15 +123,6 @@ class Product(models.Model):
         blank=True,
         null=True,
     )
-    crs = models.CharField(
-        _("Geo coördinaatreferentiesysteem"),
-        blank=True,
-        null=True,
-        choices=enums.CoordRefSystem.choices(upper=True),
-        help_text="Geo-informatie is direct gekoppeld aan een locatie op aarde. De manier waarop "
-        "die koppeling wordt gelegd, wordt beschreven in het coördinaatreferentiesysteem (CRS). "
-        "Hierin worden coördinaten van een locatie vastgelegd",
-    )
     sources = models.ManyToManyField("self", symmetrical=False, related_name="sinks")
 
     def __str__(self):
@@ -177,7 +168,6 @@ class Product(models.Model):
             team_id=self.team.pk,
             language=self.language,
             is_geo=self.is_geo,
-            crs=self.crs,
             schema_url=self.schema_url,
             contracts=contracts,
             themes=self.themes,
@@ -244,12 +234,6 @@ class DataContract(models.Model):
         null=True,
         max_length=64,
         help_text="De naam van het Data Contract. Deze moet uniek zijn",
-    )
-    description = models.TextField(
-        _("Beschrijving"),
-        blank=True,
-        null=True,
-        help_text="Beschrijving en betekenis van het Data Contract",
     )
     publication_status = models.CharField(
         _("Publicatiestatus"),
@@ -360,7 +344,6 @@ class DataContract(models.Model):
             publication_date=self.publication_date,
             purpose=self.purpose,
             name=self.name,
-            description=self.description,
             last_updated=self.last_updated,
             last_editor=self.last_editor,
             privacy_level=self.privacy_level,

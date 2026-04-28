@@ -77,15 +77,12 @@ class ProductRepository(AbstractRepository[Product]):
                     Q(name__icontains=word)
                     | Q(description__icontains=word)
                     | Q(contracts__name__icontains=word)
-                    | Q(contracts__description__icontains=word)
                 )
             products = products.filter(q_obj).distinct()
 
             def count_occurrences(product: orm.Product) -> int:
                 text = f"{product.name} {product.description} "
-                text += " ".join(
-                    [(c.name or "") + " " + (c.description or "") for c in product.contracts.all()]
-                )
+                text += " ".join([(c.name or "") for c in product.contracts.all()])
                 text_lower = text.lower()
                 return sum(1 if word.lower() in text_lower else 0 for word in words)
 
@@ -123,13 +120,12 @@ class ProductRepository(AbstractRepository[Product]):
                     Q(name__icontains=word)
                     | Q(description__icontains=word)
                     | Q(contracts__name__icontains=word)
-                    | Q(contracts__description__icontains=word)
                 )
             products = products.filter(q_obj).distinct()
 
             def count_occurrences(product: orm.Product) -> int:
                 text = f"{product.name} {product.description} "
-                text += " ".join([c.name + " " + c.description for c in product.contracts.all()])
+                text += " ".join([(c.name or "") for c in product.contracts.all()])
                 return sum(text.lower().count(word.lower()) for word in words)
 
         if filter:

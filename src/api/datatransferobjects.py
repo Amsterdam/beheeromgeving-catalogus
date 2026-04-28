@@ -152,14 +152,12 @@ class DataContractList(ModelMixin, BaseModel):
     id: int
     publication_status: enums.PublicationStatus | None = None
     name: str | None = None
-    description: str | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
 
 
 class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     purpose: str | None = None
     name: str | None = None
-    description: str | None = None
     last_updated: datetime | None = None
     privacy_level: enums.PrivacyLevel | None = None
     scopes: list[str] | None = None
@@ -227,7 +225,6 @@ class ProductCreate(ModelMixin, BaseModel):
     description: str | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
-    crs: enums.CoordRefSystem | None = None
     schema_url: str | None = None
     type: enums.ProductType | None = None
     contracts: list[DataContract] | None = None
@@ -258,7 +255,6 @@ class ProductUpdate(ModelMixin, BaseModel):
     description: str | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
-    crs: enums.CoordRefSystem | None = None
     schema_url: str | None = None
     type: enums.ProductType | None = None
     contracts: list[DataContract] | None = None

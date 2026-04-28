@@ -580,10 +580,9 @@ class TestProductService:
             "description": "Description of product",
             "language": "NL",
             "is_geo": True,
-            "crs": "RD",
             "themes": ["NM"],
         }
-        missing_fields = r"\[schema_url, refresh_period, contact_email\]"
+        missing_fields = r"\[refresh_period, contact_email\]"
         product_missing_fields = product_service.create_product(
             data={"team_id": team.id, **data}, scopes=[scope]
         )
@@ -609,7 +608,7 @@ class TestProductService:
             "start_date": "2025-01-01",
             "retainment_period": 12,
         }
-        missing_fields = r"\[description, confidentiality\]"
+        missing_fields = r"\[confidentiality\]"
 
         new_product = product_service.create_product(
             data={"team_id": team.id, "name": "Product", "type": "D"},
@@ -639,7 +638,6 @@ class TestProductService:
             "description": "Description of product",
             "language": "NL",
             "is_geo": True,
-            "crs": "RD",
             "themes": ["NM"],
             "schema_url": "https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
             "refresh_period": {"frequency": 3, "unit": "MONTH"},
@@ -668,7 +666,6 @@ class TestProductService:
             "language": "NL",
             "is_geo": True,
             "type": "D",
-            "crs": "RD",
             "themes": ["NM"],
             "schema_url": "https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
             "refresh_period": {"frequency": 3, "unit": "MONTH"},
@@ -677,7 +674,6 @@ class TestProductService:
         contract_data = {
             "purpose": "onderhoud van bomen",
             "name": "beheer bomen",
-            "description": "Description of contract",
             "privacy_level": "NPI",
             "scopes": ["bomen_beheer"],
             "start_date": "2025-01-01",
@@ -712,7 +708,6 @@ class TestProductService:
             "language": "NL",
             "is_geo": True,
             "type": "D",
-            "crs": "RD",
             "themes": ["NM"],
             "schema_url": "https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
             "refresh_period": {"frequency": 3, "unit": "MONTH"},
@@ -721,7 +716,6 @@ class TestProductService:
         contract_data = {
             "purpose": "onderhoud van bomen",
             "name": "beheer bomen",
-            "description": "Description of contract",
             "privacy_level": "NPI",
             "scopes": ["bomen_beheer"],
             "start_date": "2025-01-01",
@@ -777,7 +771,6 @@ class TestProductService:
             "description": "Description of product",
             "language": "NL",
             "is_geo": True,
-            "crs": "RD",
             "themes": ["NM"],
         }
         product_missing_fields = product_service.create_product(

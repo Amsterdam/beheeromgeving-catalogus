@@ -201,7 +201,7 @@ class TestViews:
         product = response.data
         assert product["name"] == orm_product.name
         # check a property that is only in detail view, as this should return a ProductDetail.
-        assert product["crs"] == orm_product.crs
+        assert product["contact_email"] == orm_product.contact_email
 
     def test_product_list_query_by_name_404(self, api_client, orm_product):
         """Assert query by name returns 404 when we cannot find the product."""
@@ -481,7 +481,7 @@ class TestViews:
         )
         assert response.status_code == 200
         assert response.data["name"] == orm_incomplete_product.name
-        assert response.data["missing_fields"] == ["crs"]
+        assert response.data["missing_fields"] == ["language"]
 
     def test_product_create(self, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
@@ -527,7 +527,6 @@ class TestViews:
             {"description": "New Description"},
             {"language": "EN"},
             {"is_geo": True},
-            {"crs": "RD"},
             {"schema_url": "https://schemas.data.amsterdam.nl/datasets/new_url"},
             {"type": "I"},
             {"owner": "New Owner"},
@@ -723,7 +722,6 @@ class TestViews:
             # fields that can be updated
             {"name": "New Name"},
             {"purpose": "New Purpose"},
-            {"description": "New Description"},
             {"privacy_level": "BI"},
             {"scopes": ["another_scope"]},
             {"confidentiality": "V"},
