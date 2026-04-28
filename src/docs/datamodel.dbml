@@ -17,7 +17,6 @@ Table Product {
   schema_url                URL [Note: "Alleen voor dataproducten"]
   language                  "Language Code" [Note: "ISO 639-1, Alleen voor dataproducten"]
   is_geo                    boolean [Note: "Uit amsterdam schema, Alleen voor dataproducten"]
-  crs                       CRS
   sources                   Product[] [ref: < Product.id]
   services                  DataService[] [ref: < DataService.id]
   Note: 'Product kan een dataproduct of een informatieproduct (PowerBI dashboard) zijn'
@@ -30,7 +29,6 @@ Table DataContract [Note: "Datacontract"] {
   publication_status          publicationStatus
   purpose                     string [note: "Doelbinding"]
   name                        string [note: "Naam van het contract"]
-  description                 string
   privacy_level               privacyLevel
   confidentiality             Vertrouwelijkheidsniveau
   retainment_period           integer [Note: 'in maanden']
@@ -81,6 +79,7 @@ Table Distribution {
   download_url        URL
   access_url          URL
   refresh_period      string
+  crs                 list [CRS]
 }
 
 Table DataService {

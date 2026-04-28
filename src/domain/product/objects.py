@@ -66,7 +66,6 @@ class ContractValidator:
     def get_missing_fields(self) -> list[str]:
         required_fields = [
             "name",
-            "description",
             "purpose",
             "confidentiality",
             "privacy_level",
@@ -97,7 +96,6 @@ class DataContract(BaseObject):
     publication_date: datetime | None = None
     purpose: str | None = None
     name: str | None = None
-    description: str | None = None
     last_updated: datetime | None = None
     last_editor: str | None = None
     privacy_level: enums.PrivacyLevel | None = None
@@ -150,17 +148,11 @@ class ProductValidator:
             "team_id",
             "language",
             "is_geo",
-            "schema_url",
             "themes",
             "refresh_period",
             "contact_email",
         ]
-        missing_fields = [
-            field for field in required_fields if getattr(self.product, field) is None
-        ]
-        if self.product.is_geo and not self.product.crs:
-            missing_fields.append("crs")
-        return missing_fields
+        return [field for field in required_fields if getattr(self.product, field) is None]
 
     def has_published_contract(self) -> bool:
         contract_list = self.product.contracts
@@ -231,7 +223,6 @@ class Product(BaseObject):
     description: str | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
-    crs: enums.CoordRefSystem | None = None
     schema_url: str | None = None
     type: enums.ProductType | None = None
     contracts: list[DataContract] = field(default_factory=list)

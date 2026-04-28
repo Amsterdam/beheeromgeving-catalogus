@@ -207,7 +207,6 @@ class Command(BaseCommand):
                     team,
                     name[:64],
                     description=dataset.get("description"),
-                    crs=crs_map[crs] if crs else None,
                     is_geo=dataset.get("crs") is not None,
                     schema_url=f"{SCHEMA_API_URL}/{to_snake_case(dataset['id'])}",
                     type=enums.ProductType.DATAPRODUCT,
@@ -218,8 +217,7 @@ class Command(BaseCommand):
                 auth = dataset.get("auth", [{"id": "OPENBAAR", "name": "Openbaar"}])[0]
                 contract = DataContractCreateOrUpdate(
                     name=f"{name} {auth.get('name')}"[:64],
-                    description=product.description,
-                    scope=f"scope_{auth.get('id').lower()}",
+                    scopes=[f"scope_{auth.get('id').lower()}"],
                     confidentiality=(
                         enums.ConfidentialityLevel.OPENBAAR
                         if auth.get("id") == "OPENBAAR"
@@ -249,6 +247,7 @@ class Command(BaseCommand):
                     contract_id=contract.id,
                     data=d.model_dump(),
                     scopes=[team.scope],
+                    crs=[crs_map[crs] if crs else None],
                 )
 
     def _get_refresh_period(self, product):
@@ -272,11 +271,6 @@ class Command(BaseCommand):
             "description": product["beschrijving"],
             "language": enums.Language[product["taal"].upper()],
             "is_geo": product["geoData"] == "Ja",
-            "crs": (
-                product["geoCoördinaatreferentiesysteem"]
-                if product["geoCoördinaatreferentiesysteem"] not in ["Niet van toepassing", ""]
-                else None
-            ),
             "schema_url": (
                 "https://api.schemas.data.amsterdam.nl/v1/datasets/"
                 f"{product['amsterdamSchemaDatasetVerwijzing']['datasetName']}"
@@ -355,7 +349,6 @@ class Command(BaseCommand):
         c = DataContractCreateOrUpdate(
             purpose=product_dict["doelbinding"],
             name=f"{product_dict['naam']} {product_dict['vertrouwelijkheidsniveau']}"[:64],
-            description=product_dict["beschrijving"],
             privacy_level=enums.PrivacyLevel[
                 PRIVACY_LEVELS[product_dict["privacyniveau"].lower()]
             ],
@@ -398,6 +391,12 @@ class Command(BaseCommand):
 
     def _create_distributions(self, product: dict, new_product, new_contract, services, team):
         distributions = []
+        crs = (
+            [product["geoCoördinaatreferentiesysteem"]]
+            if product["geoCoördinaatreferentiesysteem"] not in ["Niet van toepassing", ""]
+            else []
+        )
+
         for distribution in product["distributietype"]:
             if distribution == "API":
                 for service in services:
@@ -410,6 +409,7 @@ class Command(BaseCommand):
                             contract_id=new_contract.id,
                             data=d.model_dump(),
                             scopes=[team.scope],
+                            crs=crs,
                         )
                     )
             elif distribution == "Bestand":
