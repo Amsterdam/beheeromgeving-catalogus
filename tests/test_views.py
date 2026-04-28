@@ -282,6 +282,15 @@ class TestViews:
         assert response.data["results"][0]["themes"] == orm_product.themes
         assert response.data["results"][1]["themes"] == orm_product2.themes
 
+    @pytest.mark.parametrize("type", ["D", "I"])
+    def test_product_list_filter_matches_product_type(self, many_orm_products, api_client, type):
+        """Assert that we can filter the products on product type."""
+        response = api_client.get(f"/products?product_type={type}")
+        assert response.status_code == 200
+        assert response.data["count"] == 13
+        for result in response.data["results"]:
+            assert result["type"] == type
+
     def test_product_list_filter_matches_confidentiality(
         self, orm_product, orm_product2, api_client
     ):
@@ -1255,6 +1264,14 @@ class TestViews:
         response = client_with_token([orm_team.scope]).get("/me?publication_status=D")
         assert response.status_code == 200
         assert response.data["products"]["count"] == 1
+
+    @pytest.mark.parametrize("type", ["D", "I"])
+    def test_me_can_filter_on_product_type(
+        self, many_orm_products, orm_team, client_with_token, type
+    ):
+        response = client_with_token([orm_team.scope]).get(f"/me?product_type={type}")
+        assert response.status_code == 200
+        assert response.data["products"]["count"] == 13
 
     def test_me_can_search(self, many_orm_products, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).get("/me?q=z")

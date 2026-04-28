@@ -366,6 +366,7 @@ class QueryParams(BaseModel):
     team: list[int] | None = None
     theme: list[enums.Theme] | None = None
     type: list[enums.DistributionType] | None = None
+    product_type: enums.ProductType | None = None
     confidentiality: list[enums.ConfidentialityLevel] | None = None
     publication_status: enums.PublicationStatus | Literal["*"] = enums.PublicationStatus.PUBLISHED
     language: list[enums.Language] | None = None
@@ -409,6 +410,7 @@ class QueryParams(BaseModel):
             "team": "team_id__in",
             "theme": "themes__overlap",
             "type": "contracts__distributions__type__in",
+            "product_type": "type",
             "confidentiality": "contracts__confidentiality__in",
             "language": "language__in",
             "publication_status": "publication_status",
