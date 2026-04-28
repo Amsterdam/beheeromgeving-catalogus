@@ -259,8 +259,8 @@ class Command(BaseCommand):
             try:
                 refresh_parts = refresh_period_input.split(" ")
                 refresh_period = RefreshPeriod(
-                    frequency=FREQUENCY_MAP[refresh_parts[0]],
-                    unit=UNIT_MAP[refresh_parts[-1]],
+                    frequency=FREQUENCY_MAP.get(refresh_parts[0], 0),
+                    unit=UNIT_MAP.get(refresh_parts[-1], enums.TimeUnit.YEAR),
                 )
             except KeyError:
                 refresh_period = None
@@ -335,7 +335,7 @@ class Command(BaseCommand):
         try:
             retainment_period = int(product_dict["bewaartermijn"])
         except ValueError:
-            retainment_period = None
+            retainment_period = 0
         conf_level_map = {
             "Open": enums.ConfidentialityLevel.OPENBAAR,
             "Intern": enums.ConfidentialityLevel.INTERN,

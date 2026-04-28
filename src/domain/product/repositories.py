@@ -38,7 +38,7 @@ class ProductRepository(AbstractRepository[Product]):
     def _get_by_name(self, name: str) -> orm.Product:
         product = (
             self.manager.annotate(search_name=Value(name))
-            .filter(search_name__istartswith=F("name"))
+            .filter(search_name__iexact=F("name"))
             .first()
         )
         if not product:
