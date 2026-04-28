@@ -271,7 +271,7 @@ def many_orm_products(orm_team) -> list[Product]:
                 language="NL",
                 is_geo=True,
                 schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
-                type="D",
+                type="D" if index % 2 == 0 else "I",
                 themes=["NM"],
                 refresh_period="3.MONTH",
                 publication_status="P",
