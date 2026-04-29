@@ -177,13 +177,13 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         query_params["publication_status"] = "P"
         params = self._validate_dto(data=query_params, dto_type=dtos.QueryParams)
         if params.name:
-            product = product_service.get_product_by_name_for_read(
+            product = product_service.get_product_by_name(
                 name=params.name, scopes=request.get_token_scopes
             )
             data = dtos.to_response_object(product)
             return Response(data, status=200)
 
-        data = product_query_handler.list_products_for_read(
+        data = product_query_handler.list_products(
             scopes=request.get_token_scopes,
             query=params.query,
             filter=params.filter,
@@ -197,9 +197,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(responses={200: dtos.ProductDetail})
     def retrieve(self, request, pk: str):
-        product = product_service.get_product_for_read(
-            product_id=int(pk), scopes=request.get_token_scopes
-        )
+        product = product_service.get_product(product_id=int(pk), scopes=request.get_token_scopes)
         return Response(dtos.to_response_object(product), status=200)
 
     @extend_schema(request=dtos.ProductCreate, responses={200: dtos.ProductDetail})
@@ -263,7 +261,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataContractList]})
     @action(detail=True, methods=["get"], url_path="contracts", url_name="contracts-list")
     def contracts_list(self, request, pk: str):
-        contracts = product_service.get_contracts_for_read(
+        contracts = product_service.get_contracts(
             product_id=int(pk), scopes=request.get_token_scopes
         )
         data = dtos.to_response_object(contracts)
@@ -292,7 +290,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_name="contract-detail",
     )
     def contract_detail(self, request, pk: str, contract_id: str):
-        contract = product_service.get_contract_for_read(
+        contract = product_service.get_contract(
             product_id=int(pk),
             contract_id=int(contract_id),
             scopes=request.get_token_scopes,
@@ -356,7 +354,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_name="distributions-list",
     )
     def distributions_list(self, request, pk: str, contract_id: str):
-        distributions = product_service.get_distributions_for_read(
+        distributions = product_service.get_distributions(
             product_id=int(pk),
             contract_id=int(contract_id),
             scopes=request.get_token_scopes,
@@ -387,7 +385,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_name="distributions-detail",
     )
     def distribution_detail(self, request, pk: str, contract_id: str, distribution_id: str):
-        distribution = product_service.get_distribution_for_read(
+        distribution = product_service.get_distribution(
             product_id=int(pk),
             contract_id=int(contract_id),
             distribution_id=int(distribution_id),
@@ -424,7 +422,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataService]})
     @action(detail=True, methods=["get"], url_path="services", url_name="services-list")
     def services_list(self, request, pk: str):
-        services = product_service.get_services_for_read(
+        services = product_service.get_services(
             product_id=int(pk), scopes=request.get_token_scopes
         )
         data = dtos.to_response_object(services)
@@ -450,7 +448,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_name="service-detail",
     )
     def service_detail(self, request, pk: str, service_id: str):
-        service = product_service.get_service_for_read(
+        service = product_service.get_service(
             product_id=int(pk),
             service_id=int(service_id),
             scopes=request.get_token_scopes,

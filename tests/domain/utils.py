@@ -36,9 +36,6 @@ class DummyRepository(AbstractRepository):
         for object in objects:
             self._items[object.id] = object
 
-    def refresh_from_db(self):
-        pass
-
     def _add_ids(self, object):
         """Ensure the object we save to the repository has id for itself and all its
         underlying subobjects."""
@@ -104,7 +101,11 @@ class DummyRepository(AbstractRepository):
         return [
             item
             for item in self._items.values()
-            if getattr(item, "publication_status", "P") != enums.PublicationStatus.DELETED.value
+            if getattr(item, "publication_status", "P")
+            not in (
+                enums.PublicationStatus.DELETED.value,
+                enums.PublicationStatus.INTERNALLY_PUBLISHED.value,
+            )
         ]
 
     def save(self, item: DummyRepoItem):
@@ -127,16 +128,19 @@ class DummyAuthRepo(AbstractAuthRepository):
         for team in teams:
             self.team_scopes[team.id] = team.scope
         for product in products:
-            self.product_scopes[product.id] = self.team_scopes.get(product.team_id)
-
-    def refresh_from_db(self) -> None:
-        pass
+            team_scope = self.team_scopes.get(product.team_id)
+            self.product_scopes[product.id] = team_scope
+            if getattr(product, "name", None):
+                self.product_scopes[product.name.lower()] = team_scope
 
     def add_object(self, object: Team | Product):
         if isinstance(object, Team):
             self.team_scopes[object.id] = object.scope
         elif isinstance(object, Product):
-            self.product_scopes[object.id] = self.team_scopes.get(object.team_id)
+            team_scope = self.team_scopes.get(object.team_id)
+            self.product_scopes[object.id] = team_scope
+            if object.name:
+                self.product_scopes[object.name.lower()] = team_scope
 
     def get_config(self):
         return AuthorizationConfiguration(

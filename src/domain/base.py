@@ -34,11 +34,17 @@ class AbstractRepository[T](abc.ABC):
     def get(self, id: int) -> T:
         raise NotImplementedError
 
+    def get_internal(self, id: int) -> T:
+        raise NotImplementedError
+
     def get_published(self, id: int) -> T:
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_by_name(self, name: str) -> T:
+        raise NotImplementedError
+
+    def get_internal_by_name(self, name: str) -> T:
         raise NotImplementedError
 
     def get_published_by_name(self, name: str) -> T:
@@ -66,10 +72,6 @@ class AbstractRepository[T](abc.ABC):
 class AbstractAuthRepository(abc.ABC):
     @abc.abstractmethod
     def get_config(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def refresh_from_db(self) -> None:
         raise NotImplementedError
 
 
