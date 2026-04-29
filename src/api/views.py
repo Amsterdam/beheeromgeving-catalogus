@@ -177,32 +177,18 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         query_params["publication_status"] = "P"
         params = self._validate_dto(data=query_params, dto_type=dtos.QueryParams)
         if params.name:
-            try:
-                product = product_service.get_product_by_name(
-                    name=params.name, scopes=request.get_token_scopes
-                )
-            except exceptions.NotAuthorized:
-                product = product_service.get_published_product_by_name(params.name)
+            product = product_service.get_product_by_name_for_read(
+                name=params.name, scopes=request.get_token_scopes
+            )
             data = dtos.to_response_object(product)
             return Response(data, status=200)
 
-        try:
-            data = product_query_handler.list_internal_products(
-                query=params.query,
-                filter=params.filter,
-                exclude=params.exclude,
-                order=params.order,
-                scopes=request.get_token_scopes,
-            )
-        except exceptions.NotAuthorized:
-            data = []
-        data.extend(
-            product_query_handler.list_products(
-                query=params.query,
-                filter=params.filter,
-                exclude=params.exclude,
-                order=params.order,
-            )
+        data = product_query_handler.list_products_for_read(
+            scopes=request.get_token_scopes,
+            query=params.query,
+            filter=params.filter,
+            exclude=params.exclude,
+            order=params.order,
         )
 
         pagination = Pagination()
@@ -211,17 +197,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(responses={200: dtos.ProductDetail})
     def retrieve(self, request, pk: str):
-        try:
-            product = product_service.get_product(
-                product_id=int(pk), scopes=request.get_token_scopes
-            )
-        except exceptions.NotAuthorized:
-            try:
-                product = product_service.get_internal_product(
-                    product_id=int(pk), scopes=request.get_token_scopes
-                )
-            except exceptions.NotAuthorized:
-                product = product_service.get_published_product(int(pk))
+        product = product_service.get_product_for_read(
+            product_id=int(pk), scopes=request.get_token_scopes
+        )
         return Response(dtos.to_response_object(product), status=200)
 
     @extend_schema(request=dtos.ProductCreate, responses={200: dtos.ProductDetail})
@@ -285,12 +263,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataContractList]})
     @action(detail=True, methods=["get"], url_path="contracts", url_name="contracts-list")
     def contracts_list(self, request, pk: str):
-        try:
-            contracts = product_service.get_all_contracts(
-                product_id=int(pk), scopes=request.get_token_scopes
-            )
-        except exceptions.NotAuthorized:
-            contracts = product_service.get_contracts(int(pk))
+        contracts = product_service.get_contracts_for_read(
+            product_id=int(pk), scopes=request.get_token_scopes
+        )
         data = dtos.to_response_object(contracts)
         return Response(data, status=200)
 
@@ -317,14 +292,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_name="contract-detail",
     )
     def contract_detail(self, request, pk: str, contract_id: str):
-        try:
-            contract = product_service.get_contract(
-                product_id=int(pk),
-                contract_id=int(contract_id),
-                scopes=request.get_token_scopes,
-            )
-        except exceptions.NotAuthorized:
-            contract = product_service.get_published_contract(int(pk), int(contract_id))
+        contract = product_service.get_contract_for_read(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            scopes=request.get_token_scopes,
+        )
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
@@ -384,16 +356,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_name="distributions-list",
     )
     def distributions_list(self, request, pk: str, contract_id: str):
-        try:
-            distributions = product_service.get_all_distributions(
-                product_id=int(pk),
-                contract_id=int(contract_id),
-                scopes=request.get_token_scopes,
-            )
-        except exceptions.NotAuthorized:
-            distributions = product_service.get_distributions(
-                product_id=int(pk), contract_id=int(contract_id)
-            )
+        distributions = product_service.get_distributions_for_read(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            scopes=request.get_token_scopes,
+        )
         data = dtos.to_response_object(distributions)
         return Response(data, status=200)
 
@@ -420,19 +387,12 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_name="distributions-detail",
     )
     def distribution_detail(self, request, pk: str, contract_id: str, distribution_id: str):
-        try:
-            distribution = product_service.get_distribution(
-                product_id=int(pk),
-                contract_id=int(contract_id),
-                distribution_id=int(distribution_id),
-                scopes=request.get_token_scopes,
-            )
-        except exceptions.NotAuthorized:
-            distribution = product_service.get_published_distribution(
-                product_id=int(pk),
-                contract_id=int(contract_id),
-                distribution_id=int(distribution_id),
-            )
+        distribution = product_service.get_distribution_for_read(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            distribution_id=int(distribution_id),
+            scopes=request.get_token_scopes,
+        )
         data = dtos.to_response_object(distribution)
         return Response(data, status=200)
 
@@ -464,12 +424,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataService]})
     @action(detail=True, methods=["get"], url_path="services", url_name="services-list")
     def services_list(self, request, pk: str):
-        try:
-            services = product_service.get_all_services(
-                product_id=int(pk), scopes=request.get_token_scopes
-            )
-        except exceptions.NotAuthorized:
-            services = product_service.get_services(int(pk))
+        services = product_service.get_services_for_read(
+            product_id=int(pk), scopes=request.get_token_scopes
+        )
         data = dtos.to_response_object(services)
         return Response(data, status=200)
 
@@ -493,14 +450,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         url_name="service-detail",
     )
     def service_detail(self, request, pk: str, service_id: str):
-        try:
-            service = product_service.get_service(
-                product_id=int(pk),
-                service_id=int(service_id),
-                scopes=request.get_token_scopes,
-            )
-        except exceptions.NotAuthorized:
-            service = product_service.get_published_service(int(pk), int(service_id))
+        service = product_service.get_service_for_read(
+            product_id=int(pk),
+            service_id=int(service_id),
+            scopes=request.get_token_scopes,
+        )
         data = dtos.to_response_object(service)
         return Response(data, status=200)
 

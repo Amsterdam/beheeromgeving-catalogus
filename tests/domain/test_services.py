@@ -3,7 +3,12 @@ import datetime
 import pytest
 from django.conf import settings
 
-from domain.exceptions import NotAuthorized, ObjectDoesNotExist, ValidationError
+from domain.exceptions import (
+    DomainException,
+    NotAuthorized,
+    ObjectDoesNotExist,
+    ValidationError,
+)
 from domain.product import DataContract, DataService, Product, ProductService, enums
 from domain.team import Team, TeamService
 
@@ -135,10 +140,12 @@ class TestTeamService:
 
 
 class TestProductQueryHandler:
-    def test_get_products(self, product_query_handler, product: Product):
+    def test_get_products(
+        self, product_query_handler, product: Product, information_product: Product
+    ):
         result = product_query_handler.list_products()
 
-        assert result == [product]
+        assert result == [product, information_product]
 
 
 class TestProductService:
@@ -146,6 +153,40 @@ class TestProductService:
         assert product.id
         result = product_service.get_published_product(product.id)
 
+        assert result == product
+
+    def test_get_product_for_read_team_member(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        result = product_service.get_product_for_read(product.id, scopes=["scope_dadi"])
+        assert result == product
+
+    def test_get_product_for_read_employee_falls_back_to_internal(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        result = product_service.get_product_for_read(
+            product.id, scopes=[settings.EMPLOYEE_ROLE_NAME]
+        )
+        assert result == product
+
+    def test_get_product_for_read_unauthorized_falls_back_to_published(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        result = product_service.get_product_for_read(product.id, scopes=["unauthorized"])
+        assert result == product
+
+    def test_try_read_fallback_without_attempts_raises(self, product_service: ProductService):
+        with pytest.raises(DomainException):
+            product_service._try_read_fallback()
+
+    def test_get_product_by_name_for_read_team_member(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.name
+        result = product_service.get_product_by_name_for_read(product.name, scopes=["scope_dadi"])
         assert result == product
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
@@ -156,12 +197,11 @@ class TestProductService:
     def test_create_product(
         self, product_service: ProductService, product_query_handler, team: Team, scope: str
     ):
+        assert len(product_query_handler.list_products()) == 2
         data = {"type": "D", "team_id": team.id}
         result = product_service.create_product(data=data, scopes=[scope])
 
-        assert (
-            len(product_query_handler.list_products()) == 2
-        )  # service initialized with 1 product
+        assert len(product_query_handler.list_products()) == 3
         assert result.type == "D"
 
     @pytest.mark.xfail(raises=NotAuthorized)
@@ -197,10 +237,11 @@ class TestProductService:
         team: Team,
         scope: str,
     ):
+        assert len(product_query_handler.list_products()) == 2
         assert product.id
         product_service.delete_product(product_id=product.id, scopes=[scope])
 
-        assert len(product_query_handler.list_products()) == 0
+        assert len(product_query_handler.list_products()) == 1
 
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_delete_published_product(
@@ -211,6 +252,7 @@ class TestProductService:
         team: Team,
         scope: str,
     ):
+        assert len(product_query_handler.list_products()) == 2
         assert product.id
         product.publication_status = enums.PublicationStatus.PUBLISHED
         product.publication_date = datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC)
@@ -218,7 +260,7 @@ class TestProductService:
         # product exists and is marked as deleted
         assert product.publication_status == enums.PublicationStatus.DELETED
         # product doesn't show up in the list of products
-        assert len(product_query_handler.list_products()) == 0
+        assert len(product_query_handler.list_products()) == 1
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_delete_product_non_existent(self, product_service: ProductService, team: Team):
@@ -228,6 +270,29 @@ class TestProductService:
         assert product.id
         result = product_service.get_contracts(product.id)
 
+        assert result == product.contracts
+
+    def test_get_contracts_for_read_team_member(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        result = product_service.get_contracts_for_read(product.id, scopes=["scope_dadi"])
+        assert result == product.contracts
+
+    def test_get_contracts_for_read_employee_falls_back_to_internal(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        result = product_service.get_contracts_for_read(
+            product.id, scopes=[settings.EMPLOYEE_ROLE_NAME]
+        )
+        assert result == product.contracts
+
+    def test_get_contracts_for_read_unauthorized_falls_back_to_published(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        result = product_service.get_contracts_for_read(product.id, scopes=["unauthorized"])
         assert result == product.contracts
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
@@ -240,6 +305,83 @@ class TestProductService:
         result = product_service.get_published_contract(product.id, product.contracts[0].id)
 
         assert result == product.contracts[0]
+
+    def test_get_contract_for_read_team_member(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        assert product.contracts[0].id
+        result = product_service.get_contract_for_read(
+            product.id, product.contracts[0].id, scopes=["scope_dadi"]
+        )
+        assert result == product.contracts[0]
+
+    def test_get_contract_for_read_employee_falls_back_to_internal(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        assert product.contracts[0].id
+        result = product_service.get_contract_for_read(
+            product.id,
+            product.contracts[0].id,
+            scopes=[settings.EMPLOYEE_ROLE_NAME],
+        )
+        assert result == product.contracts[0]
+
+    def test_get_contract_for_read_unauthorized_falls_back_to_published(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        assert product.contracts[0].id
+        result = product_service.get_contract_for_read(
+            product.id,
+            product.contracts[0].id,
+            scopes=["unauthorized"],
+        )
+        assert result == product.contracts[0]
+
+    def test_get_distributions_for_read_unauthorized_falls_back_to_published(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        assert product.contracts[0].id
+        result = product_service.get_distributions_for_read(
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            scopes=["unauthorized"],
+        )
+        assert result == product.contracts[0].distributions
+
+    def test_get_distribution_for_read_unauthorized_falls_back_to_published(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        assert product.contracts[0].id
+        assert product.contracts[0].distributions[0].id
+        result = product_service.get_distribution_for_read(
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            distribution_id=product.contracts[0].distributions[0].id,
+            scopes=["unauthorized"],
+        )
+        assert result == product.contracts[0].distributions[0]
+
+    def test_get_services_for_read_unauthorized_falls_back_to_published(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        result = product_service.get_services_for_read(product.id, scopes=["unauthorized"])
+        assert result == product.services
+
+    def test_get_service_for_read_unauthorized_falls_back_to_published(
+        self, product_service: ProductService, product: Product
+    ):
+        assert product.id
+        assert product.services[0].id
+        result = product_service.get_service_for_read(
+            product.id, product.services[0].id, scopes=["unauthorized"]
+        )
+        assert result == product.services[0]
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contract_non_existent(self, product_service: ProductService, product: Product):

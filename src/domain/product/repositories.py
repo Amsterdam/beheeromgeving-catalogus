@@ -118,9 +118,7 @@ class ProductRepository(AbstractRepository[Product]):
         exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
     ) -> list_[dict]:
-        products = self.manager.exclude(
-            publication_status=enums.PublicationStatus.DELETED.value
-        )  # Exclude deleted products
+        products = self.manager.filter(publication_status=enums.PublicationStatus.PUBLISHED.value)
         products = self._apply_filters(
             products,
             query=query,
@@ -128,11 +126,7 @@ class ProductRepository(AbstractRepository[Product]):
             exclude=exclude,
             order=order,
         )
-        return [
-            ProductList.from_django(p).model_dump()
-            for p in products
-            if p.publication_status == enums.PublicationStatus.PUBLISHED.value
-        ]
+        return [ProductList.from_django(p).model_dump() for p in products]
 
     def list_mine(
         self,

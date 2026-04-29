@@ -713,6 +713,42 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 2
 
+    def test_contract_list_shows_internal_contracts_for_employee(
+        self, orm_team, client_with_token
+    ):
+        internal_product = Product.objects.create(
+            name="Interne bomen",
+            description="intern product",
+            team=orm_team,
+            data_steward="intern@amsterdam.nl",
+            language="NL",
+            is_geo=True,
+            schema_url="",
+            type="I",
+            themes=["NM"],
+            refresh_period="3.MONTH",
+            publication_status="I",
+        )
+        contract = DataContract.objects.create(
+            product=internal_product,
+            publication_status="P",
+            purpose="intern gebruik",
+            name="intern contract",
+            privacy_level="NPI",
+            scopes=["intern"],
+            confidentiality="I",
+            start_date="2025-01-01",
+            retainment_period=12,
+        )
+
+        response = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get(
+            f"/products/{internal_product.pk}/contracts"
+        )
+
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == contract.name
+
     def test_contract_list_shows_confidentiality(self, orm_product, api_client):
         response = api_client.get(f"/products/{orm_product.id}/contracts")
 

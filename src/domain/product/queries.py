@@ -1,4 +1,5 @@
 from domain.auth import authorize
+from domain.exceptions import NotAuthorized
 from domain.product.repositories import ProductRepository
 from domain.team import Team
 
@@ -11,6 +12,14 @@ class ProductQueryHandler:
     @authorize.is_employee
     def list_internal_products(self, scopes, **kwargs):
         return self.repository.list_internal(**kwargs)
+
+    def list_products_for_read(self, *, scopes, **kwargs):
+        try:
+            data = self.list_internal_products(scopes=scopes, **kwargs)
+        except NotAuthorized:
+            data = []
+        data.extend(self.list_products(**kwargs))
+        return data
 
     def list_products(self, **kwargs):
         return self.repository.list(**kwargs)
