@@ -158,6 +158,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             OpenApiParameter(
                 "type", description="Filter on distribution type, comma-separated list."
             ),
+            OpenApiParameter("product_type", description="Filter on product type (D/I)."),
             OpenApiParameter("language", description="Filter on language, comma-separated list."),
             OpenApiParameter(
                 "order",
