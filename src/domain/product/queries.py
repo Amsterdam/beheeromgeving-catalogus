@@ -1,5 +1,5 @@
-from domain.auth import authorize
-from domain.exceptions import NotAuthorized
+from domain.auth import Scope, authorize
+from domain.product.policies import ProductReadLevel, ProductReadPolicy
 from domain.product.repositories import ProductRepository
 from domain.team import Team
 
@@ -8,21 +8,14 @@ class ProductQueryHandler:
     def __init__(self, repository: ProductRepository):
         self.repository = repository
 
-    @authorize.is_admin
-    @authorize.is_employee
-    def list_internal_products(self, scopes, **kwargs):
-        return self.repository.list_internal(**kwargs)
-
-    def list_products_for_read(self, *, scopes, **kwargs):
-        try:
-            data = self.list_internal_products(scopes=scopes, **kwargs)
-        except NotAuthorized:
-            data = []
-        data.extend(self.list_products(**kwargs))
+    def list_products(self, *, scopes: list[Scope] | None = None, **kwargs):
+        policy = ProductReadPolicy(authorize.auth)
+        data = []
+        level = policy.level(scopes=scopes)
+        if level in (ProductReadLevel.FULL, ProductReadLevel.INTERNAL):
+            data.extend(self.repository.list_internal(**kwargs))
+        data.extend(self.repository.list(**kwargs))
         return data
-
-    def list_products(self, **kwargs):
-        return self.repository.list(**kwargs)
 
     def list_my_products(self, teams: list[Team], **kwargs):
         return self.repository.list_mine(teams=teams, **kwargs)

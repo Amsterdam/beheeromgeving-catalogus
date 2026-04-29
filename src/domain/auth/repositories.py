@@ -13,9 +13,6 @@ class AuthorizationRepository(AbstractAuthRepository):
         self.employee_role: str = settings.EMPLOYEE_ROLE_NAME
         self.feature_enabled: bool = settings.FEATURE_FLAG_USE_AUTH
 
-    def refresh_from_db(self):
-        self.queryset = orm.Team.objects.all()
-
     def get_config(self) -> AuthorizationConfiguration:
         product_scopes = {}
         team_scopes = {}

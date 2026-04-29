@@ -55,6 +55,12 @@ class ProductRepository(AbstractRepository[Product]):
         product = self._get_by_name(name)
         return product.to_domain()
 
+    def get_internal_by_name(self, name: str) -> Product:
+        product = self._get_by_name(name)
+        if product.publication_status != enums.PublicationStatus.INTERNALLY_PUBLISHED.value:
+            raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.")
+        return product.to_domain()
+
     def get_published_by_name(self, name: str) -> Product:
         product = self._get_by_name(name).to_domain(published_only=True)
         if not product:

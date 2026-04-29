@@ -1,7 +1,5 @@
-from collections.abc import Callable
-
 from domain import exceptions
-from domain.auth import Scope, authorize
+from domain.auth import ProductId, Scope, authorize
 from domain.base import AbstractRepository, AbstractService
 from domain.product import (
     DataContract,
@@ -11,6 +9,7 @@ from domain.product import (
     RefreshPeriod,
     enums,
 )
+from domain.product.policies import ProductReadLevel, ProductReadPolicy
 
 
 class ProductService(AbstractService):
@@ -18,53 +17,44 @@ class ProductService(AbstractService):
 
     def __init__(self, repo: AbstractRepository[Product]):
         self.repository = repo
-
-    def _try_read_fallback(self, *attempts: Callable[[], object]):
-        last_error: exceptions.NotAuthorized | None = None
-        for attempt in attempts:
-            try:
-                return attempt()
-            except exceptions.NotAuthorized as e:
-                last_error = e
-        if last_error is not None:
-            raise last_error
-        raise exceptions.DomainException("No fallback attempts were provided.")
-
-    def get_product_for_read(self, product_id: int, *, scopes: list[Scope], **kwargs) -> Product:
-        return self._try_read_fallback(
-            lambda: self.get_product(product_id=product_id, scopes=scopes, **kwargs),
-            lambda: self.get_internal_product(product_id=product_id, scopes=scopes, **kwargs),
-            lambda: self.get_published_product(product_id),
-        )
-
-    def get_product_by_name_for_read(self, name: str, *, scopes: list[Scope], **kwargs) -> Product:
-        return self._try_read_fallback(
-            lambda: self.get_product_by_name(name=name, scopes=scopes, **kwargs),
-            lambda: self.get_published_product_by_name(name),
-        )
+        if authorize.auth is None:
+            raise exceptions.DomainException(
+                "Authorizer doesn't have an AuthorizationService, please call set_auth_service()"
+            )
+        self.auth = authorize.auth
 
     @authorize.is_admin
     def get_all_products(self, **kwargs) -> list[Product]:
         return self.repository.list_all()
 
-    @authorize.is_admin
-    @authorize.is_team_member
-    def get_product(self, product_id: int, **kwargs) -> Product:
-        return self.repository.get(product_id)
-
-    @authorize.is_employee
-    def get_internal_product(self, product_id: int, **kwargs) -> Product:
-        return self.repository.get_internal(product_id)
-
-    def get_published_product(self, product_id: int) -> Product:
+    def get_product(
+        self,
+        product_id: int,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> Product:
+        policy = ProductReadPolicy(auth=self.auth)
+        level = policy.level_for_product(product_id=ProductId(product_id), scopes=scopes)
+        if level is ProductReadLevel.FULL:
+            return self.repository.get(product_id)
+        if level is ProductReadLevel.INTERNAL:
+            return self.repository.get_internal(product_id)
         return self.repository.get_published(product_id)
 
-    @authorize.is_admin
-    @authorize.is_team_member
-    def get_product_by_name(self, name: str, **kwargs) -> Product:
-        return self.repository.get_by_name(name)
-
-    def get_published_product_by_name(self, name: str) -> Product:
+    def get_product_by_name(
+        self,
+        name: str,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> Product:
+        policy = ProductReadPolicy(auth=self.auth)
+        level = policy.level_for_product_name(name=name, scopes=scopes)
+        if level is ProductReadLevel.FULL:
+            return self.repository.get_by_name(name)
+        if level is ProductReadLevel.INTERNAL:
+            return self.repository.get_internal_by_name(name)
         return self.repository.get_published_by_name(name)
 
     @authorize.is_admin
@@ -103,64 +93,25 @@ class ProductService(AbstractService):
         else:
             self.repository.delete(product_id)
 
-    def get_contracts(self, product_id: int) -> list[DataContract]:
-        return self.repository.get_published(product_id).contracts
-
-    @authorize.is_employee
-    def get_internal_contracts(self, product_id: int, **kwargs) -> list[DataContract]:
-        return self.repository.get_internal(product_id).contracts
-
-    def get_contracts_for_read(
-        self, product_id: int, *, scopes: list[Scope], **kwargs
+    def get_contracts(
+        self,
+        product_id: int,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
     ) -> list[DataContract]:
-        return self._try_read_fallback(
-            lambda: self.get_all_contracts(product_id=product_id, scopes=scopes, **kwargs),
-            lambda: self.get_internal_contracts(product_id=product_id, scopes=scopes, **kwargs),
-            lambda: self.get_contracts(product_id),
-        )
+        product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
+        return product.contracts
 
-    @authorize.is_admin
-    @authorize.is_team_member
-    def get_all_contracts(self, product_id, **kwargs) -> list[DataContract]:
-        return self.repository.get(product_id).contracts
-
-    def get_published_contract(self, product_id: int, contract_id: int) -> DataContract:
-        product = self.repository.get_published(product_id)
-        return product.get_contract(contract_id)
-
-    @authorize.is_employee
-    def get_internal_contract(self, product_id: int, contract_id: int, **kwargs) -> DataContract:
-        product = self.repository.get_internal(product_id)
-        return product.get_contract(contract_id)
-
-    def get_contract_for_read(
+    def get_contract(
         self,
         product_id: int,
         contract_id: int,
         *,
-        scopes: list[Scope],
+        scopes: list[Scope] | None = None,
         **kwargs,
     ) -> DataContract:
-        return self._try_read_fallback(
-            lambda: self.get_contract(
-                product_id=product_id,
-                contract_id=contract_id,
-                scopes=scopes,
-                **kwargs,
-            ),
-            lambda: self.get_internal_contract(
-                product_id=product_id,
-                contract_id=contract_id,
-                scopes=scopes,
-                **kwargs,
-            ),
-            lambda: self.get_published_contract(product_id, contract_id),
-        )
-
-    @authorize.is_admin
-    @authorize.is_team_member
-    def get_contract(self, product_id: int, contract_id: int, **kwargs) -> DataContract:
-        product = self.repository.get(product_id)
+        product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
         return product.get_contract(contract_id)
 
     @authorize.is_admin
@@ -212,73 +163,31 @@ class ProductService(AbstractService):
         existing_product.update_state(data)
         return self._persist(existing_product)
 
-    def get_distributions(self, product_id: int, contract_id: int) -> list[Distribution]:
-        product = self.get_published_product(product_id)
-        return product.get_contract(contract_id).distributions
-
-    def get_distributions_for_read(
+    def get_distributions(
         self,
         product_id: int,
         contract_id: int,
         *,
-        scopes: list[Scope],
+        scopes: list[Scope] | None = None,
         **kwargs,
     ) -> list[Distribution]:
-        return self._try_read_fallback(
-            lambda: self.get_all_distributions(
-                product_id=product_id,
-                contract_id=contract_id,
-                scopes=scopes,
-                **kwargs,
-            ),
-            lambda: self.get_distributions(product_id=product_id, contract_id=contract_id),
-        )
-
-    @authorize.is_admin
-    @authorize.is_team_member
-    def get_all_distributions(
-        self, product_id: int, contract_id: int, **kwargs
-    ) -> list[Distribution]:
-        product = self.get_product(product_id=product_id, **kwargs)
+        product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
         return product.get_contract(contract_id).distributions
 
-    def get_published_distribution(
-        self, product_id: int, contract_id: int, distribution_id: int
-    ) -> Distribution:
-        product = self.get_published_product(product_id)
-        return product.get_distribution(contract_id=contract_id, distribution_id=distribution_id)
-
-    def get_distribution_for_read(
+    def get_distribution(
         self,
         product_id: int,
         contract_id: int,
         distribution_id: int,
         *,
-        scopes: list[Scope],
+        scopes: list[Scope] | None = None,
         **kwargs,
     ) -> Distribution:
-        return self._try_read_fallback(
-            lambda: self.get_distribution(
-                product_id=product_id,
-                contract_id=contract_id,
-                distribution_id=distribution_id,
-                scopes=scopes,
-                **kwargs,
-            ),
-            lambda: self.get_published_distribution(
-                product_id=product_id,
-                contract_id=contract_id,
-                distribution_id=distribution_id,
-            ),
+        product = self.get_product(product_id, scopes=scopes, **kwargs)
+        return product.get_distribution(
+            contract_id=contract_id,
+            distribution_id=distribution_id,
         )
-
-    @authorize.is_admin
-    @authorize.is_team_member
-    def get_distribution(
-        self, product_id: int, contract_id: int, distribution_id: int, **kwargs
-    ) -> Distribution:
-        product = self.get_product(product_id=product_id, **kwargs)
-        return product.get_distribution(contract_id=contract_id, distribution_id=distribution_id)
 
     @authorize.is_admin
     @authorize.is_team_member
@@ -316,50 +225,25 @@ class ProductService(AbstractService):
         self._persist(product)
         return distribution_id
 
-    def get_services(self, product_id: int) -> list[DataService]:
-        product = self.get_published_product(product_id)
-        return product.services
-
-    def get_services_for_read(
-        self, product_id: int, *, scopes: list[Scope], **kwargs
+    def get_services(
+        self,
+        product_id: int,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
     ) -> list[DataService]:
-        return self._try_read_fallback(
-            lambda: self.get_all_services(product_id=product_id, scopes=scopes, **kwargs),
-            lambda: self.get_services(product_id),
-        )
-
-    @authorize.is_admin
-    @authorize.is_team_member
-    def get_all_services(self, product_id: int, **kwargs) -> list[DataService]:
-        product = self.get_product(product_id=product_id, **kwargs)
+        product = self.get_product(product_id, scopes=scopes, **kwargs)
         return product.services
 
-    def get_published_service(self, product_id: int, service_id: int) -> DataService:
-        product = self.get_published_product(product_id)
-        return product.get_service(service_id)
-
-    def get_service_for_read(
+    def get_service(
         self,
         product_id: int,
         service_id: int,
         *,
-        scopes: list[Scope],
+        scopes: list[Scope] | None = None,
         **kwargs,
     ) -> DataService:
-        return self._try_read_fallback(
-            lambda: self.get_service(
-                product_id=product_id,
-                service_id=service_id,
-                scopes=scopes,
-                **kwargs,
-            ),
-            lambda: self.get_published_service(product_id, service_id),
-        )
-
-    @authorize.is_admin
-    @authorize.is_team_member
-    def get_service(self, product_id: int, service_id: int, **kwargs) -> DataService:
-        product = self.get_product(product_id=product_id, **kwargs)
+        product = self.get_product(product_id, scopes=scopes, **kwargs)
         return product.get_service(service_id)
 
     @authorize.is_admin

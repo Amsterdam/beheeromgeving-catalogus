@@ -94,6 +94,19 @@ class TestProductRepository:
         repo = ProductRepository()
         repo.get(1337)
 
+    def test_get_internal_non_existent(self):
+        repo = ProductRepository()
+        with pytest.raises(ObjectDoesNotExist):
+            repo.get_internal(1337)
+
+    def test_get_internal_by_name(self, many_orm_information_products: list[ORMProduct]):
+        repo = ProductRepository()
+        orm_internal_product = many_orm_information_products[0]
+        product = repo.get_internal_by_name(orm_internal_product.name)
+
+        assert isinstance(product, Product)
+        assert product.id == orm_internal_product.pk
+
     def test_list(self, orm_product):
         repo = ProductRepository()
         result = repo.list()
@@ -189,7 +202,7 @@ class TestProductRepository:
         orm_product.refresh_from_db()
         contract = orm_product.contracts.first()
         assert hasattr(contract, "distributions")
-        distributions = list(contract.distributions.all())
+        distributions = list(contract.distributions.all().order_by("type"))
         assert len(distributions) == 3
         assert distributions[0].type == "A"
         assert distributions[0].access_service == orm_product.services.first()

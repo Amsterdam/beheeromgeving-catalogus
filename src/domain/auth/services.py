@@ -21,9 +21,6 @@ class AuthorizationService:
     def __init__(self, repo: AbstractAuthRepository):
         self.repo = repo
 
-    def refresh(self):
-        self.repo.refresh_from_db()
-
     @property
     def config(self) -> AuthorizationConfiguration:
         return self.repo.get_config()
@@ -101,6 +98,43 @@ class AuthorizationService:
 
     def is_allowed(self, scopes: list[Scope], role: Role):
         return any(self.config.scope_to_role(scope) == role for scope in scopes)
+
+    def has_role(self, *, scopes: list[Scope], role: Role) -> bool:
+        return self.require(scopes=scopes, role=role) == AuthorizationResult.GRANTED
+
+    def is_admin(self, *, scopes: list[Scope]) -> bool:
+        return self.has_role(scopes=scopes, role=Role.ADMIN)
+
+    def is_employee(self, *, scopes: list[Scope]) -> bool:
+        return self.has_role(scopes=scopes, role=Role.EMPLOYEE)
+
+    def is_team_member_of_product(self, *, product_id: ProductId, scopes: list[Scope]) -> bool:
+        return (
+            self.is_team_member(scopes=scopes, product_id=product_id)
+            == AuthorizationResult.GRANTED
+        )
+
+    def is_team_member_of_team(self, *, team_id: TeamId, scopes: list[Scope]) -> bool:
+        return (
+            self.is_team_member(scopes=scopes, data={"team_id": team_id})
+            == AuthorizationResult.GRANTED
+        )
+
+    def is_team_member_of_product_name(self, *, name: str, scopes: list[Scope]) -> bool:
+        return self.is_team_member(scopes=scopes, name=name) == AuthorizationResult.GRANTED
+
+    def can_permit(
+        self,
+        *,
+        team_id: TeamId,
+        scopes: list[Scope],
+        data: dict,
+        permission: Permission,
+    ) -> bool:
+        return (
+            self.permit(team_id=team_id, scopes=scopes, data=data, permission=permission)
+            == AuthorizationResult.GRANTED
+        )
 
 
 P = ParamSpec("P")

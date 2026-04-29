@@ -14,10 +14,12 @@ plugins =
     django_coverage_plugin
 
 [report]
-fail_under = 95
+fail_under = 97
 exclude_also =
     if "debug_toolbar" in settings.INSTALLED_APPS:
     if settings.DEBUG:
     raise NotImplementedError
     raise DomainException
     case exceptions.DomainException
+    def __str__(self):
+    if not is_initialized:
