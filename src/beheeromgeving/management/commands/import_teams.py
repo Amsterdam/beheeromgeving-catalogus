@@ -1,11 +1,8 @@
-import json
-from pathlib import Path
-
 import requests
 from django.conf import settings
 from django.core.management import BaseCommand
 
-from api.datatransferobjects import Team
+from api.datatransferobjects import TeamCreate
 from domain.auth import AuthorizationRepository, AuthorizationService, authorize
 from domain.exceptions import ValidationError
 from domain.team import TeamRepository, TeamService
@@ -45,30 +42,18 @@ class Command(BaseCommand):
                 f"https://schemas.data.amsterdam.nl/publishers/{acronym}", timeout=10
             ).json()
             publishers[acronym] = pub
-        # NOTE: This file is not committed to the repo, as it contains names and emails.
-        # It will be available in a private repo.
-        with open(Path(__file__).parent / "productowners.json") as f:
-            po_json = json.load(f)
 
-            for acronym, data in publishers.items():
-                if acronym not in po_json:
-                    print(f"{acronym} isn't available. {data['name']}")
-                    continue
-                po_name = po_json[acronym]["po_name"]
-                po_email = po_json[acronym]["po_email"]
-                contact_email = "contact@amsterdam.nl"
-                team = Team(
-                    name=data["name"],
-                    acronym=acronym,
-                    scope=f"publisher-p-{acronym.lower()}",
-                    po_name=po_name,
-                    po_email=po_email,
-                    contact_email=contact_email,
-                )
-                try:
-                    self.service.create_team(
-                        data=team.model_dump(), scopes=[settings.ADMIN_ROLE_NAME]
-                    )
-                except ValidationError as e:
-                    print(e.message)
-                    continue
+        for acronym, data in publishers.items():
+            team = TeamCreate(
+                name=data["name"],
+                acronym=acronym,
+                scope=f"publisher-p-{acronym.lower()}",
+                po_name=f"PO team {acronym}",
+                po_email=f"team.{acronym.lower()}@amsterdam.nl",
+                contact_email="contact@amsterdam.nl",
+            )
+            try:
+                self.service.create_team(data=team.model_dump(), scopes=[settings.ADMIN_ROLE_NAME])
+            except ValidationError as e:
+                print(e.message)
+                continue
