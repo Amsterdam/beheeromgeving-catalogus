@@ -197,7 +197,7 @@ class TestViews:
         """Assert we can query the products based on name.
 
         This name can be snakecased with a version suffix."""
-        response = api_client.get("/products?name=bomen_v1")
+        response = api_client.get("/products?name=bomen")
         assert response.status_code == 200
         product = response.data
         assert product["name"] == orm_product.name
