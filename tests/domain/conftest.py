@@ -121,6 +121,81 @@ def product(team: Team) -> Product:
 
 
 @pytest.fixture()
+def information_product(team: Team) -> Product:
+    assert team.id
+    return Product(
+        id=2,
+        name="informatie",
+        description="informatie over bomen in Amsterdam",
+        team_id=team.id,
+        contact_email=team.contact_email,
+        language=enums.Language.NEDERLANDS,
+        is_geo=True,
+        schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+        type=enums.ProductType.INFORMATIEPRODUCT,
+        themes=[enums.Theme.NATUUR_EN_MILIEU],
+        data_steward="meneerboom@amsterdam.nl",
+        refresh_period=RefreshPeriod.from_dict({"frequency": 3, "unit": "MONTH"}),
+        last_updated=datetime.fromisoformat("2025-09-04T11:25:05+00"),
+        created_at=datetime.fromisoformat("2025-09-04T10:25:05+00"),
+        publication_status=enums.PublicationStatus.INTERNALLY_PUBLISHED,
+        services=[
+            DataService(
+                id=1,
+                type=enums.DataServiceType.REST,
+                endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
+            )
+        ],
+        contracts=[
+            DataContract(
+                id=1,
+                publication_status=enums.PublicationStatus.INTERNALLY_PUBLISHED,
+                purpose="onderhoud van bomen",
+                name="beheer bomen",
+                privacy_level=enums.PrivacyLevel.NIET_PERSOONLIJK_IDENTIFICEERBAAR,
+                scopes=["bomen_beheer"],
+                confidentiality=enums.ConfidentialityLevel.INTERN,
+                start_date=datetime.fromisoformat("2025-01-01T00:00:00+00"),
+                retainment_period=12,
+                distributions=[
+                    Distribution(
+                        id=1,
+                        access_service_id=1,
+                        type=enums.DistributionType.API,
+                    ),
+                    Distribution(
+                        id=2,
+                        download_url="https://bomen.amsterdam.nl/beheer.csv",
+                        format="csv",
+                        type=enums.DistributionType.FILE,
+                        filename="beheer.csv",
+                    ),
+                ],
+            ),
+            DataContract(
+                id=2,
+                publication_status=enums.PublicationStatus.PUBLISHED,
+                publication_date=datetime(2025, 1, 1, tzinfo=UTC),
+                purpose="onderhoud van bomen",
+                name="contract naam",
+                privacy_level=enums.PrivacyLevel.NIET_PERSOONLIJK_IDENTIFICEERBAAR,
+                scopes=["bomen_beheer"],
+                confidentiality=enums.ConfidentialityLevel.INTERN,
+                start_date=datetime.fromisoformat("2025-01-01T00:00:00+00"),
+                retainment_period=12,
+                distributions=[
+                    Distribution(
+                        id=1,
+                        access_service_id=1,
+                        type=enums.DistributionType.API,
+                    ),
+                ],
+            ),
+        ],
+    )
+
+
+@pytest.fixture()
 def auth_repo(team, other_team, product) -> DummyAuthRepo:
     return DummyAuthRepo(teams=[team, other_team], products=[product])
 
@@ -142,8 +217,8 @@ def team_service(team, init_auth, auth_repo) -> TeamService:
 
 
 @pytest.fixture()
-def dummy_repo(product, init_auth, auth_repo) -> DummyRepository:
-    return DummyRepository([product], auth_repo=auth_repo)
+def dummy_repo(product, information_product, init_auth, auth_repo) -> DummyRepository:
+    return DummyRepository([product, information_product], auth_repo=auth_repo)
 
 
 @pytest.fixture()

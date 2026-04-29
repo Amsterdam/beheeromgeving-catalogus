@@ -296,7 +296,6 @@ def many_orm_information_products(orm_team) -> list[Product]:
                 data_steward=f"mail.info.{letter}@amsterdam.nl",
                 language="NL",
                 is_geo=True,
-                crs="RD",
                 schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
                 type="I",
                 themes=["NM"],

@@ -72,6 +72,9 @@ class DummyRepository(AbstractRepository):
     def get_published(self, id):
         return self.get(id)
 
+    def get_internal(self, id):
+        return self.get(id)
+
     def get_by_name(self, name):
         try:
             normalized_name = name.replace("_", " ").lower()
@@ -85,6 +88,17 @@ class DummyRepository(AbstractRepository):
 
     def get_published_by_name(self, name):
         return self.get_by_name(name)
+
+    def list_all(self, **_kwargs):
+        return list(self._items.values())
+
+    def list_internal(self, **_kwargs):
+        return [
+            item
+            for item in self._items.values()
+            if getattr(item, "publication_status", "I")
+            == enums.PublicationStatus.INTERNALLY_PUBLISHED.value
+        ]
 
     def list(self):
         return [
