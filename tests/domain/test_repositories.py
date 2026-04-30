@@ -94,22 +94,92 @@ class TestProductRepository:
         repo = ProductRepository()
         repo.get(1337)
 
-    def test_get_internal_non_existent(self):
-        repo = ProductRepository()
-        with pytest.raises(ObjectDoesNotExist):
-            repo.get_internal(1337)
-
-    def test_get_internal_by_name(self, many_orm_information_products: list[ORMProduct]):
+    def test_get_for_publication_status_internal_product(self, many_orm_information_products):
         repo = ProductRepository()
         orm_internal_product = many_orm_information_products[0]
-        product = repo.get_internal_by_name(orm_internal_product.name)
-
+        product = repo.get_for_publication_status(
+            orm_internal_product.id,
+            [enums.PublicationStatus.INTERNALLY_PUBLISHED],
+        )
         assert isinstance(product, Product)
         assert product.id == orm_internal_product.pk
 
+    def test_get_for_publication_status_by_name_internal_product(
+        self, many_orm_information_products: list[ORMProduct]
+    ):
+        repo = ProductRepository()
+        orm_internal_product = many_orm_information_products[0]
+        product = repo.get_for_publication_status_by_name(
+            orm_internal_product.name,
+            [enums.PublicationStatus.INTERNALLY_PUBLISHED],
+        )
+        assert isinstance(product, Product)
+        assert product.id == orm_internal_product.pk
+
+    def test_get_for_publication_status_filters_contracts(self, orm_product):
+        repo = ProductRepository()
+        # Add an internally-published contract and ensure draft stays hidden.
+        orm_product.contracts.create(
+            name="internal contract",
+            publication_status="I",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+
+        product = repo.get_for_publication_status(
+            orm_product.id,
+            [enums.PublicationStatus.PUBLISHED, enums.PublicationStatus.INTERNALLY_PUBLISHED],
+        )
+        assert product.publication_status == "P"
+        assert {c.publication_status for c in product.contracts} == {"P", "I"}
+
+    def test_get_for_publication_status_raises_when_product_status_not_allowed(
+        self, many_orm_information_products
+    ):
+        repo = ProductRepository()
+        orm_internal_product = many_orm_information_products[0]
+        with pytest.raises(ObjectDoesNotExist):
+            repo.get_for_publication_status(
+                orm_internal_product.id,
+                [enums.PublicationStatus.PUBLISHED],
+            )
+
+    def test_get_for_publication_status_raises_when_product_does_not_exist(self):
+        repo = ProductRepository()
+        with pytest.raises(ObjectDoesNotExist):
+            repo.get_for_publication_status(
+                1337,
+                [enums.PublicationStatus.PUBLISHED],
+            )
+
+    def test_get_for_publication_status_by_name_filters_contracts(self, orm_product):
+        repo = ProductRepository()
+        orm_product.contracts.create(
+            name="internal contract",
+            publication_status="I",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+
+        product = repo.get_for_publication_status_by_name(
+            orm_product.name,
+            [enums.PublicationStatus.PUBLISHED, enums.PublicationStatus.INTERNALLY_PUBLISHED],
+        )
+        assert product.id == orm_product.id
+        assert {c.publication_status for c in product.contracts} == {"P", "I"}
+
+    def test_get_for_publication_status_by_name_raises_when_product_status_not_allowed(
+        self, many_orm_information_products
+    ):
+        repo = ProductRepository()
+        orm_internal_product = many_orm_information_products[0]
+        with pytest.raises(ObjectDoesNotExist):
+            repo.get_for_publication_status_by_name(
+                orm_internal_product.name,
+                [enums.PublicationStatus.PUBLISHED],
+            )
+
     def test_list(self, orm_product):
         repo = ProductRepository()
-        result = repo.list()
+        result = repo.list_for_publication_status([enums.PublicationStatus.PUBLISHED])
 
         assert len(result) == 1
         assert result[0]["id"] == orm_product.id
@@ -229,21 +299,29 @@ class TestProductRepository:
     )
     def test_order_products_list(self, many_orm_products: list[ORMProduct], order, expect_value):
         repo = ProductRepository()
-        products = repo.list(order=order)
-        print(products[0])
+        products = repo.list_for_publication_status(
+            [enums.PublicationStatus.PUBLISHED],
+            order=order,
+        )
         assert products[0].get(order[0]) == expect_value
 
     def test_order_products_list_by_created_at(self, many_orm_products: list[ORMProduct]):
         repo = ProductRepository()
-        products = repo.list(order=("created_at", False))
+        products = repo.list_for_publication_status(
+            [enums.PublicationStatus.PUBLISHED],
+            order=("created_at", False),
+        )
         assert products[0]["last_updated"] == datetime(2025, 12, 25, 0, 34, tzinfo=UTC)
 
     def test_order_products_list_by_created_at_reversed(self, many_orm_products: list[ORMProduct]):
         repo = ProductRepository()
-        products = repo.list(order=("created_at", True))
+        products = repo.list_for_publication_status(
+            [enums.PublicationStatus.PUBLISHED],
+            order=("created_at", True),
+        )
         assert products[0]["last_updated"] == datetime(2025, 12, 25, 0, 59, tzinfo=UTC)
 
     def test_default_order_products_list(self, many_orm_products):
         repo = ProductRepository()
-        products = repo.list()
+        products = repo.list_for_publication_status([enums.PublicationStatus.PUBLISHED])
         assert products[0]["name"] == "naam a"

@@ -26,20 +26,22 @@ class ProductRepository(AbstractRepository[Product]):
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
 
-    def get_internal(self, id: int) -> Product:
+    def get_for_publication_status(
+        self, id: int, allowed_statuses: list_[enums.PublicationStatus]
+    ) -> Product:
+        allowed = {status.value for status in allowed_statuses}
         try:
-            return self.manager.get(pk=id, publication_status="I").to_domain()
+            product = self.manager.get(pk=id, publication_status__in=allowed)
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
 
-    def get_published(self, id: int) -> Product:
-        try:
-            product = self.manager.get(pk=id).to_domain(published_only=True)
-        except orm.Product.DoesNotExist as e:
-            raise exceptions.ObjectDoesNotExist from e
-        if product is None:
-            raise exceptions.ObjectDoesNotExist
-        return product
+        domain_product = product.to_domain()
+        domain_product.contracts = [
+            contract
+            for contract in domain_product.contracts
+            if contract.publication_status in allowed
+        ]
+        return domain_product
 
     def _get_by_name(self, name: str) -> orm.Product:
         product = (
@@ -55,20 +57,48 @@ class ProductRepository(AbstractRepository[Product]):
         product = self._get_by_name(name)
         return product.to_domain()
 
-    def get_internal_by_name(self, name: str) -> Product:
+    def get_for_publication_status_by_name(
+        self, name: str, allowed_statuses: list_[enums.PublicationStatus]
+    ) -> Product:
+        allowed = {status.value for status in allowed_statuses}
         product = self._get_by_name(name)
-        if product.publication_status != enums.PublicationStatus.INTERNALLY_PUBLISHED.value:
+        if product.publication_status not in allowed:
             raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.")
-        return product.to_domain()
-
-    def get_published_by_name(self, name: str) -> Product:
-        product = self._get_by_name(name).to_domain(published_only=True)
-        if not product:
-            raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.")
-        return product
+        domain_product = product.to_domain()
+        domain_product.contracts = [
+            contract
+            for contract in domain_product.contracts
+            if contract.publication_status in allowed
+        ]
+        return domain_product
 
     def list_all(self, **kwargs):
         return [p.to_domain() for p in self.manager.all()]
+
+    def list_for_publication_status(
+        self,
+        allowed_statuses: list_[enums.PublicationStatus],
+        *,
+        query: str | None = None,
+        filter: dict | None = None,
+        exclude: dict | None = None,
+        order: tuple[str, bool] | None = ("name", False),
+    ) -> list_[dict]:
+        allowed = {status.value for status in allowed_statuses}
+        products = self.manager.filter(publication_status__in=allowed)
+
+        if filter is not None:
+            filter = {**filter}
+            filter.pop("publication_status", None)
+
+        products = self._apply_filters(
+            products,
+            query=query,
+            filter=filter,
+            exclude=exclude,
+            order=order,
+        )
+        return [ProductList.from_django(p).model_dump() for p in products]
 
     def _apply_filters(
         self,
@@ -106,33 +136,6 @@ class ProductRepository(AbstractRepository[Product]):
         if query:
             products = sorted(products, key=lambda p: count_occurrences(p), reverse=True)
         return products
-
-    def list_internal(self, **kwargs):
-        products = self.manager.filter(
-            publication_status=enums.PublicationStatus.INTERNALLY_PUBLISHED.value
-        )
-        if "filter" in kwargs:
-            kwargs["filter"].pop("publication_status", None)
-        self._apply_filters(products, **kwargs)
-        return [ProductList.from_django(p).model_dump() for p in products]
-
-    def list(
-        self,
-        *,
-        query: str | None = None,
-        filter: dict | None = None,
-        exclude: dict | None = None,
-        order: tuple[str, bool] | None = ("name", False),
-    ) -> list_[dict]:
-        products = self.manager.filter(publication_status=enums.PublicationStatus.PUBLISHED.value)
-        products = self._apply_filters(
-            products,
-            query=query,
-            filter=filter,
-            exclude=exclude,
-            order=order,
-        )
-        return [ProductList.from_django(p).model_dump() for p in products]
 
     def list_mine(
         self,

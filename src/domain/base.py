@@ -34,24 +34,20 @@ class AbstractRepository[T](abc.ABC):
     def get(self, id: int) -> T:
         raise NotImplementedError
 
-    def get_internal(self, id: int) -> T:
-        raise NotImplementedError
-
-    def get_published(self, id: int) -> T:
+    def get_for_publication_status(self, id: int, allowed_statuses: list_[Any]) -> T:
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_by_name(self, name: str) -> T:
         raise NotImplementedError
 
-    def get_internal_by_name(self, name: str) -> T:
+    def get_for_publication_status_by_name(self, name: str, allowed_statuses: list_[Any]) -> T:
         raise NotImplementedError
 
-    def get_published_by_name(self, name: str) -> T:
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def list(self) -> list_:
+        raise NotImplementedError
+
+    def list_for_publication_status(self, allowed_statuses: list_[Any]) -> list_:
         raise NotImplementedError
 
     def list_all(self) -> list_[T]:
