@@ -140,19 +140,27 @@ class TestTeamService:
 
 class TestProductQueryHandler:
     def test_list_products(
-        self, product_query_handler, product: Product, information_product: Product
+        self,
+        product_query_handler,
+        product: Product,
+        information_product: Product,
+        published_product: Product,
     ):
         result = product_query_handler.list_products(scopes=[settings.EMPLOYEE_ROLE_NAME])
 
-        assert result == [information_product, product]
+        assert result == [information_product, published_product]
 
 
 class TestProductService:
-    def test_get_product(self, product_service: ProductService, product: Product):
-        assert product.id
-        result = product_service.get_product(product.id)
+    def test_get_product(self, product_service: ProductService, published_product: Product):
+        assert published_product.id
+        result = product_service.get_product(published_product.id)
 
-        assert result == product
+        assert result.id == published_product.id
+        assert result.publication_status == enums.PublicationStatus.PUBLISHED
+        assert {c.publication_status for c in result.contracts} == {
+            enums.PublicationStatus.PUBLISHED
+        }
 
     def test_get_product_team_member(self, product_service: ProductService, product: Product):
         assert product.id
@@ -160,25 +168,38 @@ class TestProductService:
         assert result == product
 
     def test_get_product_employee_falls_back_to_internal(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        result = product_service.get_product(product.id, scopes=[settings.EMPLOYEE_ROLE_NAME])
-        assert result == product
+        assert published_product.id
+        result = product_service.get_product(
+            published_product.id,
+            scopes=[settings.EMPLOYEE_ROLE_NAME],
+        )
+        assert result.id == published_product.id
+        assert {c.publication_status for c in result.contracts} <= {
+            enums.PublicationStatus.PUBLISHED,
+            enums.PublicationStatus.INTERNALLY_PUBLISHED,
+        }
 
     def test_get_product_unauthorized_falls_back_to_published(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        result = product_service.get_product(product.id, scopes=["unauthorized"])
-        assert result == product
+        assert published_product.id
+        result = product_service.get_product(published_product.id, scopes=["unauthorized"])
+        assert result.id == published_product.id
+        assert {c.publication_status for c in result.contracts} == {
+            enums.PublicationStatus.PUBLISHED
+        }
 
     def test_get_product_by_name_anonymous(
-        self, product_service: ProductService, product: Product, team: Team
+        self, product_service: ProductService, published_product: Product, team: Team
     ):
-        assert product.name
-        result = product_service.get_product_by_name(product.name, scopes=None)
-        assert result == product
+        assert published_product.name
+        result = product_service.get_product_by_name(published_product.name, scopes=None)
+        assert result.id == published_product.id
+        assert {c.publication_status for c in result.contracts} == {
+            enums.PublicationStatus.PUBLISHED
+        }
 
     def test_get_product_by_name_team_member(
         self, product_service: ProductService, product: Product, team: Team
@@ -208,7 +229,8 @@ class TestProductService:
         data = {"type": "D", "team_id": team.id}
         result = product_service.create_product(data=data, scopes=scope)
 
-        assert len(product_query_handler.list_products(scopes=scope)) == 3
+        # Newly created products are drafts by default and don't show up in list_products().
+        assert len(product_query_handler.list_products(scopes=scope)) == 2
         assert result.type == "D"
 
     @pytest.mark.xfail(raises=NotAuthorized)
@@ -250,7 +272,7 @@ class TestProductService:
         assert product.id
         product_service.delete_product(product_id=product.id, scopes=scope)
 
-        assert len(product_query_handler.list_products(scopes=scope)) == 1
+        assert len(product_query_handler.list_products(scopes=scope)) == 2
 
     @pytest.mark.parametrize(
         "scope", [(["scope_dadi", settings.EMPLOYEE_ROLE_NAME]), (["test_admin"])]
@@ -271,7 +293,7 @@ class TestProductService:
         # product exists and is marked as deleted
         assert product.publication_status == enums.PublicationStatus.DELETED
         # product doesn't show up in the list of products
-        assert len(product_query_handler.list_products(scopes=scope)) == 1
+        assert len(product_query_handler.list_products(scopes=scope)) == 2
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_delete_product_non_existent(self, product_service: ProductService, team: Team):
@@ -279,7 +301,7 @@ class TestProductService:
 
     def test_get_contracts(self, product_service: ProductService, product: Product):
         assert product.id
-        result = product_service.get_contracts(product.id)
+        result = product_service.get_contracts(product.id, scopes=["scope_dadi"])
 
         assert result == product.contracts
 
@@ -289,29 +311,39 @@ class TestProductService:
         assert result == product.contracts
 
     def test_get_contracts_employee_falls_back_to_internal(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        result = product_service.get_contracts(product.id, scopes=[settings.EMPLOYEE_ROLE_NAME])
-        assert result == product.contracts
+        assert published_product.id
+        result = product_service.get_contracts(
+            published_product.id,
+            scopes=[settings.EMPLOYEE_ROLE_NAME],
+        )
+        assert {c.publication_status for c in result} <= {
+            enums.PublicationStatus.PUBLISHED,
+            enums.PublicationStatus.INTERNALLY_PUBLISHED,
+        }
 
     def test_get_contracts_unauthorized_falls_back_to_published(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        result = product_service.get_contracts(product.id, scopes=["unauthorized"])
-        assert result == product.contracts
+        assert published_product.id
+        result = product_service.get_contracts(published_product.id, scopes=["unauthorized"])
+        assert {c.publication_status for c in result} == {enums.PublicationStatus.PUBLISHED}
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contracts_from_non_existent_product(self, product_service: ProductService):
         product_service.get_contracts(1337)
 
-    def test_get_contract(self, product_service: ProductService, product: Product):
-        assert product.id
-        assert product.contracts[0].id
-        result = product_service.get_contract(product.id, product.contracts[0].id)
-
-        assert result == product.contracts[0]
+    def test_get_contract(self, product_service: ProductService, published_product: Product):
+        assert published_product.id
+        published_contract = next(
+            c
+            for c in published_product.contracts
+            if c.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        assert published_contract.id
+        result = product_service.get_contract(published_product.id, published_contract.id)
+        assert result == published_contract
 
     def test_get_contract_team_member(self, product_service: ProductService, product: Product):
         assert product.id
@@ -322,71 +354,93 @@ class TestProductService:
         assert result == product.contracts[0]
 
     def test_get_contract_employee_falls_back_to_internal(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        assert product.contracts[0].id
+        assert published_product.id
+        published_contract = next(
+            c
+            for c in published_product.contracts
+            if c.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        assert published_contract.id
         result = product_service.get_contract(
-            product.id,
-            product.contracts[0].id,
+            published_product.id,
+            published_contract.id,
             scopes=[settings.EMPLOYEE_ROLE_NAME],
         )
-        assert result == product.contracts[0]
+        assert result == published_contract
 
     def test_get_contract_unauthorized_falls_back_to_published(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        assert product.contracts[0].id
+        assert published_product.id
+        published_contract = next(
+            c
+            for c in published_product.contracts
+            if c.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        assert published_contract.id
         result = product_service.get_contract(
-            product.id,
-            product.contracts[0].id,
+            published_product.id,
+            published_contract.id,
             scopes=["unauthorized"],
         )
-        assert result == product.contracts[0]
+        assert result == published_contract
 
     def test_get_distributions_unauthorized_falls_back_to_published(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        assert product.contracts[0].id
+        assert published_product.id
+        published_contract = next(
+            c
+            for c in published_product.contracts
+            if c.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        assert published_contract.id
         result = product_service.get_distributions(
-            product_id=product.id,
-            contract_id=product.contracts[0].id,
+            product_id=published_product.id,
+            contract_id=published_contract.id,
             scopes=["unauthorized"],
         )
-        assert result == product.contracts[0].distributions
+        assert result == published_contract.distributions
 
     def test_get_distribution_unauthorized_falls_back_to_published(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        assert product.contracts[0].id
-        assert product.contracts[0].distributions[0].id
+        assert published_product.id
+        published_contract = next(
+            c
+            for c in published_product.contracts
+            if c.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        assert published_contract.id
+        assert published_contract.distributions[0].id
         result = product_service.get_distribution(
-            product_id=product.id,
-            contract_id=product.contracts[0].id,
-            distribution_id=product.contracts[0].distributions[0].id,
+            product_id=published_product.id,
+            contract_id=published_contract.id,
+            distribution_id=published_contract.distributions[0].id,
             scopes=["unauthorized"],
         )
-        assert result == product.contracts[0].distributions[0]
+        assert result == published_contract.distributions[0]
 
     def test_get_services_unauthorized_falls_back_to_published(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        result = product_service.get_services(product.id, scopes=["unauthorized"])
-        assert result == product.services
+        assert published_product.id
+        result = product_service.get_services(published_product.id, scopes=["unauthorized"])
+        assert result == published_product.services
 
     def test_get_service_unauthorized_falls_back_to_published(
-        self, product_service: ProductService, product: Product
+        self, product_service: ProductService, published_product: Product
     ):
-        assert product.id
-        assert product.services[0].id
+        assert published_product.id
+        assert published_product.services[0].id
         result = product_service.get_service(
-            product.id, product.services[0].id, scopes=["unauthorized"]
+            published_product.id,
+            published_product.services[0].id,
+            scopes=["unauthorized"],
         )
-        assert result == product.services[0]
+        assert result == published_product.services[0]
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_contract_non_existent(self, product_service: ProductService, product: Product):
@@ -431,7 +485,7 @@ class TestProductService:
         )
 
         assert isinstance(contract, DataContract)
-        assert len(product_service.get_contracts(product.id)) == 3
+        assert len(product_service.get_contracts(product.id, scopes=[team.scope])) == 3
 
     @pytest.mark.parametrize(
         "data,missing_fields",
@@ -499,7 +553,7 @@ class TestProductService:
             scopes=[scope],
         )
 
-        assert len(product_service.get_contracts(product.id)) == 2
+        assert len(product_service.get_contracts(product.id, scopes=[team.scope])) == 2
         assert result.name == "behoud bomen"
 
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
@@ -547,7 +601,7 @@ class TestProductService:
             scopes=[scope],
         )
 
-        assert len(product_service.get_contracts(product.id)) == 1
+        assert len(product_service.get_contracts(product.id, scopes=[team.scope])) == 1
         assert product.contract_count == 1
 
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
@@ -661,7 +715,7 @@ class TestProductService:
             scopes=[scope],
         )
 
-        assert len(product_service.get_contracts(product.id)) == 2
+        assert len(product_service.get_contracts(product.id, scopes=[team.scope])) == 2
         assert result.publication_status == updated_status
 
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
@@ -971,7 +1025,9 @@ class TestProductService:
         assert product.id
         assert product.contracts[0].id
         result = product_service.get_distributions(
-            product_id=product.id, contract_id=product.contracts[0].id
+            product_id=product.id,
+            contract_id=product.contracts[0].id,
+            scopes=["scope_dadi"],
         )
         assert result == product.contracts[0].distributions
 
@@ -984,6 +1040,7 @@ class TestProductService:
             product_id=product.id,
             contract_id=product.contracts[0].id,
             distribution_id=product.contracts[0].distributions[0].id,
+            scopes=["scope_dadi"],
         )
         assert result == product.contracts[0].distributions[0]
 
@@ -1013,7 +1070,7 @@ class TestProductService:
             scopes=[scope],
         )
         assert distribution.id
-        updated_product = product_service.get_product(product.id)
+        updated_product = product_service.get_product(product.id, scopes=[team.scope])
         saved_distribution = updated_product.get_distribution(
             contract_id=product.contracts[0].id, distribution_id=distribution.id
         )
@@ -1193,7 +1250,7 @@ class TestProductService:
         )
 
         assert isinstance(result, DataService)
-        assert len(product_service.get_services(product.id)) == 2
+        assert len(product_service.get_services(product.id, scopes=[team.scope])) == 2
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_service_non_existent_product(
@@ -1214,7 +1271,7 @@ class TestProductService:
             scopes=[scope],
         )
 
-        assert len(product_service.get_services(product.id)) == 1
+        assert len(product_service.get_services(product.id, scopes=[team.scope])) == 1
         assert result.type == "WMS"
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
@@ -1242,7 +1299,7 @@ class TestProductService:
             scopes=[scope],
         )
 
-        assert len(product_service.get_services(product.id)) == 0
+        assert len(product_service.get_services(product.id, scopes=[team.scope])) == 0
 
     @pytest.mark.xfail(raises=ValidationError)
     def test_delete_service_fails_when_distribution_accesses_it(

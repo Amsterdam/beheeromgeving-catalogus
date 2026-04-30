@@ -512,6 +512,118 @@ class TestViews:
         response = api_client.get(f"/products/{product_id}")
         assert response.status_code == 404
 
+    def test_employee_can_access_published_product(self, orm_product, client_with_token):
+        response = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get(
+            f"/products/{orm_product.id}"
+        )
+        assert response.status_code == 200
+        assert response.data["id"] == orm_product.id
+        assert response.data["publication_status"] == "P"
+
+    def test_employee_cannot_see_unpublished_contracts_under_internally_published_product(
+        self, orm_team, client_with_token
+    ):
+        internal_product = Product.objects.create(
+            name="Interne bomen",
+            description="intern product",
+            team=orm_team,
+            data_steward="intern@amsterdam.nl",
+            language="NL",
+            is_geo=True,
+            schema_url="",
+            type="I",
+            themes=["NM"],
+            refresh_period="3.MONTH",
+            publication_status="I",
+        )
+
+        DataContract.objects.create(
+            product=internal_product,
+            publication_status="D",
+            purpose="concept",
+            name="draft contract",
+            privacy_level="NPI",
+            scopes=["intern"],
+            confidentiality="I",
+            start_date="2025-01-01",
+            retainment_period=12,
+        )
+        DataContract.objects.create(
+            product=internal_product,
+            publication_status="P",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
+            purpose="gepubliceerd",
+            name="published contract",
+            privacy_level="NPI",
+            scopes=["intern"],
+            confidentiality="I",
+            start_date="2025-01-01",
+            retainment_period=12,
+        )
+        internal_contract = DataContract.objects.create(
+            product=internal_product,
+            publication_status="I",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
+            purpose="intern gepubliceerd",
+            name="internal contract",
+            privacy_level="NPI",
+            scopes=["intern"],
+            confidentiality="I",
+            start_date="2025-01-01",
+            retainment_period=12,
+        )
+
+        response = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get(
+            f"/products/{internal_product.pk}/contracts"
+        )
+
+        assert response.status_code == 200
+        assert len(response.data) == 2
+        assert {contract["publication_status"] for contract in response.data} == {"P", "I"}
+        assert internal_contract.pk in {contract["id"] for contract in response.data}
+
+    def test_anonymous_user_cannot_see_internally_published_contracts_under_published_product(
+        self, orm_product, api_client
+    ):
+        internal_contract = DataContract.objects.create(
+            product=orm_product,
+            name="intern contract",
+            publication_status="I",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+
+        response = api_client.get(f"/products/{orm_product.id}/contracts")
+        assert response.status_code == 200
+        assert all(contract["publication_status"] == "P" for contract in response.data)
+        assert internal_contract.pk not in {contract["id"] for contract in response.data}
+
+        detail = api_client.get(f"/products/{orm_product.id}/contracts/{internal_contract.pk}")
+        assert detail.status_code == 404
+
+    def test_employee_can_see_internally_published_contract_under_published_product(
+        self, orm_product, client_with_token
+    ):
+        internal_contract = DataContract.objects.create(
+            product=orm_product,
+            name="intern contract",
+            publication_status="I",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+
+        response = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get(
+            f"/products/{orm_product.id}/contracts"
+        )
+        assert response.status_code == 200
+        assert {contract["publication_status"] for contract in response.data} == {"P", "I"}
+        assert internal_contract.pk in {contract["id"] for contract in response.data}
+
+        detail = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get(
+            f"/products/{orm_product.id}/contracts/{internal_contract.pk}"
+        )
+        assert detail.status_code == 200
+        assert detail.data["id"] == internal_contract.pk
+        assert detail.data["publication_status"] == "I"
+
     def test_product_detail_missing_fields(
         self, orm_incomplete_product, orm_team, client_with_token
     ):

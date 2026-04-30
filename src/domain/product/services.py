@@ -39,8 +39,17 @@ class ProductService(AbstractService):
         if level is ProductReadLevel.FULL:
             return self.repository.get(product_id)
         if level is ProductReadLevel.INTERNAL:
-            return self.repository.get_internal(product_id)
-        return self.repository.get_published(product_id)
+            return self.repository.get_for_publication_status(
+                product_id,
+                [
+                    enums.PublicationStatus.PUBLISHED,
+                    enums.PublicationStatus.INTERNALLY_PUBLISHED,
+                ],
+            )
+        return self.repository.get_for_publication_status(
+            product_id,
+            [enums.PublicationStatus.PUBLISHED],
+        )
 
     def get_product_by_name(
         self,
@@ -54,8 +63,17 @@ class ProductService(AbstractService):
         if level is ProductReadLevel.FULL:
             return self.repository.get_by_name(name)
         if level is ProductReadLevel.INTERNAL:
-            return self.repository.get_internal_by_name(name)
-        return self.repository.get_published_by_name(name)
+            return self.repository.get_for_publication_status_by_name(
+                name,
+                [
+                    enums.PublicationStatus.PUBLISHED,
+                    enums.PublicationStatus.INTERNALLY_PUBLISHED,
+                ],
+            )
+        return self.repository.get_for_publication_status_by_name(
+            name,
+            [enums.PublicationStatus.PUBLISHED],
+        )
 
     @authorize.is_admin
     @authorize.is_team_member

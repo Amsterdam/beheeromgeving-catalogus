@@ -7,7 +7,7 @@ from domain.base import (
     AbstractRepository,
     BaseObject,
 )
-from domain.product import Product, enums
+from domain.product import Product
 from domain.team import Team
 
 # alias for typing
@@ -66,11 +66,25 @@ class DummyRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object with id {id} does not exist") from e
 
-    def get_published(self, id):
-        return self.get(id)
-
-    def get_internal(self, id):
-        return self.get(id)
+    def get_for_publication_status(self, id, allowed_statuses):
+        allowed = {getattr(status, "value", status) for status in allowed_statuses}
+        obj = self.get(id)
+        obj_status = getattr(obj, "publication_status", None)
+        obj_status = getattr(obj_status, "value", obj_status)
+        if obj_status not in allowed:
+            raise exceptions.ObjectDoesNotExist
+        if hasattr(obj, "contracts") and obj.contracts is not None:
+            obj.contracts = [
+                c
+                for c in obj.contracts
+                if getattr(
+                    getattr(c, "publication_status", None),
+                    "value",
+                    getattr(c, "publication_status", None),
+                )
+                in allowed
+            ]
+        return obj
 
     def get_by_name(self, name):
         try:
@@ -83,30 +97,44 @@ class DummyRepository(AbstractRepository):
         except StopIteration as e:
             raise exceptions.ObjectDoesNotExist(f"Object with name {name} does not exist") from e
 
-    def get_published_by_name(self, name):
-        return self.get_by_name(name)
+    def get_for_publication_status_by_name(self, name, allowed_statuses):
+        allowed = {getattr(status, "value", status) for status in allowed_statuses}
+        obj = self.get_by_name(name)
+        obj_status = getattr(obj, "publication_status", None)
+        obj_status = getattr(obj_status, "value", obj_status)
+        if obj_status not in allowed:
+            raise exceptions.ObjectDoesNotExist
+        if hasattr(obj, "contracts") and obj.contracts is not None:
+            obj.contracts = [
+                c
+                for c in obj.contracts
+                if getattr(
+                    getattr(c, "publication_status", None),
+                    "value",
+                    getattr(c, "publication_status", None),
+                )
+                in allowed
+            ]
+        return obj
 
     def list_all(self, **_kwargs):
         return list(self._items.values())
 
-    def list_internal(self, **_kwargs):
+    def list_for_publication_status(self, allowed_statuses, **_kwargs):
+        allowed = {getattr(status, "value", status) for status in allowed_statuses}
         return [
             item
             for item in self._items.values()
-            if getattr(item, "publication_status", "I")
-            == enums.PublicationStatus.INTERNALLY_PUBLISHED.value
+            if getattr(
+                getattr(item, "publication_status", None),
+                "value",
+                getattr(item, "publication_status", None),
+            )
+            in allowed
         ]
 
     def list(self):
-        return [
-            item
-            for item in self._items.values()
-            if getattr(item, "publication_status", "P")
-            not in (
-                enums.PublicationStatus.DELETED.value,
-                enums.PublicationStatus.INTERNALLY_PUBLISHED.value,
-            )
-        ]
+        return list(self._items.values())
 
     def save(self, item: DummyRepoItem):
         self._add_ids(item)
