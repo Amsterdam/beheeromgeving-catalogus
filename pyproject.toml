@@ -44,9 +44,9 @@ dev = [
     "pytest-django==4.12.0",
     "pytest-sugar==1.1.1",
     "requests-mock==1.12.1",
-    "ruff==0.15.11",
+    "ruff==0.15.12",
     "termcolor==3.3.0",
-    "ty>=0.0.32",
+    "ty>=0.0.33",
 ]
 
 [build-system]
