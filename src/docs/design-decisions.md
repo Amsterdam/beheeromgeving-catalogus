@@ -2,6 +2,8 @@
 
 ## Changelog
 
+2026-04-30: Added section on authorization policies.
+
 2026-04-08: Added note on soft deletion.
 
 2026-03-09: Use queries for /products and /me endpoints.
@@ -135,6 +137,19 @@ with the name of the scope of admins.
 
 Authorization as a whole is behind a feature flag to ease development. There is a setting
 FEATURE_FLAG_USE_AUTH, which is set to True by default.
+
+**Updated (2026-04-30)**
+Because there was repeated logic in our read methods which checked whether the
+user belonged to a certain group before they could read a resource with nested
+try/except logic with fallbacks, we refactored auth for reads a bit. Beside the
+decorators we now also added some helper functions on the AuthorizationService
+which can be used to determine the access level of a user.
+
+The product domain now contains a policies.py file where we determine the level
+to which the user belongs. This level is then in the service mapped to a set of
+publication statuses which those users may see. For convenience, the repository
+now contains `get/list_for_publication_status*` helpers which filter out
+everything the user isn't allowed to see.
 
 ## User Stories / Use Cases
 
