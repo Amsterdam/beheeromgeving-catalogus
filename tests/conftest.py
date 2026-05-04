@@ -113,7 +113,7 @@ def orm_product(orm_team) -> Product:
 @pytest.fixture()
 def orm_draft_product(orm_team) -> Product:
     product = Product.objects.create(
-        name="Bomen",
+        name="Bomen draft",
         description="bomen in Amsterdam",
         team=orm_team,
         data_steward="meneerboom@amsterdam.nl",
@@ -136,7 +136,7 @@ def orm_draft_product(orm_team) -> Product:
         product=product,
         publication_status="D",
         purpose="onderhoud van bomen",
-        name="beheer bomen",
+        name="beheer bomen draft",
         privacy_level="NPI",
         scopes=["bomen_beheer"],
         confidentiality="I",

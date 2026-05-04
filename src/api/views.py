@@ -3,6 +3,7 @@ from typing import overload
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from pydantic import BaseModel, ValidationError
 from rest_framework.decorators import action, api_view
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -76,9 +77,26 @@ class TeamViewSet(ExceptionHandlerMixin, ViewSet):
         # Raises if data is invalid
         return dto_model(**data)
 
-    @extend_schema(responses={200: dtos.TeamList})
-    def list(self, _request):
+    @extend_schema(
+        responses={200: dtos.TeamList},
+        parameters=[
+            OpenApiParameter(
+                "has_published_products",
+                description="Filter teams on whether they have published products",
+                type=bool,
+            )
+        ],
+    )
+    def list(self, request: Request):
+        qp = dtos.TeamQueryParams(**request.query_params.dict())
         teams = team_service.get_teams()
+        if qp.has_published_products is not None:
+            teams = [
+                team
+                for team in teams
+                if (qp.has_published_products and team.product_count)
+                or (not qp.has_published_products and team.product_count == 0)
+            ]
         data = dtos.to_response_object(teams)
         return Response(data, status=200)
 

@@ -13,5 +13,6 @@ class Team(BaseObject):
     contact_email: str
     scope: str
     id: int | None = None
+    product_count: int = 0
 
-    _skip_keys = set()
+    _skip_keys = {"product_count"}

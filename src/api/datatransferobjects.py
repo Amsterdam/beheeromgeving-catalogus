@@ -115,6 +115,7 @@ class TeamList(ModelMixin, BaseModel):
     id: int
     name: str
     acronym: str
+    product_count: int
 
 
 class DataServiceCreateOrUpdate(ModelMixin, BaseModel):
@@ -359,6 +360,10 @@ class MeDetail(BaseModel):
 
     teams: list[Team]
     products: PaginatedResponse[MyProduct]
+
+
+class TeamQueryParams(BaseModel):
+    has_published_products: bool | None = None
 
 
 class QueryParams(BaseModel):

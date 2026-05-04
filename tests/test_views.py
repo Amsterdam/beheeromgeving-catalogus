@@ -44,7 +44,32 @@ class TestViews:
         response = api_client.get("/teams")
         assert response.status_code == 200
         assert response.data[0]["acronym"] == "DADI"
+        assert response.data[0]["product_count"] == 0
         assert response.data[0].get("po_email") is None
+
+    @pytest.mark.parametrize("value", ["true", "1", "yes"])
+    def test_teams_list_filter_has_published_products_true(
+        self, orm_team, orm_other_team, orm_product, api_client, value
+    ):
+        response = api_client.get(f"/teams?has_published_products={value}")
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]["id"] == orm_team.id
+        assert response.data[0]["product_count"] == 1
+
+    @pytest.mark.parametrize("value", ["false", "0", "no"])
+    def test_teams_list_filter_has_published_products_false(
+        self, orm_team, orm_other_team, orm_product, api_client, value
+    ):
+        response = api_client.get(f"/teams?has_published_products={value}")
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]["id"] == orm_other_team.id
+        assert response.data[0]["product_count"] == 0
+
+    def test_teams_list_filter_has_published_products_invalid(self, orm_team, api_client):
+        response = api_client.get("/teams?has_published_products=notabool")
+        assert response.status_code == 400
 
     def test_teams_detail(self, orm_team, api_client):
         response = api_client.get(f"/teams/{orm_team.id}")
@@ -231,7 +256,7 @@ class TestViews:
     def test_product_list_query_by_name_draft_team_200(
         self, orm_draft_product, orm_team, client_with_token
     ):
-        response = client_with_token([orm_team.scope]).get("/products?name=bomen")
+        response = client_with_token([orm_team.scope]).get("/products?name=bomen draft")
         assert response.status_code == 200
         assert response.data["name"] == orm_draft_product.name
 
