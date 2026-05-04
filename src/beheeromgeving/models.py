@@ -398,6 +398,7 @@ class Team(models.Model):
             po_email=self.po_email,
             contact_email=self.contact_email,
             scope=self.scope,
+            product_count=self.products.filter(publication_status__in=["P", "I"]).count(),
         )
 
     @classmethod

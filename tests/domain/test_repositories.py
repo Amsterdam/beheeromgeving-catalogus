@@ -25,6 +25,11 @@ class TestTeamRepository:
         assert isinstance(team, Team)
         assert team.id == orm_team.id
 
+    def test_get_includes_product_count(self, orm_team, orm_product, orm_draft_product):
+        repo = TeamRepository()
+        team = repo.get(orm_team.id)
+        assert team.product_count == 1
+
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_non_existent(self, orm_team):
         repo = TeamRepository()
