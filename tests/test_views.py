@@ -784,6 +784,17 @@ class TestViews:
         assert orm_product.publication_date is not None
         assert response.data["publication_status"] == orm_product.publication_status
 
+    def test_set_state_dataproduct_internal_not_possible(
+        self, orm_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/set-state",
+            data={"publication_status": "I"},  # publish internally
+        )
+        assert response.status_code == 400
+        orm_product.refresh_from_db()
+        assert orm_product.publication_status == "P"  # unchanged
+
     def test_set_state_contract(self, orm_product, orm_team, client_with_token):
         first_contract_id = orm_product.contracts.first().id
         second_contract_id = orm_product.contracts.last().id
