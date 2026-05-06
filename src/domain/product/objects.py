@@ -225,6 +225,7 @@ class Product(BaseObject):
     id: int | None = None
     name: str | None = None
     description: str | None = None
+    other_identifier: str | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
     schema_url: str | None = None
@@ -241,6 +242,7 @@ class Product(BaseObject):
     contact_email: str | None = None
     data_steward: str | None = None
     services: list[DataService] = field(default_factory=list)
+    endorsement: enums.EndorsementLevel | None = None
     sources: list[int] = field(default_factory=list)
     sinks: list[int] = field(default_factory=list)
     team_id: int

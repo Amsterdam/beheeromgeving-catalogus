@@ -28,6 +28,13 @@ class Product(models.Model):
         null=True,
         help_text="Beschrijving en betekenis van het Data Product",
     )
+    other_identifier = models.CharField(
+        _("Overige identifier"),
+        max_length=128,
+        blank=True,
+        null=True,
+        help_text="Een alternatieve identifier voor het Product",
+    )
     type = models.CharField(
         _("Product type"),
         max_length=1,
@@ -123,6 +130,14 @@ class Product(models.Model):
         blank=True,
         null=True,
     )
+    endorsement = models.CharField(
+        _("Endorsement niveau"),
+        max_length=1,
+        choices=enums.EndorsementLevel.choices(),
+        null=True,
+        blank=True,
+        help_text="Het endorsement niveau van het Informatieproduct.",
+    )
     sources = models.ManyToManyField("self", symmetrical=False, related_name="sinks")
 
     def __str__(self):
@@ -165,6 +180,7 @@ class Product(models.Model):
             type=self.type,
             name=self.name,
             description=self.description,
+            other_identifier=self.other_identifier,
             team_id=self.team.pk,
             language=self.language,
             is_geo=self.is_geo,
@@ -184,6 +200,7 @@ class Product(models.Model):
             owner=self.owner,
             contact_email=self.contact_email,
             data_steward=self.data_steward,
+            endorsement=self.endorsement,
             services=[s.to_domain() for s in self.services.order_by("id")],
             sources=list(self.sources.values_list("pk", flat=True)),
             sinks=list(self.sinks.values_list("pk", flat=True)),

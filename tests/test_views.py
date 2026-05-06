@@ -726,6 +726,8 @@ class TestViews:
             {"owner": "New Owner"},
             {"contact_email": "newmail@contact.nl"},
             {"data_steward": "newmail@steward.nl"},
+            {"endorsement": "P"},
+            {"other_identifier": "df6c6daa-4923-11f1-8ec6-b9f5b97669e8"},
         ],
     )
     def test_product_update(self, orm_draft_product, orm_team, data, client_with_token):
