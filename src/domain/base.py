@@ -1,7 +1,9 @@
 import abc
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from datetime import UTC, datetime
 from typing import Any
+
+from domain import exceptions
 
 
 @dataclass
@@ -17,7 +19,15 @@ class BaseObject:
                 dictionary.pop(key)
         return dictionary
 
-    def update_from_dict(self, data: dict):
+    def update_from_dict(self, data: dict[str, Any]):
+        allowed_keys = {f.name for f in fields(self)}
+        unknown_keys = set(data).difference(allowed_keys)
+        if unknown_keys:
+            unknown_keys_str = ", ".join(sorted(unknown_keys))
+            raise exceptions.ValidationError(
+                f"Unknown fields for {type(self).__name__}: {unknown_keys_str}"
+            )
+
         for k, v in data.items():
             setattr(self, k, v)
             # when published, set the publication_date.
