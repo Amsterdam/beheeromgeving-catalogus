@@ -236,6 +236,7 @@ class ProductCreate(ModelMixin, BaseModel):
     team_id: int
     name: str | None = Field(None, min_length=2)
     description: str | None = None
+    other_identifier: str | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
     schema_url: str | None = None
@@ -248,6 +249,7 @@ class ProductCreate(ModelMixin, BaseModel):
     contact_email: str | None = None
     data_steward: str | None = None
     services: list[DataService] | None = None
+    endorsement: enums.EndorsementLevel | None = None
     sources: list[int] | None = None
     sinks: list[int] | None = None
 
@@ -276,6 +278,7 @@ class ProductUpdate(ModelMixin, BaseModel):
     team_id: int | None = None
     name: str | None = Field(None, min_length=2)
     description: str | None = None
+    other_identifier: str | None = None
     language: enums.Language | None = None
     is_geo: bool | None = None
     schema_url: str | None = None
@@ -288,6 +291,7 @@ class ProductUpdate(ModelMixin, BaseModel):
     contact_email: str | None = None
     data_steward: str | None = None
     services: list[DataService] | None = None
+    endorsement: enums.EndorsementLevel | None = None
     sources: list[int] | None = None
     sinks: list[int] | None = None
 
@@ -306,6 +310,7 @@ class ProductList(ModelMixin, BaseModel):
     id: int
     name: str | None = Field(None, min_length=2)
     description: str | None = None
+    other_identifier: str | None = None
     type: enums.ProductType | None = None
     owner: str | None = None
     themes: list[enums.Theme] | None = None
@@ -324,6 +329,7 @@ class ProductList(ModelMixin, BaseModel):
             id=product.pk,
             name=product.name,
             description=product.description,
+            other_identifier=product.other_identifier,
             type=product.type,
             owner=product.owner,
             themes=product.themes,

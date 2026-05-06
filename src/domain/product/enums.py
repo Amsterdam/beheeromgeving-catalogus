@@ -62,6 +62,11 @@ class PublicationStatus(StrChoicesEnum):
     DELETED = "X"
 
 
+class EndorsementLevel(StrChoicesEnum):
+    CERTIFIED = "C"
+    PROMOTED = "P"
+
+
 class ConfidentialityLevel(StrChoicesEnum):
     OPENBAAR = "O"
     INTERN = "I"
