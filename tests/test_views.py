@@ -702,6 +702,44 @@ class TestViews:
         )
         assert response.status_code == 201
 
+    def test_product_create_information_product_with_access_url(self, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).post(
+            "/products",
+            data={
+                "type": "I",
+                "name": "Information Product",
+                "team_id": orm_team.id,
+                "access_url": "https://data.amsterdam.nl/report/1",
+            },
+        )
+        assert response.status_code == 201, response.data
+        assert (
+            response.data["contracts"][0]["distributions"][0]["access_url"]
+            == "https://data.amsterdam.nl/report/1"
+        )
+        orm_product = Product.objects.get(id=response.data["id"])
+        assert (
+            orm_product.contracts.first().distributions.first().access_url
+            == "https://data.amsterdam.nl/report/1"
+        )
+
+    def test_product_create_fails_with_access_url_on_data_product(
+        self, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).post(
+            "/products",
+            data={
+                "type": "D",
+                "team_id": orm_team.id,
+                "access_url": "https://data.amsterdam.nl/report/1",
+            },
+        )
+        assert response.status_code == 400
+        assert (
+            "access_url is only allowed when the product is an information product"
+            in response.data
+        )
+
     @pytest.mark.parametrize(
         "input,output",
         [
@@ -778,6 +816,42 @@ class TestViews:
             assert getattr(orm_draft_product, key) == val
         assert response.data["last_updated"] == orm_draft_product.last_updated
         assert orm_draft_product.last_editor == "test@example.com"
+
+    def test_product_update_information_product_with_access_url(
+        self, orm_team, orm_information_product, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_information_product.id}",
+            data={
+                "access_url": "https://data.amsterdam.nl/report/test/2",
+            },
+        )
+        assert response.status_code == 200, response.data
+        assert (
+            response.data["contracts"][0]["distributions"][0]["access_url"]
+            == "https://data.amsterdam.nl/report/test/2"
+        )
+        orm_information_product.refresh_from_db()
+        assert (
+            orm_information_product.contracts.first().distributions.first().access_url
+            == "https://data.amsterdam.nl/report/test/2"
+        )
+
+    def test_product_update_fails_with_access_url_on_data_product(
+        self, orm_team, orm_draft_product, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}",
+            data={
+                "type": "D",
+                "access_url": "https://data.amsterdam.nl/report/1",
+            },
+        )
+        assert response.status_code == 400, response.data
+        assert (
+            "access_url is only allowed when the product is an information product"
+            in response.data
+        )
 
     def test_product_update_base64_description(
         self, orm_draft_product, orm_team, client_with_token

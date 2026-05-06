@@ -90,6 +90,7 @@ exclude_also = [
     'if "debug_toolbar" in settings.INSTALLED_APPS:',
     "raise NotImplementedError",
     "raise DomainException",
+    "raise exceptions.DomainException",
     "case exceptions.DomainException",
     "def __str__(self):",
     "if not is_initialized:"

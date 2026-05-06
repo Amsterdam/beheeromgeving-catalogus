@@ -296,8 +296,7 @@ class Command(BaseCommand):
             raise RuntimeError(f"Team {team.name} is missing id")
         product_dto = ProductCreate(team_id=team.id, name=name, **kwargs)
         return self.service.create_product(
-            data=product_dto.model_dump(),
-            scopes=[team.scope],
+            data=product_dto.model_dump(), scopes=[team.scope], last_editor="import"
         )
 
     def _update_product(self, team: Team, domain_product: Product, product: dict):
