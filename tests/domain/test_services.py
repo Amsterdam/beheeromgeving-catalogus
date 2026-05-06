@@ -568,6 +568,21 @@ class TestProductService:
         assert isinstance(contract, DataContract)
         assert len(product_service.get_contracts(product.id, scopes=[team.scope])) == 3
 
+    def test_create_contract_fails_for_information_product_with_existing_contract(
+        self, product_service: ProductService, information_product: Product, team: Team
+    ):
+        assert information_product.id
+        assert len(information_product.contracts) == 1
+
+        with pytest.raises(
+            ValidationError, match="Information product can only have one contract."
+        ):
+            product_service.create_contract(
+                product_id=information_product.id,
+                data={"purpose": "onderhoud van bomen"},
+                scopes=[team.scope],
+            )
+
     @pytest.mark.parametrize(
         "data,missing_fields",
         [
@@ -1196,6 +1211,24 @@ class TestProductService:
             data=data,
             scopes=[],
         )
+
+    def test_create_distribution_fails_for_information_product_with_existing_distribution(
+        self, product_service: ProductService, information_product: Product, team: Team
+    ):
+        """Test to see if creating a distribution fails for an information product that already has
+        a distribution."""
+        assert information_product.id
+        assert information_product.contracts[0].id
+        data = {"format": "TEST", "type": "F"}
+        with pytest.raises(
+            ValidationError, match="Information product contract can only have one distribution."
+        ):
+            product_service.create_distribution(
+                product_id=information_product.id,
+                contract_id=information_product.contracts[0].id,
+                data=data,
+                scopes=[team.scope],
+            )
 
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_update_distribution(
