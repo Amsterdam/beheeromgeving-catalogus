@@ -89,6 +89,7 @@ class DistributionType(StrChoicesEnum):
     FILE = "F"
     CUSTOM = "C"
     API = "A"
+    REPORT = "R"
 
 
 class CoordRefSystem(StrChoicesEnum):
