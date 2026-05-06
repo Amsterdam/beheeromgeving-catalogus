@@ -505,6 +505,42 @@ class TestViews:
         )  # fietspaaltjes, fietspaden; count: 2
         assert response.data["results"][1]["id"] == orm_product.id  # bomen; count: 1
 
+    def test_product_list_fields_parameter(self, orm_product, api_client):
+        response = api_client.get("/products?fields=name,other_identifier")
+        assert response.status_code == 200
+        for product in response.data["results"]:
+            # id is always included.
+            assert set(product.keys()) == {"id", "name", "other_identifier"}
+
+    def test_product_list_fields_parameter_all(self, orm_product, api_client):
+        response = api_client.get("/products?fields=*")
+        assert response.status_code == 200
+        for product in response.data["results"]:
+            assert set(product.keys()) == {
+                "id",
+                "name",
+                "description",
+                "language",
+                "owner",
+                "type",
+                "themes",
+                "last_updated",
+                "team_id",
+                "is_geo",
+                "schema_url",
+                "contract_count",
+                "publication_status",
+                "other_identifier",
+                "summary",
+            }
+
+    def test_product_list_fields_parameter_invalid_field_ignored(self, orm_product, api_client):
+        response = api_client.get("/products?fields=name,invalid_field")
+        assert response.status_code == 200
+        for product in response.data["results"]:
+            # id is always included.
+            assert set(product.keys()) == {"id", "name"}
+
     def test_product_detail_does_not_show_draft_product(self, orm_draft_product, api_client):
         response = api_client.get(f"/products/{orm_draft_product.id}")
         assert response.status_code == 404
@@ -1498,3 +1534,26 @@ class TestViews:
         response = client_with_token([orm_team.scope]).get("/me?has_schema_url=false")
         assert response.status_code == 200
         assert response.data["products"]["count"] == 0
+
+    def test_me_fields_parameter(self, many_orm_products, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get(
+            "/me?fields=name,publication_status,other_identifier"
+        )
+        assert response.status_code == 200
+        for product in response.data["products"]["results"]:
+            assert set(product.keys()) == {"id", "name", "publication_status", "other_identifier"}
+
+    def test_me_fields_parameter_all(self, many_orm_products, orm_team, client_with_token):
+        response = client_with_token([orm_team.scope]).get("/me?fields=*")
+        assert response.status_code == 200
+        for product in response.data["products"]["results"]:
+            assert set(product.keys()) == {
+                "id",
+                "name",
+                "team_id",
+                "type",
+                "publication_status",
+                "last_updated",
+                "other_identifier",
+                "contracts",
+            }

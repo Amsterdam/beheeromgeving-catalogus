@@ -214,6 +214,7 @@ class MyProduct(ModelMixin, BaseModel):
     team_id: int
     id: int
     name: str | None = None
+    other_identifier: str | None = None
     type: enums.ProductType | None = None
     last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
@@ -225,6 +226,7 @@ class MyProduct(ModelMixin, BaseModel):
             id=product.pk,
             team_id=product.team.pk,
             name=product.name,
+            other_identifier=product.other_identifier,
             type=product.type,
             last_updated=product.last_updated,
             publication_status=product.publication_status,
@@ -383,6 +385,7 @@ class ProductQueryParams(BaseModel):
     language: list[enums.Language] | None = None
     order: tuple[str, bool] | None = None
     query: str | None = Field(alias="q", default=None)
+    fields: list[str] | None = None
     is_geo: bool | None = None
     has_schema_url: bool | None = None
 
@@ -413,6 +416,12 @@ class ProductQueryParams(BaseModel):
             return raw[1:], reversed
         else:
             return raw, reversed
+
+    @field_validator("fields", mode="before")
+    def validate_fields(cls, raw):
+        if raw == "*":
+            return None
+        return ["id"] + raw.split(",")
 
     @property
     def filter(self) -> dict:
