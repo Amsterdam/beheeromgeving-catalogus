@@ -162,6 +162,7 @@ class ProductValidator:
         required_fields = [
             "name",
             "description",
+            "type",
             "team_id",
             "language",
             "is_geo",
@@ -200,7 +201,8 @@ class ProductValidator:
 
     def can_change_publication_status(self, data: dict) -> bool:
         if (
-            data.get("publication_status") == "P"
+            self.product.type != enums.ProductType.INFORMATIEPRODUCT
+            and data.get("publication_status") == "P"
             and self.product.publication_status != enums.PublicationStatus.PUBLISHED
         ):
             missing_fields = self.get_missing_fields()
@@ -222,6 +224,10 @@ class ProductValidator:
         return True
 
     def can_change_contract_status(self, data: dict, contract_id: int) -> bool:
+        if self.product.type == enums.ProductType.INFORMATIEPRODUCT:
+            raise ValidationError(
+                "Cannot independently change contract publication status of information product"
+            )
         only_published_contract = self.is_only_published_contract(contract_id)
 
         if (
@@ -313,6 +319,9 @@ class Product(BaseObject):
     def update_state(self, data: dict) -> Product:
         if self.validate.can_change_publication_status(data):
             self.update_from_dict(data)
+            if self.type == enums.ProductType.INFORMATIEPRODUCT:
+                for contract in self.contracts:
+                    contract.update_from_dict(data)
         return self
 
     def update_contract(self, contract_id: int, data: dict) -> DataContract:

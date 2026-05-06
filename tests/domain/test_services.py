@@ -814,6 +814,33 @@ class TestProductService:
         assert len(product_service.get_contracts(product.id, scopes=[team.scope])) == 2
         assert result.publication_status == updated_status
 
+    def test_update_publication_status_for_info_product_also_updates_contract(
+        self, product_service: ProductService, information_product: Product, team: Team
+    ):
+        """Test to see if updating the publication status of an information product also updates
+        the publication status of its contract."""
+        assert information_product.id
+        assert len(information_product.contracts) == 1
+        assert (
+            information_product.contracts[0].publication_status
+            == enums.PublicationStatus.INTERNALLY_PUBLISHED
+        )
+
+        result = product_service.update_publication_status(
+            product_id=information_product.id,
+            data={"publication_status": "P"},
+            scopes=[team.scope],
+        )
+
+        assert result.publication_status == enums.PublicationStatus.PUBLISHED
+        assert len(product_service.get_contracts(information_product.id, scopes=[team.scope])) == 1
+        assert (
+            product_service.get_contracts(information_product.id, scopes=[team.scope])[
+                0
+            ].publication_status
+            == enums.PublicationStatus.PUBLISHED
+        )
+
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_publish_product_sets_publication_date(
         self, product_service: ProductService, product: Product, scope: str
@@ -875,6 +902,7 @@ class TestProductService:
         data = {
             "name": "Product",
             "description": "Description of product",
+            "type": "D",
             "language": "NL",
             "is_geo": True,
             "themes": ["NM"],
@@ -933,6 +961,7 @@ class TestProductService:
         data = {
             "name": "Product",
             "description": "Description of product",
+            "type": "D",
             "language": "NL",
             "is_geo": True,
             "themes": ["NM"],
