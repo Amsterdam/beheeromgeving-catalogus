@@ -83,6 +83,7 @@ class ProductRepository(AbstractRepository[Product]):
         filter: dict | None = None,
         exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
+        fields: list[str] | None = None,
     ) -> list_[dict]:
         allowed = {status.value for status in allowed_statuses}
         products = self.manager.filter(publication_status__in=allowed)
@@ -98,7 +99,10 @@ class ProductRepository(AbstractRepository[Product]):
             exclude=exclude,
             order=order,
         )
-        return [ProductList.from_django(p).model_dump() for p in products]
+        dump_kwargs = {}
+        if fields not in (None, "*"):
+            dump_kwargs["include"] = fields
+        return [ProductList.from_django(p).model_dump(**dump_kwargs) for p in products]
 
     def _apply_filters(
         self,
@@ -144,6 +148,7 @@ class ProductRepository(AbstractRepository[Product]):
         filter: dict | None = None,
         exclude: dict | None = None,
         order: tuple[str, bool] | None = ("name", False),
+        fields: list[str] | None = None,
         teams: list_[Team],
     ) -> list_:
         team_ids = [team.id for team in teams]
@@ -155,8 +160,10 @@ class ProductRepository(AbstractRepository[Product]):
             exclude=exclude,
             order=order,
         )
-
-        return [MyProduct.from_django(p).model_dump() for p in products]
+        dump_kwargs = {}
+        if fields not in (None, "*"):
+            dump_kwargs["include"] = fields
+        return [MyProduct.from_django(p).model_dump(**dump_kwargs) for p in products]
 
     def save(self, item: Product) -> Product:
         try:

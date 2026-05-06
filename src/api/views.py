@@ -187,6 +187,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
                 "has_schema_url",
                 description="Filter on whether product has a schema_url.",
             ),
+            OpenApiParameter(
+                "fields",
+                description="Comma-separated list of fields to include in the response. "
+                "Use '*' or omit to include all fields.",
+            ),
         ],
     )
     def list(self, request):
@@ -207,6 +212,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             filter=params.filter,
             exclude=params.exclude,
             order=params.order,
+            fields=params.fields,
         )
 
         pagination = Pagination()
@@ -518,6 +524,7 @@ def me(request):
         filter=params.filter,
         exclude=params.exclude,
         order=params.order or ("last_updated", True),
+        fields=params.fields,
     )
     pagination = Pagination()
     try:
