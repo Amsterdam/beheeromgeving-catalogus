@@ -193,7 +193,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         query_params = request.query_params.dict()
         # List view can only see published items.
         query_params["publication_status"] = "P"
-        params = self._validate_dto(data=query_params, dto_type=dtos.QueryParams)
+        params = self._validate_dto(data=query_params, dto_type=dtos.ProductQueryParams)
         if params.name:
             product = product_service.get_product_by_name(
                 name=params.name, scopes=request.get_token_scopes
@@ -505,7 +505,7 @@ def me(request):
         query_params = request.query_params.dict()
         if "publication_status" not in query_params:
             query_params["publication_status"] = "*"
-        params = dtos.QueryParams(**query_params)
+        params = dtos.ProductQueryParams(**query_params)
     except ValidationError as e:
         return Response(status=400, data=str(e))
     team_service = TeamService(repo=TeamRepository())

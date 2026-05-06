@@ -1,7 +1,7 @@
 import pytest
 from django.http import QueryDict
 
-from api.datatransferobjects import QueryParams
+from api.datatransferobjects import ProductQueryParams
 from domain.product import enums
 
 
@@ -11,20 +11,20 @@ class TestQueryParams:
         [
             (
                 "",
-                QueryParams(),
+                ProductQueryParams(),
                 {"publication_status": enums.PublicationStatus.PUBLISHED},
                 None,
             ),
-            ("publication_status=*", QueryParams(publication_status="*"), {}, None),
+            ("publication_status=*", ProductQueryParams(publication_status="*"), {}, None),
             (
                 "name=bomen",
-                QueryParams(name="bomen"),
+                ProductQueryParams(name="bomen"),
                 {"publication_status": enums.PublicationStatus.PUBLISHED},
                 None,
             ),
             (
                 "language=EN",
-                QueryParams(language="EN"),  # ty:ignore[invalid-argument-type]
+                ProductQueryParams(language="EN"),  # ty:ignore[invalid-argument-type]
                 {
                     "language__in": [enums.Language.ENGLISH],
                     "publication_status": enums.PublicationStatus.PUBLISHED,
@@ -33,7 +33,7 @@ class TestQueryParams:
             ),
             (
                 "team=1&theme=NM,B",
-                QueryParams(team="1", theme="NM,B"),  # ty:ignore[invalid-argument-type]
+                ProductQueryParams(team="1", theme="NM,B"),  # ty:ignore[invalid-argument-type]
                 {
                     "team_id__in": [1],
                     "themes__overlap": [enums.Theme.NATUUR_EN_MILIEU, enums.Theme.BESTUUR],
@@ -43,7 +43,7 @@ class TestQueryParams:
             ),
             (
                 "type=A&confidentiality=O",
-                QueryParams(
+                ProductQueryParams(
                     type="A",  # ty:ignore[invalid-argument-type]
                     confidentiality=enums.ConfidentialityLevel.OPENBAAR,  # ty:ignore[invalid-argument-type]
                 ),
@@ -56,7 +56,7 @@ class TestQueryParams:
             ),
             (
                 "q=boom",
-                QueryParams(q="boom"),  # ty:ignore[unknown-argument]
+                ProductQueryParams(q="boom"),  # ty:ignore[unknown-argument]
                 {"publication_status": enums.PublicationStatus.PUBLISHED},
                 "boom",
             ),
@@ -64,7 +64,7 @@ class TestQueryParams:
     )
     def test_query_param_object(self, query_string, expect, expect_filter, expect_query):
         qd = QueryDict(query_string)
-        qp = QueryParams(**qd.dict())
+        qp = ProductQueryParams(**qd.dict())
         assert qp == expect
         assert qp.filter == expect_filter
         assert qp.query == expect_query
@@ -80,5 +80,5 @@ class TestQueryParams:
     )
     def test_query_param_order(self, query_string, expected_order):
         qd = QueryDict(query_string)
-        qp = QueryParams(**qd.dict())
+        qp = ProductQueryParams(**qd.dict())
         assert qp.order == expected_order
