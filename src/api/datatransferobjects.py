@@ -372,7 +372,7 @@ class TeamQueryParams(BaseModel):
     has_published_products: bool | None = None
 
 
-class QueryParams(BaseModel):
+class ProductQueryParams(BaseModel):
     name: str | None = None
     team: list[int] | None = None
     theme: list[enums.Theme] | None = None
