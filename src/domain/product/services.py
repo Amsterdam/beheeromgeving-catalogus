@@ -78,24 +78,103 @@ class ProductService(AbstractService):
     @authorize.is_admin
     @authorize.is_team_member
     def create_product(self, *, data: dict, **kwargs) -> Product:
-        refresh_period = data.pop("refresh_period", None)
-        product = Product(
-            **data,
-            refresh_period=(RefreshPeriod.from_dict(refresh_period) if refresh_period else None),
-            publication_status=enums.PublicationStatus.DRAFT,
-            last_editor="import",
+        refresh_period_data = data.pop("refresh_period", None)
+        refresh_period = (
+            RefreshPeriod.from_dict(refresh_period_data) if refresh_period_data else None
         )
+        access_url = data.pop("access_url", None)
+
+        product = Product(
+            refresh_period=refresh_period,
+            publication_status=enums.PublicationStatus.DRAFT,
+            last_editor=kwargs.get("last_editor"),
+            **data,
+        )
+
+        if product.type == enums.ProductType.INFORMATIEPRODUCT and access_url:
+            # Also create a default contract and distribution for the access_url
+            contract = DataContract(
+                name=f"Contract voor {product.name}",
+                publication_status=enums.PublicationStatus.DRAFT,
+                distributions=[
+                    Distribution(
+                        access_url=access_url,
+                        type=enums.DistributionType.REPORT,
+                        refresh_period=refresh_period,
+                    )
+                ],
+            )
+            product.create_contract(contract)
+
         return self._persist(product)
+
+    def _update_access_url_for_information_product(
+        self, existing_product: Product, access_url: str, data: dict
+    ):
+        if not existing_product.contracts:
+            contract = DataContract(
+                name=f"Contract voor {existing_product.name}",
+                publication_status=enums.PublicationStatus.DRAFT,
+                distributions=[
+                    Distribution(
+                        access_url=access_url,
+                        type=enums.DistributionType.REPORT,
+                        refresh_period=data.get("refresh_period"),
+                    )
+                ],
+            )
+            existing_product.create_contract(contract)
+        elif not existing_product.contracts[0].distributions:
+            if not existing_product.contracts[0].id:
+                raise exceptions.DomainException(
+                    "Existing product has invalid contract data, cannot add distribution with "
+                    "access_url"
+                )
+            existing_product.add_distribution_to_contract(
+                contract_id=existing_product.contracts[0].id,
+                distribution=Distribution(
+                    access_url=access_url,
+                    type=enums.DistributionType.REPORT,
+                    refresh_period=data.get("refresh_period"),
+                ),
+            )
+        else:
+            if (
+                not existing_product.contracts[0].id
+                or not existing_product.contracts[0].distributions[0].id
+            ):
+                raise exceptions.DomainException(
+                    "Existing product has invalid contract/distribution data, cannot update "
+                    "access_url"
+                )
+            existing_product.update_distribution(
+                contract_id=existing_product.contracts[0].id,
+                distribution_id=existing_product.contracts[0].distributions[0].id,
+                data={
+                    "access_url": access_url,
+                    "type": enums.DistributionType.REPORT,
+                    "refresh_period": data.get("refresh_period"),
+                },
+            )
+        return existing_product
 
     @authorize.is_admin
     @authorize.is_team_member
     def update_product(self, *, product_id: int, data: dict, **kwargs) -> Product:
         existing_product = self.get_product(product_id=product_id, **kwargs)
+        access_url = data.pop("access_url", None) if "access_url" in data else None
         if data.get("refresh_period"):
             data["refresh_period"] = RefreshPeriod.from_dict(data["refresh_period"])
         if kwargs.get("last_editor"):
             data["last_editor"] = kwargs["last_editor"]
         existing_product.update(data)
+        if existing_product.type == enums.ProductType.INFORMATIEPRODUCT and access_url:
+            existing_product = self._update_access_url_for_information_product(
+                existing_product=existing_product,
+                access_url=access_url,
+                data=data,
+            )
+
         return self._persist(existing_product)
 
     @authorize.is_admin

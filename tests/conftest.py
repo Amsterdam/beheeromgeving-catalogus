@@ -381,6 +381,36 @@ def orm_incomplete_product(orm_team) -> Product:
 
 
 @pytest.fixture()
+def orm_information_product(orm_team) -> Product:
+    product = Product.objects.create(
+        name="Bomen",
+        description="informatie over bomen in Amsterdam",
+        team=orm_team,
+        data_steward="meneerboom@amsterdam.nl",
+        is_geo=True,
+        schema_url="https://schemas.data.amsterdam.nl/datasets/bomen/dataset",
+        type="I",
+        themes=["NM"],
+        refresh_period="3.MONTH",
+        publication_status="I",
+    )
+
+    contract = DataContract.objects.create(
+        product=product,
+        publication_status="I",
+        name="informatie bomen",
+    )
+
+    Distribution.objects.create(
+        contract=contract,
+        access_url="https://example.com/test_report",
+        type="R",
+    )
+
+    return product
+
+
+@pytest.fixture()
 def client_with_token(api_client):
     class Client:
         def __init__(self, scopes: list[str] | None = None):

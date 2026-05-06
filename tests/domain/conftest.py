@@ -229,37 +229,12 @@ def information_product(team: Team) -> Product:
                 distributions=[
                     Distribution(
                         id=1,
-                        access_service_id=1,
-                        type=enums.DistributionType.API,
-                    ),
-                    Distribution(
-                        id=2,
-                        download_url="https://bomen.amsterdam.nl/beheer.csv",
-                        format="csv",
-                        type=enums.DistributionType.FILE,
-                        filename="beheer.csv",
+                        access_url="https://example.com/test_report",
+                        type=enums.DistributionType.REPORT,
+                        refresh_period=RefreshPeriod(frequency=1, unit=enums.TimeUnit.WEEK),
                     ),
                 ],
-            ),
-            DataContract(
-                id=2,
-                publication_status=enums.PublicationStatus.PUBLISHED,
-                publication_date=datetime(2025, 1, 1, tzinfo=UTC),
-                purpose="onderhoud van bomen",
-                name="contract naam",
-                privacy_level=enums.PrivacyLevel.NIET_PERSOONLIJK_IDENTIFICEERBAAR,
-                scopes=["bomen_beheer"],
-                confidentiality=enums.ConfidentialityLevel.INTERN,
-                start_date=datetime.fromisoformat("2025-01-01T00:00:00+00"),
-                retainment_period=12,
-                distributions=[
-                    Distribution(
-                        id=1,
-                        access_service_id=1,
-                        type=enums.DistributionType.API,
-                    ),
-                ],
-            ),
+            )
         ],
     )
 

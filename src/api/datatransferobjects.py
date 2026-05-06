@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Literal, overload
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from domain.base import BaseObject
 from domain.product import enums, objects
@@ -252,6 +252,7 @@ class ProductCreate(ModelMixin, BaseModel):
     data_steward: str | None = None
     services: list[DataService] | None = None
     endorsement: enums.EndorsementLevel | None = None
+    access_url: str | None = None
     sources: list[int] | None = None
     sinks: list[int] | None = None
 
@@ -264,6 +265,14 @@ class ProductCreate(ModelMixin, BaseModel):
             except binascii.Error, ValueError:
                 return v
         return v
+
+    @model_validator(mode="after")
+    def validate_access_url(self):
+        if self.access_url and self.type == enums.ProductType.DATAPRODUCT:
+            raise ValueError(
+                "access_url is only allowed when the product is an information product."
+            )
+        return self
 
 
 class ProductDetail(IdMixin, ProductCreate):
@@ -294,6 +303,7 @@ class ProductUpdate(ModelMixin, BaseModel):
     data_steward: str | None = None
     services: list[DataService] | None = None
     endorsement: enums.EndorsementLevel | None = None
+    access_url: str | None = None
     sources: list[int] | None = None
     sinks: list[int] | None = None
 
@@ -306,6 +316,14 @@ class ProductUpdate(ModelMixin, BaseModel):
             except binascii.Error, ValueError:
                 return v
         return v
+
+    @model_validator(mode="after")
+    def validate_access_url(self):
+        if self.access_url and self.type == enums.ProductType.DATAPRODUCT:
+            raise ValueError(
+                "access_url is only allowed when the product is an information product."
+            )
+        return self
 
 
 class ProductList(ModelMixin, BaseModel):

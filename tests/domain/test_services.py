@@ -233,6 +233,32 @@ class TestProductService:
         assert len(product_query_handler.list_products(scopes=scope)) == 2
         assert result.type == "D"
 
+    def test_create_product_with_access_url_creates_contract_and_report_distribution(
+        self, product_service: ProductService, team: Team
+    ):
+        data = {
+            "type": "I",
+            "team_id": team.id,
+            "name": "rapportage product",
+            "refresh_period": {"frequency": 1, "unit": "DAY"},
+            "access_url": "https://example.com/report",
+        }
+        result = product_service.create_product(
+            data=data,
+            scopes=[team.scope],
+            last_editor="alice@example.com",
+        )
+
+        assert result.publication_status == enums.PublicationStatus.DRAFT
+        assert result.last_editor == "alice@example.com"
+        assert len(result.contracts) == 1
+        assert result.contracts[0].publication_status == enums.PublicationStatus.DRAFT
+        assert len(result.contracts[0].distributions) == 1
+        assert result.contracts[0].distributions[0].access_url == "https://example.com/report"
+        assert result.contracts[0].distributions[0].type == enums.DistributionType.REPORT
+        assert result.contracts[0].distributions[0].refresh_period is not None
+        assert result.contracts[0].distributions[0].refresh_period.to_string == "1.DAY"
+
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_product_other_team(
         self, team: Team, other_team: Team, product_service: ProductService
@@ -251,6 +277,61 @@ class TestProductService:
         result = product_service.get_product(product.id, scopes=[scope])
 
         assert result.description == "a fancy product"
+
+    def test_update_product_with_access_url_edits_report_distribution(
+        self, product_service: ProductService, information_product: Product, team: Team
+    ):
+        assert information_product.id
+        contract_id = information_product.contracts[0].id
+        assert contract_id
+        existing_count = len(information_product.contracts[0].distributions)
+
+        product_service.update_product(
+            product_id=information_product.id,
+            data={
+                "access_url": "https://example.com/report",
+                "refresh_period": {"frequency": 1, "unit": "DAY"},
+            },
+            scopes=[team.scope],
+            last_editor="bob@example.com",
+        )
+
+        updated = product_service.get_product(information_product.id, scopes=[team.scope])
+        assert updated.last_editor == "bob@example.com"
+        contract = updated.get_contract(contract_id)
+        assert len(contract.distributions) == existing_count
+        assert contract.distributions[-1].type == enums.DistributionType.REPORT
+        assert contract.distributions[-1].access_url == "https://example.com/report"
+        assert contract.distributions[-1].refresh_period.to_string == "1.DAY"
+
+    def test_update_product_with_access_url_creates_contract_when_missing(
+        self, product_service: ProductService, team: Team
+    ):
+        created = product_service.create_product(
+            data={"type": "I", "team_id": team.id, "name": "zonder contract"},
+            scopes=[team.scope],
+        )
+        assert created.id
+        assert created.contracts == []
+
+        product_service.update_product(
+            product_id=created.id,
+            data={
+                "access_url": "https://example.com/report_test_new",
+                "refresh_period": {"frequency": 1, "unit": "DAY"},
+            },
+            scopes=[team.scope],
+        )
+
+        updated = product_service.get_product(created.id, scopes=[team.scope])
+        assert len(updated.contracts) == 1
+        assert len(updated.contracts[0].distributions) == 1
+        assert updated.contracts[0].distributions[0].type == enums.DistributionType.REPORT
+        assert (
+            updated.contracts[0].distributions[0].access_url
+            == "https://example.com/report_test_new"
+        )
+        assert updated.contracts[0].distributions[0].refresh_period.to_string == "1.DAY"
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_update_product_non_existent(self, product_service: ProductService, team: Team):

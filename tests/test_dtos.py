@@ -1,7 +1,8 @@
 import pytest
 from django.http import QueryDict
+from pydantic import ValidationError
 
-from api.datatransferobjects import ProductQueryParams
+from api.datatransferobjects import ProductCreate, ProductQueryParams, ProductUpdate
 from domain.product import enums
 
 
@@ -56,7 +57,7 @@ class TestQueryParams:
             ),
             (
                 "q=boom",
-                ProductQueryParams(q="boom"),  # ty:ignore[unknown-argument]
+                ProductQueryParams(q="boom"),
                 {"publication_status": enums.PublicationStatus.PUBLISHED},
                 "boom",
             ),
@@ -82,3 +83,40 @@ class TestQueryParams:
         qd = QueryDict(query_string)
         qp = ProductQueryParams(**qd.dict())
         assert qp.order == expected_order
+
+
+class TestProductDTOValidation:
+    def test_product_create_access_url_allowed_for_information_product(self):
+        dto = ProductCreate(
+            team_id=1,
+            type=enums.ProductType.INFORMATIEPRODUCT,
+            access_url="https://example.com/report",
+        )
+        assert dto.access_url == "https://example.com/report"
+
+    def test_product_create_access_url_rejected_for_non_information_product(self):
+        with pytest.raises(
+            ValidationError,
+            match="access_url is only allowed when the product is an information product",
+        ):
+            ProductCreate(
+                team_id=1,
+                type=enums.ProductType.DATAPRODUCT,
+                access_url="https://example.com/report",
+            )
+
+    def test_product_update_access_url_allowed_for_information_product(self):
+        dto = ProductUpdate(
+            type=enums.ProductType.INFORMATIEPRODUCT,
+            access_url="https://example.com/report",
+        )
+        assert dto.access_url == "https://example.com/report"
+
+    def test_product_update_access_url_rejected_when_type_is_dataproduct(self):
+        with pytest.raises(
+            ValidationError,
+            match="access_url is only allowed when the product is an information product",
+        ):
+            ProductUpdate(
+                access_url="https://example.com/report", type=enums.ProductType.DATAPRODUCT
+            )
