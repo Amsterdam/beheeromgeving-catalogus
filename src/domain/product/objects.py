@@ -121,12 +121,29 @@ class ProductValidator:
     def __init__(self, prod: Product):
         self.product = prod
 
-    def can_update(self) -> bool:
+    def can_update(self, data: dict | None = None) -> bool:
         if self.product.publication_status == enums.PublicationStatus.PUBLISHED:
             raise ValidationError("Cannot update published product.")
+        if (
+            data
+            and data.get("type") == "I"
+            and (
+                len(self.product.contracts) >= 1
+                or len(self.product.contracts[0].distributions) >= 1
+            )
+        ):
+            raise ValidationError(
+                "Information product cannot have multiple contracts or distributions."
+            )
         return True
 
     def can_create_contract(self) -> bool:
+        if (
+            self.product.type == enums.ProductType.INFORMATIEPRODUCT
+            and len(self.product.contracts) >= 1
+        ):
+            raise ValidationError("Information product can only have one contract.")
+
         required_fields = [
             "name",
             "type",
@@ -219,6 +236,14 @@ class ProductValidator:
 
         return True
 
+    def can_add_distribution_to_contract(self, contract: DataContract) -> bool:
+        if (
+            self.product.type == enums.ProductType.INFORMATIEPRODUCT
+            and len(contract.distributions) >= 1
+        ):
+            raise ValidationError("Information product contract can only have one distribution.")
+        return True
+
 
 @dataclass(kw_only=True)
 class Product(BaseObject):
@@ -281,7 +306,7 @@ class Product(BaseObject):
             ) from None
 
     def update(self, data: dict) -> Product:
-        if self.validate.can_update():
+        if self.validate.can_update(data):
             self.update_from_dict(data)
         return self
 
@@ -328,7 +353,8 @@ class Product(BaseObject):
 
     def add_distribution_to_contract(self, contract_id: int, distribution: Distribution) -> None:
         contract = self.get_contract(contract_id)
-        contract.distributions.append(distribution)
+        if self.validate.can_add_distribution_to_contract(contract):
+            contract.distributions.append(distribution)
 
     def update_distribution(
         self, contract_id: int, distribution_id: int, data: dict

@@ -796,7 +796,6 @@ class TestViews:
             {"language": "EN"},
             {"is_geo": True},
             {"schema_url": "https://schemas.data.amsterdam.nl/datasets/new_url"},
-            {"type": "I"},
             {"owner": "New Owner"},
             {"contact_email": "newmail@contact.nl"},
             {"data_steward": "newmail@steward.nl"},
@@ -851,6 +850,41 @@ class TestViews:
         assert (
             "access_url is only allowed when the product is an information product"
             in response.data
+        )
+
+    def test_product_update_type_fails_for_product_with_multiple_distributions(
+        self, orm_team, orm_draft_product, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}",
+            data={
+                "type": "I",
+            },
+        )
+        assert response.status_code == 400, response.data
+        assert (
+            "Information product cannot have multiple contracts or distributions." in response.data
+        )
+
+    def test_product_update_type_fails_for_product_with_multiple_contracts(
+        self, orm_team, orm_information_product, client_with_token
+    ):
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_information_product.id}",
+            data={"type": "D"},
+        )
+        client_with_token([orm_team.scope]).post(
+            f"/products/{orm_information_product.id}/contracts/"
+            f"{orm_information_product.contracts.first().id}/distributions",
+            data={"type": "F"},
+        )
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_information_product.id}",
+            data={"type": "I"},
+        )
+        assert response.status_code == 400, response.data
+        assert (
+            "Information product cannot have multiple contracts or distributions." in response.data
         )
 
     def test_product_update_base64_description(
