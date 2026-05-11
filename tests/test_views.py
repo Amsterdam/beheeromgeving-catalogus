@@ -1558,6 +1558,25 @@ class TestViews:
         ]:
             assert key in response.data["products"]["results"][0]["contracts"][0]
 
+    def test_me_admin_scope(
+        self, orm_product, orm_product2, orm_team, orm_other_team, client_with_token
+    ):
+        response = client_with_token([settings.ADMIN_ROLE_NAME]).get("/me")
+
+        assert response.status_code == 200
+        # all teams in response
+        assert len(response.data["teams"]) == 2
+        assert {team["name"] for team in response.data["teams"]} == {
+            orm_team.name,
+            orm_other_team.name,
+        }
+        # all products of all teams in response
+        assert len(response.data["products"]["results"]) == 2
+        assert {product["name"] for product in response.data["products"]["results"]} == {
+            orm_product.name,
+            orm_product2.name,
+        }
+
     @pytest.mark.parametrize(
         "query_string,expected",
         [
