@@ -2,6 +2,8 @@
 
 ## Changelog
 
+2026-05-11: Added update about auth refactor with more specific methods.
+
 2026-04-30: Added section on authorization policies.
 
 2026-04-08: Added note on soft deletion.
@@ -150,6 +152,17 @@ to which the user belongs. This level is then in the service mapped to a set of
 publication statuses which those users may see. For convenience, the repository
 now contains `get/list_for_publication_status*` helpers which filter out
 everything the user isn't allowed to see.
+
+**Updated (2026-05-11)**
+We refactored parts of the authorization implementation to improve performance.
+Previously, authorization could require building a full in-memory configuration mapping for
+all teams and products to determine whether a user was a team member for a given resource.
+This was expensive and hard to invalidate consistently in a multi-pod deployment.
+
+For membership checks we now use repository methods that do targeted ORM lookups (using
+`.exists()` on filtered querysets) such as `can_access_product(product_id, scopes)`.
+This makes authorization checks proportional to the specific resource being accessed instead of
+the total number of teams/products in the database.
 
 ## User Stories / Use Cases
 
