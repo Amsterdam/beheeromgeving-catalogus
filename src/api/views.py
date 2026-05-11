@@ -29,8 +29,10 @@ class ExceptionHandlerMixin:
                 return Response(status=400, data=e.message)
             case exceptions.IllegalOperation():
                 return Response(status=400, data=e.message)
-            case exceptions.NotAuthorized():
+            case exceptions.NotAuthenticated():
                 return Response(status=401, data=e.message)
+            case exceptions.NotAuthorized():
+                return Response(status=403, data=e.message)
             case exceptions.ObjectDoesNotExist():
                 return Response(status=404, data=e.message)
             case NotFound():

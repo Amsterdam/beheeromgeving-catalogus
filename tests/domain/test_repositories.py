@@ -4,7 +4,7 @@ import pytest
 
 from beheeromgeving.models import Product as ORMProduct
 from beheeromgeving.models import Team as ORMTeam
-from domain.exceptions import NotAuthorized, ObjectDoesNotExist
+from domain.exceptions import AuthException, ObjectDoesNotExist
 from domain.product import (
     DataContract,
     DataService,
@@ -142,7 +142,7 @@ class TestProductRepository:
     ):
         repo = ProductRepository()
         orm_internal_product = many_orm_information_products[0]
-        with pytest.raises(NotAuthorized):
+        with pytest.raises(AuthException):
             repo.get_for_publication_status(
                 orm_internal_product.id,
                 [enums.PublicationStatus.PUBLISHED],
@@ -176,7 +176,7 @@ class TestProductRepository:
     ):
         repo = ProductRepository()
         orm_internal_product = many_orm_information_products[0]
-        with pytest.raises(NotAuthorized):
+        with pytest.raises(AuthException):
             repo.get_for_publication_status_by_name(
                 orm_internal_product.name,
                 [enums.PublicationStatus.PUBLISHED],

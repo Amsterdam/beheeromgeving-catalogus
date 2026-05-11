@@ -17,5 +17,13 @@ class ValidationError(DomainException):
     pass
 
 
-class NotAuthorized(DomainException):
+class AuthException(DomainException):
+    pass
+
+
+class NotAuthorized(AuthException):
+    pass
+
+
+class NotAuthenticated(AuthException):
     pass
