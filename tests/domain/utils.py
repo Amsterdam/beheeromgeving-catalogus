@@ -1,7 +1,7 @@
 from django.conf import settings
 
 from domain import exceptions
-from domain.auth import AuthorizationConfiguration
+from domain.auth import AuthorizationResult
 from domain.base import (
     AbstractAuthRepository,
     AbstractRepository,
@@ -161,6 +161,10 @@ class DummyAuthRepo(AbstractAuthRepository):
             if getattr(product, "name", None):
                 self.product_scopes[product.name.lower()] = team_scope
 
+        self.feature_enabled = getattr(settings, "FEATURE_FLAG_USE_AUTH", True)
+        self.admin_role = settings.ADMIN_ROLE_NAME
+        self.employee_role = settings.EMPLOYEE_ROLE_NAME
+
     def add_object(self, object: Team | Product):
         if isinstance(object, Team):
             self.team_scopes[object.id] = object.scope
@@ -170,10 +174,23 @@ class DummyAuthRepo(AbstractAuthRepository):
             if object.name:
                 self.product_scopes[object.name.lower()] = team_scope
 
-    def get_config(self):
-        return AuthorizationConfiguration(
-            settings.ADMIN_ROLE_NAME,
-            settings.EMPLOYEE_ROLE_NAME,
-            self.team_scopes,
-            self.product_scopes,
-        )
+    def get_team_scope(self, team_id: int):
+        return self.team_scopes.get(team_id, AuthorizationResult.DENIED)
+
+    def get_product_scope(self, product_id: int):
+        return self.product_scopes.get(product_id, AuthorizationResult.DENIED)
+
+    def get_product_scope_by_name(self, name: str):
+        return self.product_scopes.get(name.lower(), AuthorizationResult.DENIED)
+
+    def can_access_team(self, team_id: int, scopes) -> bool:
+        team_scope = self.get_team_scope(team_id)
+        return team_scope in scopes
+
+    def can_access_product(self, product_id: int, scopes) -> bool:
+        product_scope = self.get_product_scope(product_id)
+        return product_scope in scopes
+
+    def can_access_product_name(self, name: str, scopes) -> bool:
+        product_scope = self.get_product_scope_by_name(name)
+        return product_scope in scopes
