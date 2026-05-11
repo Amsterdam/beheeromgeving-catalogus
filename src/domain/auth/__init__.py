@@ -1,6 +1,5 @@
 from domain.auth.objects import (
     RULES,
-    AuthorizationConfiguration,
     AuthorizationResult,
     Permission,
     ProductId,
@@ -15,7 +14,6 @@ from domain.auth.services import AuthorizationService, authorize
 __all__ = [
     RULES,
     authorize,
-    AuthorizationConfiguration,
     AuthorizationService,
     AuthorizationRepository,
     AuthorizationResult,
