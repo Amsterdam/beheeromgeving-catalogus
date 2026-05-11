@@ -18,7 +18,7 @@ dependencies = [
     "djangorestframework==3.17.1",
     "drf-spectacular==0.29.0",
     "psycopg==3.3.4",
-    "pydantic[email]==2.13.3",
+    "pydantic[email]==2.13.4",
     "python-dateutil==2.9.0.post0",
     "python-json-logger==4.1.0",
     "python-owasp-zap-v2-4==0.1.0",
@@ -46,7 +46,7 @@ dev = [
     "requests-mock==1.12.1",
     "ruff==0.15.12",
     "termcolor==3.3.0",
-    "ty>=0.0.34",
+    "ty>=0.0.35",
 ]
 
 [build-system]
