@@ -128,8 +128,11 @@ class ProductValidator:
             data
             and data.get("type") == "I"
             and (
-                len(self.product.contracts) >= 1
-                or len(self.product.contracts[0].distributions) >= 1
+                len(self.product.contracts) > 1
+                or (
+                    len(self.product.contracts) == 1
+                    and len(self.product.contracts[0].distributions) > 1
+                )
             )
         ):
             raise ValidationError(
