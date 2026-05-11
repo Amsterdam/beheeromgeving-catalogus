@@ -76,8 +76,20 @@ class AbstractRepository[T](abc.ABC):
 
 
 class AbstractAuthRepository(abc.ABC):
+    feature_enabled: bool
+    admin_role: str
+    employee_role: str
+
     @abc.abstractmethod
-    def get_config(self):
+    def can_access_team(self, team_id: int, scopes: list[Any]) -> bool:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def can_access_product(self, product_id: int, scopes: list[Any]) -> bool:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def can_access_product_name(self, name: str, scopes: list[Any]) -> bool:
         raise NotImplementedError
 
 

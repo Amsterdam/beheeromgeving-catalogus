@@ -4,7 +4,6 @@ from typing import ParamSpec, Protocol, TypeVar
 
 from domain.auth import (
     RULES,
-    AuthorizationConfiguration,
     AuthorizationResult,
     Permission,
     ProductId,
@@ -22,8 +21,16 @@ class AuthorizationService:
         self.repo = repo
 
     @property
-    def config(self) -> AuthorizationConfiguration:
-        return self.repo.get_config()
+    def feature_enabled(self) -> bool:
+        return self.repo.feature_enabled
+
+    @property
+    def admin_role(self) -> str:
+        return self.repo.admin_role
+
+    @property
+    def employee_role(self) -> str:
+        return self.repo.employee_role
 
     def require(
         self,
@@ -49,22 +56,20 @@ class AuthorizationService:
         permission: Permission,
         **kwargs,
     ) -> AuthorizationResult:
-        """Assert that the user can perform the action on all the fields in the data."""
+        """Assert that the user can perform the action on all the fields in the data.
+
+        For now only used for the team member role."""
         if not permission:
             raise DomainException("AuthorizationService.permit needs a Permission")
         fields = set(data.keys())
-        for role in self.get_applicable_roles(team_id, scopes):
-            if permission.role == role and permission.can_access_fields(fields):
-                return AuthorizationResult.GRANTED
+        if (
+            self.repo.can_access_team(int(team_id), scopes)
+            and permission.role == Role.TEAM_MEMBER
+            and permission.can_access_fields(fields)
+        ):
+            return AuthorizationResult.GRANTED
 
         return AuthorizationResult.DENIED
-
-    def get_applicable_roles(self, team_id: TeamId, scopes: list[Scope]):
-        team_scope = self.config.team_id_to_scope(team_id)
-        roles = {self.config.scope_to_role(scope) for scope in scopes}
-        if team_scope not in scopes:
-            roles.discard(Role.TEAM_MEMBER)
-        return roles
 
     def is_team_member(
         self,
@@ -84,20 +89,22 @@ class AuthorizationService:
                 "AuthorizationService.is_team_member needs either a team_id, product_id, "
                 "or (product) name."
             )
-        team_scope = None
-        if team_id:
-            team_scope = self.config.team_id_to_scope(team_id)
-        elif product_id:
-            team_scope = self.config.product_id_to_scope(product_id)
-        elif name:
-            team_scope = self.config.product_name_to_scope(name)
 
-        if team_scope in scopes:
+        if (
+            (team_id and self.repo.can_access_team(int(team_id), scopes))
+            or (product_id and self.repo.can_access_product(int(product_id), scopes))
+            or (name and self.repo.can_access_product_name(str(name), scopes))
+        ):
             return AuthorizationResult.GRANTED
-        return AuthorizationResult.DENIED
+        else:
+            return AuthorizationResult.DENIED
 
     def is_allowed(self, scopes: list[Scope], role: Role):
-        return any(self.config.scope_to_role(scope) == role for scope in scopes)
+        if role is Role.ADMIN:
+            return self.admin_role in scopes
+        if role is Role.EMPLOYEE:
+            return self.employee_role in scopes
+        return False
 
     def has_role(self, *, scopes: list[Scope], role: Role) -> bool:
         return self.require(scopes=scopes, role=role) == AuthorizationResult.GRANTED
@@ -122,19 +129,6 @@ class AuthorizationService:
 
     def is_team_member_of_product_name(self, *, name: str, scopes: list[Scope]) -> bool:
         return self.is_team_member(scopes=scopes, name=name) == AuthorizationResult.GRANTED
-
-    def can_permit(
-        self,
-        *,
-        team_id: TeamId,
-        scopes: list[Scope],
-        data: dict,
-        permission: Permission,
-    ) -> bool:
-        return (
-            self.permit(team_id=team_id, scopes=scopes, data=data, permission=permission)
-            == AuthorizationResult.GRANTED
-        )
 
 
 P = ParamSpec("P")
@@ -179,7 +173,7 @@ class Authorizer:
 
     def set_auth_service(self, auth: AuthorizationService):
         self.auth = auth
-        self.NO_AUTH = not auth.config.feature_enabled
+        self.NO_AUTH = not auth.feature_enabled
 
     def _create_lambda(self, rule: Rule):
         if self.auth is None:

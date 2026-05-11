@@ -1,32 +1,21 @@
 from django.conf import settings
-from django.db.models import QuerySet
 
 from beheeromgeving import models as orm
-from domain.auth import AuthorizationConfiguration
+from domain.auth import Scope
 from domain.base import AbstractAuthRepository
 
 
 class AuthorizationRepository(AbstractAuthRepository):
     def __init__(self):
-        self.queryset: QuerySet[orm.Team] = orm.Team.objects.all()
         self.admin_role: str = settings.ADMIN_ROLE_NAME
         self.employee_role: str = settings.EMPLOYEE_ROLE_NAME
         self.feature_enabled: bool = settings.FEATURE_FLAG_USE_AUTH
 
-    def get_config(self) -> AuthorizationConfiguration:
-        product_scopes = {}
-        team_scopes = {}
+    def can_access_team(self, team_id: int, scopes: list[Scope]) -> bool:
+        return orm.Team.objects.filter(pk=team_id, scope__in=scopes).exists()
 
-        for t in self.queryset:
-            team_scopes[t.pk] = t.scope
-            for p in t.products.all():
-                product_scopes[p.pk] = t.scope
-                if p.name:
-                    product_scopes[p.name.lower()] = t.scope
-        return AuthorizationConfiguration(
-            self.admin_role,
-            self.employee_role,
-            team_scopes,
-            product_scopes,
-            feature_enabled=self.feature_enabled,
-        )
+    def can_access_product(self, product_id: int, scopes: list[Scope]) -> bool:
+        return orm.Product.objects.filter(pk=product_id, team__scope__in=scopes).exists()
+
+    def can_access_product_name(self, name: str, scopes: list[Scope]) -> bool:
+        return orm.Product.objects.filter(name__iexact=name, team__scope__in=scopes).exists()
