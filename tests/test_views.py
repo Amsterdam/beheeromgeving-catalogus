@@ -250,7 +250,7 @@ class TestViews:
         assert response.data == "Product with name fietspaaltjes_v1 does not exist."
 
     def test_product_list_query_by_name_draft_non_team_404(self, api_client, orm_draft_product):
-        response = api_client.get("/products?name=bomen")
+        response = api_client.get("/products?name=bomen")  # product doesn't exist
         assert response.status_code == 404
 
     def test_product_list_query_by_name_draft_team_200(
@@ -543,7 +543,7 @@ class TestViews:
 
     def test_product_detail_does_not_show_draft_product(self, orm_draft_product, api_client):
         response = api_client.get(f"/products/{orm_draft_product.id}")
-        assert response.status_code == 404
+        assert response.status_code == 401
 
     def test_product_detail_omits_non_published_contracts_when_not_logged_in(
         self, orm_product, api_client
@@ -566,12 +566,12 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == many_orm_information_products[0].name
 
-    def test_product_detail_hides_internal_product_for_non_employee(
+    def test_product_detail_requires_token_for_internal_product(
         self, many_orm_information_products, api_client
     ):
         product_id = many_orm_information_products[0].id
         response = api_client.get(f"/products/{product_id}")
-        assert response.status_code == 404
+        assert response.status_code == 401
 
     def test_employee_can_access_published_product(self, orm_product, client_with_token):
         response = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get(
@@ -1225,12 +1225,12 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 2
 
-    def test_distribution_list_draft_non_team_404(self, orm_draft_product, api_client):
+    def test_distribution_list_draft_non_team_401(self, orm_draft_product, api_client):
         contract_id = orm_draft_product.contracts.first().id
         response = api_client.get(
             f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions"
         )
-        assert response.status_code == 404
+        assert response.status_code == 401
 
     def test_distribution_list_draft_team_200(
         self, orm_draft_product, orm_team, client_with_token
@@ -1257,13 +1257,13 @@ class TestViews:
         )
         assert response.status_code == 404
 
-    def test_distribution_detail_draft_non_team_404(self, orm_draft_product, api_client):
+    def test_distribution_detail_draft_non_team_401(self, orm_draft_product, api_client):
         contract_id = orm_draft_product.contracts.first().id
         distribution_id = orm_draft_product.contracts.first().distributions.first().id
         response = api_client.get(
             f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
         )
-        assert response.status_code == 404
+        assert response.status_code == 401
 
     def test_distribution_detail_draft_team_200(
         self, orm_draft_product, orm_team, client_with_token
@@ -1400,10 +1400,10 @@ class TestViews:
         assert response.status_code == 200
         assert len(response.data) == 1
 
-    def test_service_list_draft_non_team_404(self, orm_draft_product, api_client):
+    def test_service_list_draft_non_team_401(self, orm_draft_product, api_client):
         response = api_client.get(f"/products/{orm_draft_product.id}/services")
 
-        assert response.status_code == 404
+        assert response.status_code == 401
 
     def test_service_list_draft_team_200(self, orm_draft_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).get(
@@ -1420,12 +1420,12 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["id"] == orm_product.services.first().id
 
-    def test_service_detail_draft_non_team_404(self, orm_draft_product, api_client):
+    def test_service_detail_draft_non_team_401(self, orm_draft_product, api_client):
         response = api_client.get(
             f"/products/{orm_draft_product.id}/services/{orm_draft_product.services.first().id}"
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 401
 
     def test_service_detail_draft_team_200(self, orm_draft_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).get(

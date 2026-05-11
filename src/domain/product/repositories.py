@@ -31,9 +31,12 @@ class ProductRepository(AbstractRepository[Product]):
     ) -> Product:
         allowed = {status.value for status in allowed_statuses}
         try:
-            product = self.manager.get(pk=id, publication_status__in=allowed)
+            product = self.manager.get(pk=id)
         except orm.Product.DoesNotExist as e:
             raise exceptions.ObjectDoesNotExist from e
+
+        if product.publication_status not in allowed:
+            raise exceptions.NotAuthorized(f"Not authorized to access product with id {id}.")
 
         domain_product = product.to_domain()
         domain_product.contracts = [
@@ -63,7 +66,7 @@ class ProductRepository(AbstractRepository[Product]):
         allowed = {status.value for status in allowed_statuses}
         product = self._get_by_name(name)
         if product.publication_status not in allowed:
-            raise exceptions.ObjectDoesNotExist(f"Product with name {name} does not exist.")
+            raise exceptions.NotAuthorized(f"Not authorized to access product with name {name}.")
         domain_product = product.to_domain()
         domain_product.contracts = [
             contract
