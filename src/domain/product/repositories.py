@@ -36,7 +36,7 @@ class ProductRepository(AbstractRepository[Product]):
             raise exceptions.ObjectDoesNotExist from e
 
         if product.publication_status not in allowed:
-            raise exceptions.NotAuthorized(f"Not authorized to access product with id {id}.")
+            raise exceptions.AuthException(f"Not authorized to access product with id {id}.")
 
         domain_product = product.to_domain()
         domain_product.contracts = [
@@ -66,7 +66,7 @@ class ProductRepository(AbstractRepository[Product]):
         allowed = {status.value for status in allowed_statuses}
         product = self._get_by_name(name)
         if product.publication_status not in allowed:
-            raise exceptions.NotAuthorized(f"Not authorized to access product with name {name}.")
+            raise exceptions.AuthException(f"Not authorized to access product with name {name}.")
         domain_product = product.to_domain()
         domain_product.contracts = [
             contract

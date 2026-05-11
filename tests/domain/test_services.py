@@ -4,6 +4,7 @@ import pytest
 from django.conf import settings
 
 from domain.exceptions import (
+    NotAuthenticated,
     NotAuthorized,
     ObjectDoesNotExist,
     ValidationError,
@@ -1227,7 +1228,7 @@ class TestProductService:
         )
         assert saved_distribution.crs == ["RD", "WGS84", "ETRS89", "UTM35S"]
 
-    @pytest.mark.xfail(raises=NotAuthorized)
+    @pytest.mark.xfail(raises=NotAuthenticated)
     def test_create_distribution_not_allowed(
         self, product_service: ProductService, product: Product
     ):
@@ -1281,7 +1282,7 @@ class TestProductService:
         ).get_distribution(contract_id, distribution_id)
         assert updated_distribution.format == "TEST"
 
-    @pytest.mark.xfail(raises=NotAuthorized)
+    @pytest.mark.xfail(raises=NotAuthenticated)
     def test_update_distribution_not_allowed(
         self, product_service: ProductService, product: Product
     ):
@@ -1316,7 +1317,7 @@ class TestProductService:
         distribution_ids = [d.id for d in product.contracts[0].distributions]
         assert distribution_id not in distribution_ids
 
-    @pytest.mark.xfail(raises=NotAuthorized)
+    @pytest.mark.xfail(raises=NotAuthenticated)
     def test_delete_distribution_not_allowed(
         self, product_service: ProductService, product: Product
     ):

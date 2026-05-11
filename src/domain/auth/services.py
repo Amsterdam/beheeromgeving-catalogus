@@ -13,7 +13,7 @@ from domain.auth import (
     TeamId,
 )
 from domain.base import AbstractAuthRepository
-from domain.exceptions import DomainException, NotAuthorized
+from domain.exceptions import DomainException, NotAuthenticated, NotAuthorized
 
 
 class AuthorizationService:
@@ -199,6 +199,11 @@ class Authorizer:
                 already_allowed = kwargs.pop("already_allowed", False)
                 if already_allowed:
                     return func(self, *args, **kwargs)
+
+                scopes = kwargs.get("scopes")
+                if not scopes:
+                    raise NotAuthenticated("Authentication required.")
+
                 try:
                     authorization_function = auth_self._create_lambda(rule)
                 except KeyError:

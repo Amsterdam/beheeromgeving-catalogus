@@ -106,7 +106,7 @@ class TestViews:
                 "scope": "scope_benk",
             },
         )
-        assert response.status_code == 401
+        assert response.status_code == 403
         # No team created
         result = client_with_token([]).get("/teams")
         assert len(result.data) == 0
@@ -130,7 +130,7 @@ class TestViews:
 
     def test_teams_delete_unauthorized(self, orm_team, client_with_token):
         response = client_with_token(["some_unauthorized_scope"]).delete(f"/teams/{orm_team.id}")
-        assert response.status_code == 401
+        assert response.status_code == 403
         assert Team.objects.count() == 1
 
     def test_products_list(self, orm_product, api_client):
@@ -566,12 +566,28 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == many_orm_information_products[0].name
 
+    def test_product_detail_shows_internal_product_for_team_member(
+        self, orm_information_product, client_with_token
+    ):
+        response = client_with_token([orm_information_product.team.scope]).get(
+            f"/products/{orm_information_product.id}"
+        )
+        assert response.status_code == 200
+        assert response.data["name"] == orm_information_product.name
+
     def test_product_detail_requires_token_for_internal_product(
         self, many_orm_information_products, api_client
     ):
         product_id = many_orm_information_products[0].id
         response = api_client.get(f"/products/{product_id}")
         assert response.status_code == 401
+
+    def test_product_detail_forbidden_for_internal_product_when_logged_in_with_wrong_scope(
+        self, many_orm_information_products, client_with_token
+    ):
+        product_id = many_orm_information_products[0].id
+        response = client_with_token(["some_scope"]).get(f"/products/{product_id}")
+        assert response.status_code == 403
 
     def test_employee_can_access_published_product(self, orm_product, client_with_token):
         response = client_with_token([settings.EMPLOYEE_ROLE_NAME]).get(
@@ -1300,7 +1316,7 @@ class TestViews:
             f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
             data=data,
         )
-        assert response.status_code == 401
+        assert response.status_code == 403
 
     def test_distribution_update(self, orm_draft_product, orm_team, client_with_token):
         contract_id = orm_draft_product.contracts.first().id
@@ -1388,7 +1404,7 @@ class TestViews:
         response = client_with_token([orm_other_team.scope]).delete(
             f"/products/{orm_draft_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
         )
-        assert response.status_code == 401
+        assert response.status_code == 403
 
         orm_draft_product.refresh_from_db()
         orm_contract = orm_draft_product.contracts.first()

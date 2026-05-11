@@ -27,6 +27,12 @@ class ProductService(AbstractService):
     def get_all_products(self, **kwargs) -> list[Product]:
         return self.repository.list_all()
 
+    def _get_exception(self, scopes: list[Scope] | None, message: str):
+        if scopes:
+            return exceptions.NotAuthorized(message)
+        else:
+            return exceptions.NotAuthenticated(message)
+
     def get_product(
         self,
         product_id: int,
@@ -46,10 +52,14 @@ class ProductService(AbstractService):
                     enums.PublicationStatus.INTERNALLY_PUBLISHED,
                 ],
             )
-        return self.repository.get_for_publication_status(
-            product_id,
-            [enums.PublicationStatus.PUBLISHED],
-        )
+
+        try:
+            return self.repository.get_for_publication_status(
+                product_id,
+                [enums.PublicationStatus.PUBLISHED],
+            )
+        except exceptions.AuthException as exc:
+            raise self._get_exception(scopes, exc.message) from exc
 
     def get_product_by_name(
         self,
@@ -70,10 +80,14 @@ class ProductService(AbstractService):
                     enums.PublicationStatus.INTERNALLY_PUBLISHED,
                 ],
             )
-        return self.repository.get_for_publication_status_by_name(
-            name,
-            [enums.PublicationStatus.PUBLISHED],
-        )
+
+        try:
+            return self.repository.get_for_publication_status_by_name(
+                name,
+                [enums.PublicationStatus.PUBLISHED],
+            )
+        except exceptions.AuthException as exc:
+            raise self._get_exception(scopes, exc.message) from exc
 
     @authorize.is_admin
     @authorize.is_team_member
