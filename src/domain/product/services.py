@@ -334,6 +334,29 @@ class ProductService(AbstractService):
             )
         return contract
 
+    def _validate_contract_draft_service_references(
+        self,
+        *,
+        product: Product,
+        contract: DataContract,
+    ) -> None:
+        published_service_ids = {
+            service.id for service in product.services if service.id is not None
+        }
+        invalid_service_ids = sorted(
+            {
+                distribution.access_service_id
+                for distribution in contract.distributions
+                if distribution.access_service_id is not None
+                and distribution.access_service_id not in published_service_ids
+            }
+        )
+        if invalid_service_ids:
+            raise exceptions.ValidationError(
+                "Cannot publish contract working copy because distributions must "
+                "reference the published service set."
+            )
+
     @authorize.is_admin
     @authorize.is_team_member
     def get_contract_draft(
@@ -407,6 +430,36 @@ class ProductService(AbstractService):
         )
         return self.repository.delete_contract_draft(
             product_id=product_id, contract_id=contract_id
+        )
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def publish_contract_draft(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> DataContract:
+        self._get_contract_for_working_copy(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
+        draft_contract = self.repository.get_contract_draft(
+            product_id=product_id,
+            contract_id=contract_id,
+        )
+        self._validate_contract_draft_service_references(
+            product=product,
+            contract=draft_contract,
+        )
+        return self.repository.publish_contract_draft(
+            product_id=product_id,
+            contract_id=contract_id,
         )
 
     @authorize.is_admin

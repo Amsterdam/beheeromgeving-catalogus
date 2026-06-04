@@ -258,6 +258,47 @@ class ProductRepository(AbstractRepository[Product]):
         except IntegrityError as e:
             raise exceptions.ValidationError(f"Error for {contract.name}: {e!s}") from e
 
+    def publish_contract_draft(self, *, product_id: int, contract_id: int) -> DataContract:
+        try:
+            with transaction.atomic():
+                live_contract = orm.DataContract.objects.select_related("product").get(
+                    pk=contract_id,
+                    product_id=product_id,
+                )
+                draft = (
+                    orm.DataContractWorkingCopy.objects.select_related(
+                        "contract",
+                        "contract__product",
+                    )
+                    .prefetch_related("distributions", "distributions__live_distribution")
+                    .select_for_update()
+                    .get(
+                        contract_id=contract_id,
+                        contract__product_id=product_id,
+                    )
+                )
+
+                if live_contract.last_updated != draft.base_last_updated:
+                    raise exceptions.IllegalOperation(
+                        "Cannot publish contract working copy because the live contract has "
+                        "changed."
+                    )
+
+                published_contract = draft.to_domain()
+                for distribution in published_contract.distributions:
+                    if distribution.id is not None and distribution.id < 0:
+                        distribution.id = None
+
+                saved_contract = orm.DataContract.from_domain(published_contract, product_id)
+                draft.delete()
+                return saved_contract
+        except orm.DataContract.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist from e
+        except orm.DataContractWorkingCopy.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist(
+                f"Contract working copy for contract with id {contract_id} does not exist."
+            ) from e
+
     def delete_contract_draft(self, *, product_id: int, contract_id: int) -> int:
         num_delete, _ = orm.DataContractWorkingCopy.objects.filter(
             contract_id=contract_id,

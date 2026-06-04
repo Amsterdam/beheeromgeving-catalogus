@@ -418,6 +418,22 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(status=204)
 
+    @extend_schema(responses={200: dtos.DataContract})
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="contracts/(?P<contract_id>[^/.]+)/draft/publish",
+        url_name="contract-draft-publish",
+    )
+    def publish_contract_draft(self, request, pk: str, contract_id: str):
+        contract = product_service.publish_contract_draft(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(contract)
+        return Response(data, status=200)
+
     @extend_schema(request=dtos.SetState, responses={200: dtos.DataContract})
     @action(
         detail=True,

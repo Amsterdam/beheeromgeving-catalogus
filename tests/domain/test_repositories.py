@@ -420,6 +420,71 @@ class TestProductRepository:
             download_url="https://bomen.amsterdam.nl/draft.geojson"
         ).exists()
 
+    def test_publish_contract_draft_assigns_live_ids_and_removes_working_copy(
+        self, orm_product: ORMProduct
+    ):
+        repo = ProductRepository()
+        product = repo.get(orm_product.pk)
+        contract = product.contracts[0]
+        assert contract.id is not None
+
+        live_contract = orm_product.contracts.first()
+        assert live_contract is not None
+        live_distributions = list(
+            live_contract.distributions.order_by("id").values(
+                "id",
+                "access_service_id",
+            )
+        )
+
+        contract.name = "gepubliceerde draft naam"
+        contract.distributions = [
+            Distribution(
+                id=live_distributions[0]["id"],
+                access_service_id=live_distributions[0]["access_service_id"],
+                type=enums.DistributionType.API,
+            ),
+            Distribution(
+                id=live_distributions[1]["id"],
+                download_url="https://bomen.amsterdam.nl/beheer-updated.csv",
+                format="csv",
+                type=enums.DistributionType.FILE,
+            ),
+            Distribution(
+                download_url="https://bomen.amsterdam.nl/published.geojson",
+                format="geojson",
+                type=enums.DistributionType.FILE,
+            ),
+        ]
+
+        repo.save_contract_draft(product_id=orm_product.pk, contract=contract)
+
+        published_contract = repo.publish_contract_draft(
+            product_id=orm_product.pk,
+            contract_id=contract.id,
+        )
+
+        published_distribution = next(
+            distribution
+            for distribution in published_contract.distributions
+            if distribution.download_url == "https://bomen.amsterdam.nl/published.geojson"
+        )
+
+        assert published_contract.id == contract.id
+        assert published_contract.name == "gepubliceerde draft naam"
+        assert published_distribution.id is not None
+        assert published_distribution.id > 0
+        assert published_distribution.id not in {d["id"] for d in live_distributions}
+        assert not DataContractWorkingCopy.objects.filter(contract_id=contract.id).exists()
+
+        orm_product.refresh_from_db()
+        live_contract = orm_product.contracts.get(pk=contract.id)
+        assert live_contract.name == "gepubliceerde draft naam"
+        assert live_contract.distributions.count() == 3
+        assert live_contract.distributions.filter(
+            download_url="https://bomen.amsterdam.nl/published.geojson"
+        ).exists()
+
     def test_delete_contract_draft(self, orm_product: ORMProduct):
         repo = ProductRepository()
         product = repo.get(orm_product.pk)

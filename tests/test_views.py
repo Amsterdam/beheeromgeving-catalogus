@@ -1435,6 +1435,119 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == "New Name"
 
+    def test_contract_draft_can_be_published(self, orm_product, orm_team, client_with_token):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft/publish",
+            data={},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["id"] == contract_id
+        assert response.data["name"] == "New Name"
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert draft_response.status_code == 404
+        assert live_response.status_code == 200
+        assert live_response.data["id"] == contract_id
+        assert live_response.data["name"] == "New Name"
+
+    def test_contract_draft_publish_rejects_stale_working_copy(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={"name": "New Name"},
+        )
+
+        contract.purpose = "Live change"
+        contract.save()
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft/publish",
+            data={},
+        )
+
+        assert response.status_code == 400
+        assert "live contract has changed" in response.data
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert draft_response.status_code == 200
+        assert draft_response.data["name"] == "New Name"
+        assert live_response.status_code == 200
+        assert live_response.data["name"] == contract.name
+        assert live_response.data["purpose"] == "Live change"
+
+    def test_contract_draft_publish_rejects_unpublished_service_reference(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+        live_distributions = list(contract.distributions.order_by("id"))
+
+        patch_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={
+                "distributions": [
+                    {
+                        "id": live_distributions[0].id,
+                        "access_service_id": 999999,
+                        "type": live_distributions[0].type,
+                    },
+                    {
+                        "id": live_distributions[1].id,
+                        "download_url": live_distributions[1].download_url,
+                        "format": live_distributions[1].format,
+                        "type": live_distributions[1].type,
+                    },
+                ]
+            },
+        )
+
+        assert patch_response.status_code == 200, patch_response.data
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft/publish",
+            data={},
+        )
+
+        assert response.status_code == 400
+        assert "published service set" in response.data
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert draft_response.status_code == 200
+        assert draft_response.data["distributions"][0]["access_service_id"] == 999999
+        assert live_response.status_code == 200
+        assert live_response.data["distributions"][0]["access_service_id"] != 999999
+
     def test_contract_draft_detail_fails_for_non_published_contract(
         self, orm_draft_product, orm_team, client_with_token
     ):
