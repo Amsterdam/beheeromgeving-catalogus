@@ -35,6 +35,7 @@ class DummyRepository(AbstractRepository):
     ):
         self._items = {}
         self._drafts = {}
+        self._contract_drafts = {}
         self.auth_repo = auth_repo
         for object in objects:
             self._items[object.id] = object
@@ -162,6 +163,28 @@ class DummyRepository(AbstractRepository):
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object draft with id {id} does not exist") from e
         return id
+
+    def get_contract_draft(self, *, product_id, contract_id):
+        try:
+            return copy.deepcopy(self._contract_drafts[(product_id, contract_id)])
+        except KeyError as e:
+            raise exceptions.ObjectDoesNotExist(
+                f"Object draft with id {contract_id} does not exist"
+            ) from e
+
+    def save_contract_draft(self, *, product_id, contract):
+        self._add_ids(contract)
+        self._contract_drafts[(product_id, contract.id)] = copy.deepcopy(contract)
+        return copy.deepcopy(contract)
+
+    def delete_contract_draft(self, *, product_id, contract_id):
+        try:
+            self._contract_drafts.pop((product_id, contract_id))
+        except KeyError as e:
+            raise exceptions.ObjectDoesNotExist(
+                f"Object draft with id {contract_id} does not exist"
+            ) from e
+        return contract_id
 
     def delete(self, id):
         try:

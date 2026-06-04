@@ -1398,6 +1398,99 @@ class TestViews:
         assert response.status_code == 400
         assert orm_product.contracts.first().name != "New Name"
 
+    def test_contract_draft_update_for_published_contract_keeps_live_contract_unchanged(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract_id = orm_product.contracts.first().id
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={"name": "New Name"},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["name"] == "New Name"
+
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert live_response.status_code == 200
+        assert live_response.data["name"] == "beheer bomen"
+
+    def test_contract_draft_can_be_retrieved_explicitly(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract_id = orm_product.contracts.first().id
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
+
+        assert response.status_code == 200
+        assert response.data["name"] == "New Name"
+
+    def test_contract_draft_detail_fails_for_non_published_contract(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        contract_id = orm_draft_product.contracts.first().id
+
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/draft"
+        )
+
+        assert response.status_code == 400
+        assert "only available for externally published dataproduct contracts" in response.data
+
+    def test_contract_draft_reuses_the_same_pending_copy(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract_id = orm_product.contracts.first().id
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={"purpose": "New Purpose"},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["name"] == "New Name"
+        assert response.data["purpose"] == "New Purpose"
+
+    def test_contract_draft_can_be_discarded(self, orm_product, orm_team, client_with_token):
+        contract_id = orm_product.contracts.first().id
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
+
+        assert response.status_code == 204
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert draft_response.status_code == 404
+        assert live_response.status_code == 200
+        assert live_response.data["name"] == "beheer bomen"
+
     @pytest.mark.parametrize(
         "data",
         [

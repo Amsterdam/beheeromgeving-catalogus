@@ -378,6 +378,46 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
+    @extend_schema(responses={200: dtos.DataContract})
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="contracts/(?P<contract_id>[^/.]+)/draft",
+        url_name="contract-draft-detail",
+    )
+    def contract_draft_detail(self, request, pk: str, contract_id: str):
+        contract = product_service.get_contract_draft(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(contract)
+        return Response(data, status=200)
+
+    @extend_schema(request=dtos.DataContractCreateOrUpdate, responses={200: dtos.DataContract})
+    @contract_draft_detail.mapping.patch
+    def update_contract_draft(self, request, pk: str, contract_id: str):
+        contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
+        last_editor = self._get_last_editor(request)
+        contract = product_service.update_contract_draft(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            data=contract_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
+            last_editor=last_editor,
+        )
+        data = dtos.to_response_object(contract)
+        return Response(data, status=200)
+
+    @contract_draft_detail.mapping.delete
+    def delete_contract_draft(self, request, pk: str, contract_id: str):
+        product_service.discard_contract_draft(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            scopes=request.get_token_scopes,
+        )
+        return Response(status=204)
+
     @extend_schema(request=dtos.SetState, responses={200: dtos.DataContract})
     @action(
         detail=True,

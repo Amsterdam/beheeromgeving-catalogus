@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 
 import pytest
 
+from beheeromgeving.models import DataContractWorkingCopy, ProductWorkingCopy
 from beheeromgeving.models import Product as ORMProduct
-from beheeromgeving.models import ProductWorkingCopy
 from beheeromgeving.models import Team as ORMTeam
 from domain.exceptions import AuthException, ObjectDoesNotExist
 from domain.product import (
@@ -205,6 +205,10 @@ class TestProductRepository:
         with pytest.raises(ValueError, match="requires a persisted product id"):
             ProductWorkingCopy.from_domain(Product(team_id=orm_team.id))
 
+    def test_contract_working_copy_from_domain_requires_persisted_contract_id(self, orm_product):
+        with pytest.raises(ValueError, match="requires a persisted contract id"):
+            DataContractWorkingCopy.from_domain(DataContract(), orm_product.id)
+
     def test_save(self, product, orm_team):
         repo = ProductRepository()
         product.team_id = orm_team.id
@@ -294,6 +298,90 @@ class TestProductRepository:
         assert distributions[2].type == "F"
         assert distributions[2].format == "txt"
         assert distributions[2].download_url == "https://bomen.amsterdam.nl/bomen.txt"
+
+    def test_save_contract_draft_and_get_contract_draft_with_schema_url(
+        self, orm_incomplete_product: ORMProduct
+    ):
+        repo = ProductRepository()
+        product = repo.get(orm_incomplete_product.pk)
+        contract = product.contracts[0]
+        assert contract.id
+
+        contract.name = "beheer bomen draft"
+        saved_contract = repo.save_contract_draft(
+            product_id=orm_incomplete_product.pk,
+            contract=contract,
+        )
+        fetched_contract = repo.get_contract_draft(
+            product_id=orm_incomplete_product.pk,
+            contract_id=contract.id,
+        )
+
+        assert saved_contract.name == "beheer bomen draft"
+        assert fetched_contract.name == "beheer bomen draft"
+        assert fetched_contract.schema_url == (
+            "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?"
+            "scopes=bomen_beheer&tables=stamgegevens,takgegevens"
+        )
+
+    def test_save_contract_draft_updates_existing_working_copy(
+        self, orm_draft_product: ORMProduct
+    ):
+        repo = ProductRepository()
+        product = repo.get(orm_draft_product.pk)
+        contract = product.contracts[0]
+        assert contract.id
+
+        contract.name = "eerste draft naam"
+        repo.save_contract_draft(product_id=orm_draft_product.pk, contract=contract)
+
+        contract.purpose = "bijgewerkt doel"
+        updated_contract = repo.save_contract_draft(
+            product_id=orm_draft_product.pk,
+            contract=contract,
+        )
+
+        assert DataContractWorkingCopy.objects.filter(contract_id=contract.id).count() == 1
+        assert updated_contract.name == "eerste draft naam"
+        assert updated_contract.purpose == "bijgewerkt doel"
+        assert updated_contract.schema_url == (
+            "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?scopes=bomen_beheer"
+        )
+
+    def test_delete_contract_draft(self, orm_product: ORMProduct):
+        repo = ProductRepository()
+        product = repo.get(orm_product.pk)
+        contract = product.contracts[0]
+        assert contract.id
+
+        repo.save_contract_draft(product_id=orm_product.pk, contract=contract)
+
+        deleted_id = repo.delete_contract_draft(
+            product_id=orm_product.pk,
+            contract_id=contract.id,
+        )
+
+        assert deleted_id == contract.id
+        assert not DataContractWorkingCopy.objects.filter(contract_id=contract.id).exists()
+
+    def test_get_contract_draft_non_existent(self, orm_product: ORMProduct):
+        repo = ProductRepository()
+
+        with pytest.raises(ObjectDoesNotExist, match="Contract working copy"):
+            repo.get_contract_draft(product_id=orm_product.pk, contract_id=1337)
+
+    def test_save_contract_draft_non_existent_live_contract(self, orm_product: ORMProduct):
+        repo = ProductRepository()
+        contract = DataContract(id=1337, name="missing contract")
+
+        with pytest.raises(ObjectDoesNotExist):
+            repo.save_contract_draft(product_id=orm_product.pk, contract=contract)
+
+    def test_delete_contract_draft_non_existent(self, orm_product: ORMProduct):
+        repo = ProductRepository()
+
+        with pytest.raises(ObjectDoesNotExist, match="Contract working copy"):
+            repo.delete_contract_draft(product_id=orm_product.pk, contract_id=1337)
 
     @pytest.mark.parametrize(
         "order,expect_value",

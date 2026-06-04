@@ -287,6 +287,101 @@ class ProductService(AbstractService):
         product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
         return product.get_contract(contract_id)
 
+    def _get_contract_for_working_copy(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> DataContract:
+        product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
+        contract = product.get_contract(contract_id)
+        if (
+            product.type != enums.ProductType.DATAPRODUCT
+            or product.publication_status != enums.PublicationStatus.PUBLISHED
+            or contract.publication_status != enums.PublicationStatus.PUBLISHED
+        ):
+            raise exceptions.IllegalOperation(
+                "Contract working copies are only available for externally published "
+                "dataproduct contracts."
+            )
+        return contract
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def get_contract_draft(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> DataContract:
+        self._get_contract_for_working_copy(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        return self.repository.get_contract_draft(product_id=product_id, contract_id=contract_id)
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def update_contract_draft(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        data: dict,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> DataContract:
+        live_contract = self._get_contract_for_working_copy(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        if kwargs.get("last_editor"):
+            data["last_editor"] = kwargs["last_editor"]
+
+        try:
+            draft_contract = self.repository.get_contract_draft(
+                product_id=product_id,
+                contract_id=contract_id,
+            )
+        except exceptions.ObjectDoesNotExist:
+            draft_contract = copy.deepcopy(live_contract)
+
+        live_status = live_contract.publication_status
+        live_publication_date = live_contract.publication_date
+        draft_contract.publication_status = enums.PublicationStatus.DRAFT
+        draft_contract.update_from_dict(data)
+        draft_contract.publication_status = live_status
+        draft_contract.publication_date = live_publication_date
+        return self.repository.save_contract_draft(product_id=product_id, contract=draft_contract)
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def discard_contract_draft(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> int:
+        self._get_contract_for_working_copy(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        return self.repository.delete_contract_draft(
+            product_id=product_id, contract_id=contract_id
+        )
+
     @authorize.is_admin
     @authorize.is_team_member
     def create_contract(self, product_id: int, data: dict, **kwargs) -> DataContract:
