@@ -76,6 +76,9 @@ class AbstractRepository[T](abc.ABC):
     def save_draft(self, item: T) -> T:
         raise NotImplementedError
 
+    def publish_draft(self, id: int) -> T:
+        raise NotImplementedError
+
     def delete_draft(self, id: int) -> int:
         raise NotImplementedError
 

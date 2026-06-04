@@ -279,6 +279,15 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(status=204)
 
+    @extend_schema(responses={200: dtos.ProductDetail})
+    @action(detail=True, methods=["post"], url_path="draft/publish", url_name="draft-publish")
+    def publish_draft(self, request, pk: str):
+        product = product_service.publish_product_draft(
+            product_id=int(pk),
+            scopes=request.get_token_scopes,
+        )
+        return Response(dtos.to_response_object(product), status=200)
+
     @extend_schema(
         summary="Delete a product",
         description="Deletes a product. If the product is published, it will get the "

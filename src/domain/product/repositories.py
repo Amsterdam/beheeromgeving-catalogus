@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import F, Q, QuerySet, Value
 from django.db.utils import IntegrityError
 
@@ -198,6 +199,31 @@ class ProductRepository(AbstractRepository[Product]):
             raise exceptions.ObjectDoesNotExist from e
         except IntegrityError as e:
             raise exceptions.ValidationError(f"Error for {item.name}: {e!s}") from e
+
+    def publish_draft(self, id: int) -> Product:
+        try:
+            with transaction.atomic():
+                live_product = orm.Product.objects.select_for_update().get(pk=id)
+                draft = (
+                    orm.ProductWorkingCopy.objects.select_related("product", "team")
+                    .select_for_update()
+                    .get(product_id=id)
+                )
+
+                if live_product.last_updated != draft.base_last_updated:
+                    raise exceptions.IllegalOperation(
+                        "Cannot publish product working copy because the live product has changed."
+                    )
+
+                published_product = self.save(draft.to_domain())
+                draft.delete()
+                return published_product
+        except orm.Product.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist from e
+        except orm.ProductWorkingCopy.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist(
+                f"Product working copy for product with id {id} does not exist."
+            ) from e
 
     def delete_draft(self, id: int) -> int:
         num_delete, _ = orm.ProductWorkingCopy.objects.filter(product_id=id).delete()
