@@ -548,6 +548,40 @@ class TestProductService:
         )
         assert live.purpose == "onderhoud van bomen"
 
+    def test_publish_contract_working_copy_rejects_unpublished_service_reference(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        assert published_product.id
+        published_contract = next(
+            c
+            for c in published_product.contracts
+            if c.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        assert published_contract.id
+        live_distributions = published_contract.distributions
+
+        product_service.update_contract_draft(
+            product_id=published_product.id,
+            contract_id=published_contract.id,
+            data={
+                "distributions": [
+                    {
+                        "id": live_distributions[0].id,
+                        "access_service_id": 999999,
+                        "type": live_distributions[0].type,
+                    }
+                ]
+            },
+            scopes=[team.scope],
+        )
+
+        with pytest.raises(ValidationError, match="published service set"):
+            product_service.publish_contract_draft(
+                product_id=published_product.id,
+                contract_id=published_contract.id,
+                scopes=[team.scope],
+            )
+
     def test_get_contract_team_member(self, product_service: ProductService, product: Product):
         assert product.id
         assert product.contracts[0].id
