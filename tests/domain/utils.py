@@ -1,3 +1,5 @@
+import copy
+
 from django.conf import settings
 
 from domain import exceptions
@@ -32,6 +34,7 @@ class DummyRepository(AbstractRepository):
         auth_repo: type[AbstractAuthRepository] = AbstractAuthRepository,
     ):
         self._items = {}
+        self._drafts = {}
         self.auth_repo = auth_repo
         for object in objects:
             self._items[object.id] = object
@@ -141,6 +144,24 @@ class DummyRepository(AbstractRepository):
         self._items[item.id] = item
         self.auth_repo.add_object(item)  # ty:ignore[unresolved-attribute]
         return item
+
+    def get_draft(self, id):
+        try:
+            return copy.deepcopy(self._drafts[id])
+        except KeyError as e:
+            raise exceptions.ObjectDoesNotExist(f"Object draft with id {id} does not exist") from e
+
+    def save_draft(self, item: DummyRepoItem):
+        self._add_ids(item)
+        self._drafts[item.id] = copy.deepcopy(item)
+        return copy.deepcopy(item)
+
+    def delete_draft(self, id):
+        try:
+            self._drafts.pop(id)
+        except KeyError as e:
+            raise exceptions.ObjectDoesNotExist(f"Object draft with id {id} does not exist") from e
+        return id
 
     def delete(self, id):
         try:

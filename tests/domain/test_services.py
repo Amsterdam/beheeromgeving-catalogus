@@ -279,6 +279,54 @@ class TestProductService:
 
         assert result.description == "a fancy product"
 
+    def test_update_published_product_through_working_copy(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        assert published_product.id
+
+        result = product_service.update_product_draft(
+            product_id=published_product.id,
+            data={"description": "a fancy product"},
+            scopes=[team.scope],
+        )
+
+        draft = product_service.get_product_draft(
+            product_id=published_product.id,
+            scopes=[team.scope],
+        )
+        live = product_service.get_product(published_product.id, scopes=[team.scope])
+
+        assert result.description == "a fancy product"
+        assert draft.description == "a fancy product"
+        assert live.description == "bomen in Amsterdam"
+
+    def test_discard_published_product_working_copy(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        assert published_product.id
+
+        product_service.update_product_draft(
+            product_id=published_product.id,
+            data={"description": "a fancy product"},
+            scopes=[team.scope],
+        )
+
+        result = product_service.discard_product_draft(
+            product_id=published_product.id,
+            scopes=[team.scope],
+        )
+
+        assert result == published_product.id
+
+        with pytest.raises(ObjectDoesNotExist):
+            product_service.get_product_draft(
+                product_id=published_product.id,
+                scopes=[team.scope],
+            )
+
+        live = product_service.get_product(published_product.id, scopes=[team.scope])
+        assert live.description == "bomen in Amsterdam"
+
     def test_update_product_with_access_url_edits_report_distribution(
         self, product_service: ProductService, information_product: Product, team: Team
     ):

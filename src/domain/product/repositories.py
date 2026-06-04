@@ -19,6 +19,15 @@ class ProductRepository(AbstractRepository[Product]):
         self.manager = orm.Product.objects.select_related("team").prefetch_related(
             "sources__pk", "team", "contracts", "contracts__distributions", "services"
         )
+        self.draft_manager = orm.ProductWorkingCopy.objects.select_related(
+            "product", "product__team", "team"
+        ).prefetch_related(
+            "product__sources__pk",
+            "product__team",
+            "product__contracts",
+            "product__contracts__distributions",
+            "product__services",
+        )
 
     def get(self, id: int) -> Product:
         try:
@@ -173,6 +182,31 @@ class ProductRepository(AbstractRepository[Product]):
             return orm.Product.from_domain(item)
         except IntegrityError as e:
             raise exceptions.ValidationError(f"Error for {item.name}: {e!s}") from e
+
+    def get_draft(self, id: int) -> Product:
+        try:
+            return self.draft_manager.get(product_id=id).to_domain()
+        except orm.ProductWorkingCopy.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist(
+                f"Product working copy for product with id {id} does not exist."
+            ) from e
+
+    def save_draft(self, item: Product) -> Product:
+        try:
+            return orm.ProductWorkingCopy.from_domain(item)
+        except orm.Product.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist from e
+        except IntegrityError as e:
+            raise exceptions.ValidationError(f"Error for {item.name}: {e!s}") from e
+
+    def delete_draft(self, id: int) -> int:
+        num_delete, _ = orm.ProductWorkingCopy.objects.filter(product_id=id).delete()
+        if num_delete == 0:
+            raise exceptions.ObjectDoesNotExist(
+                f"Product working copy for product with id {id} does not exist."
+            )
+
+        return id
 
     def delete(self, id: int) -> int:
         num_delete, _ = orm.Product.objects.filter(pk=id).delete()

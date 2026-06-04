@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from beheeromgeving.models import Product as ORMProduct
+from beheeromgeving.models import ProductWorkingCopy
 from beheeromgeving.models import Team as ORMTeam
 from domain.exceptions import AuthException, ObjectDoesNotExist
 from domain.product import (
@@ -199,6 +200,10 @@ class TestProductRepository:
     def test_delete_non_existent(self):
         repo = ProductRepository()
         repo.delete(1337)
+
+    def test_product_working_copy_from_domain_requires_persisted_product_id(self, orm_team):
+        with pytest.raises(ValueError, match="requires a persisted product id"):
+            ProductWorkingCopy.from_domain(Product(team_id=orm_team.id))
 
     def test_save(self, product, orm_team):
         repo = ProductRepository()

@@ -1,3 +1,5 @@
+import copy
+
 from domain import exceptions
 from domain.auth import ProductId, Scope, authorize
 from domain.base import AbstractRepository, AbstractService
@@ -190,6 +192,56 @@ class ProductService(AbstractService):
             )
 
         return self._persist(existing_product)
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def get_product_draft(self, *, product_id: int, **kwargs) -> Product:
+        product = self.repository.get(product_id)
+        if product.publication_status != enums.PublicationStatus.PUBLISHED:
+            raise exceptions.IllegalOperation(
+                "Product working copies are only available for externally published products."
+            )
+        return self.repository.get_draft(product_id)
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def update_product_draft(self, *, product_id: int, data: dict, **kwargs) -> Product:
+        live_product = self.repository.get(product_id)
+        if live_product.publication_status != enums.PublicationStatus.PUBLISHED:
+            raise exceptions.IllegalOperation(
+                "Product working copies are only available for externally published products."
+            )
+        if "access_url" in data:
+            raise exceptions.IllegalOperation(
+                "Cannot update access_url through a product working copy."
+            )
+        if data.get("refresh_period"):
+            data["refresh_period"] = RefreshPeriod.from_dict(data["refresh_period"])
+        if kwargs.get("last_editor"):
+            data["last_editor"] = kwargs["last_editor"]
+
+        try:
+            draft_product = self.repository.get_draft(product_id)
+        except exceptions.ObjectDoesNotExist:
+            draft_product = copy.deepcopy(live_product)
+
+        live_status = live_product.publication_status
+        live_publication_date = live_product.publication_date
+        draft_product.publication_status = enums.PublicationStatus.DRAFT
+        draft_product.update(data)
+        draft_product.publication_status = live_status
+        draft_product.publication_date = live_publication_date
+        return self.repository.save_draft(draft_product)
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def discard_product_draft(self, *, product_id: int, **kwargs) -> int:
+        product = self.repository.get(product_id)
+        if product.publication_status != enums.PublicationStatus.PUBLISHED:
+            raise exceptions.IllegalOperation(
+                "Product working copies are only available for externally published products."
+            )
+        return self.repository.delete_draft(product_id)
 
     @authorize.is_admin
     @authorize.is_team_member

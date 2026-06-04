@@ -235,6 +235,151 @@ class Product(models.Model):
         return instance.to_domain()
 
 
+class ProductWorkingCopy(models.Model):
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="working_copy",
+    )
+    team = models.ForeignKey(
+        "Team",
+        on_delete=models.CASCADE,
+        related_name="product_working_copies",
+    )
+    name = models.CharField(max_length=64, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    other_identifier = models.CharField(max_length=128, blank=True, null=True)
+    language = models.CharField(
+        choices=enums.Language.choices(),
+        null=True,
+        blank=True,
+    )
+    is_geo = models.BooleanField(blank=True, null=True)
+    schema_url = models.URLField(blank=True, null=True)
+    type = models.CharField(
+        max_length=1,
+        choices=enums.ProductType.choices(),
+        null=True,
+        blank=True,
+    )
+    themes = ArrayField(
+        models.CharField(max_length=32, choices=enums.Theme.choices()),
+        null=True,
+        blank=True,
+    )
+    _owner = models.CharField(max_length=64, null=True, blank=True)
+    data_steward = models.CharField(
+        blank=True,
+        null=True,
+        validators=[EmailValidator()],
+    )
+    _contact_email = models.CharField(
+        max_length=128,
+        null=True,
+        blank=True,
+        validators=[EmailValidator()],
+    )
+    refresh_period = models.JSONField(null=True, default=dict)
+    last_updated = models.DateTimeField(auto_now=True)
+    last_editor = models.CharField(
+        max_length=128,
+        null=True,
+        blank=True,
+        default="import",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    base_last_updated = models.DateTimeField()
+    endorsement = models.CharField(
+        max_length=1,
+        choices=enums.EndorsementLevel.choices(),
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return self.name or str(self.pk)
+
+    @property
+    def contact_email(self):
+        return self._contact_email or self.team.contact_email
+
+    @contact_email.setter
+    def contact_email(self, value):
+        if value and value != self.team.contact_email:
+            self._contact_email = value
+        else:
+            self._contact_email = None
+
+    @property
+    def owner(self):
+        return self._owner or self.team.po_name
+
+    @owner.setter
+    def owner(self, value):
+        if value and value != self.team.po_name:
+            self._owner = value
+        else:
+            self._owner = None
+
+    def to_domain(self):
+        domain_product = self.product.to_domain()
+        domain_product.update_from_dict(
+            {
+                "name": self.name,
+                "description": self.description,
+                "other_identifier": self.other_identifier,
+                "language": self.language,
+                "is_geo": self.is_geo,
+                "schema_url": self.schema_url,
+                "type": self.type,
+                "team_id": self.team_id,
+                "themes": self.themes,
+                "last_updated": self.last_updated,
+                "last_editor": self.last_editor,
+                "refresh_period": (
+                    objects.RefreshPeriod.from_string(self.refresh_period)
+                    if self.refresh_period
+                    else None
+                ),
+                "owner": self.owner,
+                "contact_email": self.contact_email,
+                "data_steward": self.data_steward,
+                "endorsement": self.endorsement,
+            }
+        )
+        return domain_product
+
+    @classmethod
+    def from_domain(cls, product: objects.Product):
+        if product.id is None:
+            raise ValueError("Product working copy requires a persisted product id.")
+
+        live_product = Product.objects.select_related("team").get(pk=product.id)
+        instance = cls.objects.filter(product=live_product).first()
+        if instance is None:
+            instance = cls(product=live_product, base_last_updated=live_product.last_updated)
+
+        instance.team_id = product.team_id
+        instance.name = product.name
+        instance.description = product.description
+        instance.other_identifier = product.other_identifier
+        instance.language = product.language
+        instance.is_geo = product.is_geo
+        instance.schema_url = product.schema_url
+        instance.type = product.type
+        instance.themes = product.themes
+        instance.refresh_period = (
+            product.refresh_period.to_string if product.refresh_period is not None else None
+        )
+        instance.last_editor = product.last_editor
+        instance.data_steward = product.data_steward
+        instance.endorsement = product.endorsement
+        instance.owner = product.owner
+        instance.contact_email = product.contact_email
+        instance.save()
+        return instance.to_domain()
+
+
 class DataContract(models.Model):
     distributions: models.Manager[Distribution]
 
