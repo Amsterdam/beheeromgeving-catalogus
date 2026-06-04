@@ -1070,6 +1070,61 @@ class TestViews:
         assert live_response.status_code == 200
         assert live_response.data["name"] == "Bomen"
 
+    def test_product_draft_can_be_published(self, orm_product, orm_team, client_with_token):
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/draft/publish",
+            data={},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["id"] == orm_product.id
+        assert response.data["name"] == "New Name"
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+
+        assert draft_response.status_code == 404
+        assert live_response.status_code == 200
+        assert live_response.data["id"] == orm_product.id
+        assert live_response.data["name"] == "New Name"
+
+    def test_product_draft_publish_rejects_stale_working_copy(
+        self, orm_product, orm_team, client_with_token
+    ):
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "New Name"},
+        )
+
+        orm_product.description = "Live change"
+        orm_product.save()
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/draft/publish",
+            data={},
+        )
+
+        assert response.status_code == 400
+        assert "live product has changed" in response.data
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+
+        assert draft_response.status_code == 200
+        assert draft_response.data["name"] == "New Name"
+        assert live_response.status_code == 200
+        assert live_response.data["name"] == "Bomen"
+        assert live_response.data["description"] == "Live change"
+
     def test_product_draft_discard_fails_for_non_published_product(
         self, orm_draft_product, orm_team, client_with_token
     ):

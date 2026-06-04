@@ -245,6 +245,16 @@ class ProductService(AbstractService):
 
     @authorize.is_admin
     @authorize.is_team_member
+    def publish_product_draft(self, *, product_id: int, **kwargs) -> Product:
+        product = self.repository.get(product_id)
+        if product.publication_status != enums.PublicationStatus.PUBLISHED:
+            raise exceptions.IllegalOperation(
+                "Product working copies are only available for externally published products."
+            )
+        return self.repository.publish_draft(product_id)
+
+    @authorize.is_admin
+    @authorize.is_team_member
     def delete_product(self, *, product_id: int, **kwargs) -> None:
         product = self.get_product(product_id=product_id, **kwargs)
         if product.publication_date is not None:
