@@ -25,6 +25,32 @@ class ProductService(AbstractService):
             )
         self.auth = authorize.auth
 
+    def _normalize_contract_draft_data(self, data: dict) -> dict:
+        distributions = data.get("distributions")
+        if distributions is None:
+            return data
+
+        normalized = dict(data)
+        normalized["distributions"] = [
+            Distribution(
+                id=distribution.get("id"),
+                access_service_id=distribution.get("access_service_id"),
+                access_url=distribution.get("access_url"),
+                download_url=distribution.get("download_url"),
+                format=distribution.get("format"),
+                filename=distribution.get("filename"),
+                type=distribution.get("type"),
+                refresh_period=(
+                    RefreshPeriod.from_dict(distribution["refresh_period"])
+                    if distribution.get("refresh_period")
+                    else None
+                ),
+                crs=distribution.get("crs"),
+            )
+            for distribution in distributions
+        ]
+        return normalized
+
     @authorize.is_admin
     def get_all_products(self, **kwargs) -> list[Product]:
         return self.repository.list_all()
@@ -354,6 +380,7 @@ class ProductService(AbstractService):
         except exceptions.ObjectDoesNotExist:
             draft_contract = copy.deepcopy(live_contract)
 
+        data = self._normalize_contract_draft_data(data)
         live_status = live_contract.publication_status
         live_publication_date = live_contract.publication_date
         draft_contract.publication_status = enums.PublicationStatus.DRAFT

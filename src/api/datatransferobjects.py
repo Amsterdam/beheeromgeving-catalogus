@@ -151,6 +151,10 @@ class Distribution(IdMixin, DistributionCreateOrUpdate):
     """Distribution detail view"""
 
 
+class DistributionDraft(DistributionCreateOrUpdate):
+    id: int | None = None
+
+
 class DataContractList(ModelMixin, BaseModel):
     id: int
     publication_status: enums.PublicationStatus | None = None
@@ -167,7 +171,7 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     confidentiality: enums.ConfidentialityLevel | None = None
     start_date: date | None = None
     retainment_period: int | None = None
-    distributions: list[Distribution] | None = None
+    distributions: list[DistributionDraft] | None = None
     tables: list[str] | None = None
 
     @field_validator("purpose")
@@ -186,6 +190,7 @@ class DataContract(IdMixin, DataContractCreateOrUpdate):
 
     publication_status: enums.PublicationStatus
     publication_date: datetime | None = None
+    distributions: list[Distribution] | None = None
     missing_fields: list[str] | None = None
     schema_url: str | None = None
 

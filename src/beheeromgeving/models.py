@@ -536,6 +536,8 @@ class DataContract(models.Model):
 
 
 class DataContractWorkingCopy(models.Model):
+    distributions: models.Manager[DataContractWorkingCopyDistribution]
+
     contract = models.OneToOneField(
         DataContract,
         on_delete=models.CASCADE,
@@ -566,6 +568,7 @@ class DataContractWorkingCopy(models.Model):
     scopes = ArrayField(models.CharField(max_length=64), null=True, blank=True)
     tables = ArrayField(models.CharField(max_length=64), null=True, blank=True)
     base_last_updated = models.DateTimeField()
+    has_distribution_draft = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name or str(self.pk)
@@ -603,6 +606,13 @@ class DataContractWorkingCopy(models.Model):
                 "schema_url": self.schema_url,
             }
         )
+        if self.has_distribution_draft:
+            domain_contract.distributions = [
+                distribution.to_domain()
+                for distribution in self.distributions.select_related(
+                    "live_distribution"
+                ).order_by("id")
+            ]
         return domain_contract
 
     @classmethod
@@ -627,8 +637,150 @@ class DataContractWorkingCopy(models.Model):
         instance.start_date = contract.start_date
         instance.scopes = contract.scopes
         instance.tables = contract.tables
+        instance.has_distribution_draft = True
         instance.save()
+
+        live_distributions_by_id = {
+            distribution.pk: distribution
+            for distribution in live_contract.distributions.all().order_by("id")
+        }
+        draft_distribution_ids = set()
+        for distribution in contract.distributions or []:
+            draft_distribution = DataContractWorkingCopyDistribution.from_domain(
+                distribution=distribution,
+                working_copy=instance,
+                live_distribution=live_distributions_by_id.get(distribution.id),
+            )
+            draft_distribution_ids.add(draft_distribution.pk)
+
+        instance.distributions.exclude(pk__in=draft_distribution_ids).delete()
         return instance.to_domain()
+
+
+class DataContractWorkingCopyDistribution(models.Model):
+    live_distribution_id: int | None
+
+    working_copy = models.ForeignKey(
+        DataContractWorkingCopy,
+        on_delete=models.CASCADE,
+        related_name="distributions",
+    )
+    live_distribution = models.OneToOneField(
+        "Distribution",
+        on_delete=models.SET_NULL,
+        related_name="draft_copy",
+        null=True,
+        blank=True,
+    )
+    access_service_id = models.IntegerField(null=True, blank=True)
+    access_url = models.URLField(
+        _("Access URL"),
+        null=True,
+        blank=True,
+        help_text="Toegangslink naar de distributie.",
+    )
+    download_url = models.URLField(
+        _("Download URL"),
+        null=True,
+        blank=True,
+        help_text="Link naar het bestand dat opgeslagen is binnen de omgeving van het "
+        "Datateam op het Dataplatform",
+    )
+    format = models.CharField(
+        _("Bestandstype"),
+        max_length=10,
+        blank=True,
+        null=True,
+        help_text="Het bestandsformaat: CSV, CAD, etc.",
+    )
+    filename = models.CharField(
+        _("Bestandsnaam"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="De naam van het bestand.",
+    )
+    type = models.CharField(choices=enums.DistributionType.choices(), null=True, blank=True)
+    refresh_period = models.CharField(
+        _("Ververstermijn"),
+        max_length=64,
+        null=True,
+        blank=True,
+        help_text="Om de hoeveel tijd de data in het Data Product ververst wordt",
+    )
+    crs = ArrayField(
+        models.CharField(
+            _("Geo coördinaatreferentiesysteem"),
+            choices=enums.CoordRefSystem.choices(upper=True),
+        ),
+        blank=True,
+        null=True,
+        help_text="Geo-informatie is direct gekoppeld aan een locatie op aarde. De manier waarop "
+        "die koppeling wordt gelegd, wordt beschreven in het coördinaatreferentiesysteem (CRS). "
+        "Hierin worden coördinaten van een locatie vastgelegd. Een distributie kan meerdere "
+        "CRS'en ondersteunen.",
+    )
+
+    def __str__(self):
+        return str(self.live_distribution_id or self.pk)
+
+    def to_domain(self):
+        return objects.Distribution(
+            id=self.live_distribution_id or -self.pk,
+            access_service_id=self.access_service_id,
+            access_url=self.access_url,
+            download_url=self.download_url,
+            format=self.format,
+            filename=self.filename,
+            type=self.type,
+            refresh_period=(
+                objects.RefreshPeriod.from_string(self.refresh_period)
+                if self.refresh_period
+                else None
+            ),
+            crs=[enums.CoordRefSystem[crs] for crs in self.crs] if self.crs else None,
+        )
+
+    @classmethod
+    def from_domain(
+        cls,
+        *,
+        distribution: objects.Distribution,
+        working_copy: DataContractWorkingCopy,
+        live_distribution: Distribution | None,
+    ):
+        instance = None
+        if live_distribution is not None:
+            instance = cls.objects.filter(
+                working_copy=working_copy,
+                live_distribution=live_distribution,
+            ).first()
+        elif distribution.id is not None and distribution.id < 0:
+            instance = cls.objects.filter(
+                working_copy=working_copy,
+                pk=abs(distribution.id),
+                live_distribution__isnull=True,
+            ).first()
+
+        if instance is None:
+            instance = cls(working_copy=working_copy, live_distribution=live_distribution)
+
+        instance.access_service_id = distribution.access_service_id
+        instance.access_url = distribution.access_url
+        instance.download_url = distribution.download_url
+        instance.format = distribution.format
+        instance.filename = distribution.filename
+        instance.type = distribution.type
+        instance.refresh_period = (
+            distribution.refresh_period.to_string if distribution.refresh_period else None
+        )
+        instance.crs = (
+            [crs.value if hasattr(crs, "value") else crs for crs in distribution.crs]
+            if distribution.crs
+            else None
+        )
+        instance.save()
+        return instance
 
 
 class Team(models.Model):

@@ -31,7 +31,9 @@ class ProductRepository(AbstractRepository[Product]):
         )
         self.contract_draft_manager = orm.DataContractWorkingCopy.objects.select_related(
             "contract", "contract__product"
-        ).prefetch_related("contract__distributions")
+        ).prefetch_related(
+            "contract__distributions", "distributions", "distributions__live_distribution"
+        )
 
     def get(self, id: int) -> Product:
         try:

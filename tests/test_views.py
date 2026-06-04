@@ -1466,6 +1466,180 @@ class TestViews:
         assert response.data["name"] == "New Name"
         assert response.data["purpose"] == "New Purpose"
 
+    def test_contract_draft_can_add_a_new_distribution_without_mutating_live_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+        live_distributions = list(contract.distributions.order_by("id"))
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={
+                "distributions": [
+                    {
+                        "id": live_distributions[0].id,
+                        "access_service_id": live_distributions[0].access_service_id,
+                        "type": live_distributions[0].type,
+                    },
+                    {
+                        "id": live_distributions[1].id,
+                        "download_url": live_distributions[1].download_url,
+                        "format": live_distributions[1].format,
+                        "type": live_distributions[1].type,
+                    },
+                    {
+                        "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                        "format": "geojson",
+                        "type": "F",
+                    },
+                ]
+            },
+        )
+
+        assert response.status_code == 200, response.data
+        assert len(response.data["distributions"]) == 3
+
+        draft_distribution_ids = {
+            distribution["id"] for distribution in response.data["distributions"]
+        }
+        live_distribution_ids = {distribution.id for distribution in live_distributions}
+        assert live_distribution_ids.issubset(draft_distribution_ids)
+
+        new_distribution = next(
+            distribution
+            for distribution in response.data["distributions"]
+            if distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
+        )
+        assert new_distribution["id"] not in live_distribution_ids
+
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
+
+        assert live_response.status_code == 200
+        assert len(live_response.data["distributions"]) == 2
+        assert draft_response.status_code == 200
+        assert len(draft_response.data["distributions"]) == 3
+
+    def test_contract_draft_can_update_a_draft_only_distribution_by_draft_id(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+        live_distributions = list(contract.distributions.order_by("id"))
+
+        create_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={
+                "distributions": [
+                    {
+                        "id": live_distributions[0].id,
+                        "access_service_id": live_distributions[0].access_service_id,
+                        "type": live_distributions[0].type,
+                    },
+                    {
+                        "id": live_distributions[1].id,
+                        "download_url": live_distributions[1].download_url,
+                        "format": live_distributions[1].format,
+                        "type": live_distributions[1].type,
+                    },
+                    {
+                        "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                        "format": "geojson",
+                        "type": "F",
+                    },
+                ]
+            },
+        )
+        draft_only_distribution = next(
+            distribution
+            for distribution in create_response.data["distributions"]
+            if distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
+        )
+
+        update_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={
+                "distributions": [
+                    {
+                        "id": live_distributions[0].id,
+                        "access_service_id": live_distributions[0].access_service_id,
+                        "type": live_distributions[0].type,
+                    },
+                    {
+                        "id": live_distributions[1].id,
+                        "download_url": live_distributions[1].download_url,
+                        "format": live_distributions[1].format,
+                        "type": live_distributions[1].type,
+                    },
+                    {
+                        "id": draft_only_distribution["id"],
+                        "download_url": "https://bomen.amsterdam.nl/draft-updated.geojson",
+                        "format": "geojson",
+                        "filename": "draft.geojson",
+                        "type": "F",
+                    },
+                ]
+            },
+        )
+
+        assert update_response.status_code == 200, update_response.data
+        updated_draft_only_distribution = next(
+            distribution
+            for distribution in update_response.data["distributions"]
+            if distribution["id"] == draft_only_distribution["id"]
+        )
+        assert updated_draft_only_distribution["download_url"] == (
+            "https://bomen.amsterdam.nl/draft-updated.geojson"
+        )
+        assert updated_draft_only_distribution["filename"] == "draft.geojson"
+
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+        assert len(live_response.data["distributions"]) == 2
+
+    def test_contract_draft_can_delete_a_distribution_without_mutating_live_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+        live_distributions = list(contract.distributions.order_by("id"))
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={
+                "distributions": [
+                    {
+                        "id": live_distributions[0].id,
+                        "access_service_id": live_distributions[0].access_service_id,
+                        "type": live_distributions[0].type,
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 200, response.data
+        assert [distribution["id"] for distribution in response.data["distributions"]] == [
+            live_distributions[0].id
+        ]
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert draft_response.status_code == 200
+        assert len(draft_response.data["distributions"]) == 1
+        assert live_response.status_code == 200
+        assert len(live_response.data["distributions"]) == 2
+
     def test_contract_draft_can_be_discarded(self, orm_product, orm_team, client_with_token):
         contract_id = orm_product.contracts.first().id
 

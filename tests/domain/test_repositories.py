@@ -348,6 +348,78 @@ class TestProductRepository:
             "https://schemas.data.amsterdam.nl/datasets/bomen/dataset?scopes=bomen_beheer"
         )
 
+    def test_save_contract_draft_round_trips_live_and_draft_distribution_ids(
+        self, orm_product: ORMProduct
+    ):
+        repo = ProductRepository()
+        product = repo.get(orm_product.pk)
+        contract = product.contracts[0]
+        assert contract.id is not None
+
+        live_contract = orm_product.contracts.first()
+        assert live_contract is not None
+        live_distributions = list(
+            live_contract.distributions.order_by("id").values(
+                "id",
+                "access_service_id",
+            )
+        )
+
+        contract.distributions = [
+            Distribution(
+                id=live_distributions[0]["id"],
+                access_service_id=live_distributions[0]["access_service_id"],
+                type=enums.DistributionType.API,
+            ),
+            Distribution(
+                id=live_distributions[1]["id"],
+                download_url="https://bomen.amsterdam.nl/beheer-updated.csv",
+                format="csv",
+                type=enums.DistributionType.FILE,
+            ),
+            Distribution(
+                download_url="https://bomen.amsterdam.nl/draft.geojson",
+                format="geojson",
+                type=enums.DistributionType.FILE,
+            ),
+        ]
+
+        saved_contract = repo.save_contract_draft(product_id=orm_product.pk, contract=contract)
+        fetched_contract = repo.get_contract_draft(
+            product_id=orm_product.pk,
+            contract_id=contract.id,
+        )
+
+        live_distribution_ids = {distribution["id"] for distribution in live_distributions}
+        saved_ids = {distribution.id for distribution in saved_contract.distributions}
+        fetched_ids = {distribution.id for distribution in fetched_contract.distributions}
+        draft_distribution = next(
+            distribution
+            for distribution in fetched_contract.distributions
+            if distribution.download_url == "https://bomen.amsterdam.nl/draft.geojson"
+        )
+
+        assert live_distribution_ids.issubset(saved_ids)
+        assert live_distribution_ids.issubset(fetched_ids)
+        assert draft_distribution.id is not None
+        assert draft_distribution.id < 0
+        assert (
+            next(
+                distribution
+                for distribution in fetched_contract.distributions
+                if distribution.id == draft_distribution.id
+            ).download_url
+            == "https://bomen.amsterdam.nl/draft.geojson"
+        )
+
+        orm_product.refresh_from_db()
+        live_contract = orm_product.contracts.first()
+        assert live_contract is not None
+        assert live_contract.distributions.count() == 2
+        assert not live_contract.distributions.filter(
+            download_url="https://bomen.amsterdam.nl/draft.geojson"
+        ).exists()
+
     def test_delete_contract_draft(self, orm_product: ORMProduct):
         repo = ProductRepository()
         product = repo.get(orm_product.pk)
