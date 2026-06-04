@@ -929,6 +929,157 @@ class TestViews:
         orm_product.refresh_from_db()
         assert orm_product.name != "New Name"
 
+    def test_product_draft_update_for_published_product_keeps_live_product_unchanged(
+        self, orm_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "New Name"},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["name"] == "New Name"
+
+        live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+
+        assert live_response.status_code == 200
+        assert live_response.data["name"] == "Bomen"
+
+    def test_product_draft_can_be_retrieved_explicitly(
+        self, orm_product, orm_team, client_with_token
+    ):
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}/draft")
+
+        assert response.status_code == 200
+        assert response.data["name"] == "New Name"
+
+    def test_product_draft_detail_fails_for_non_published_product(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_draft_product.id}/draft"
+        )
+
+        assert response.status_code == 400
+        assert "only available for externally published products" in response.data
+
+    def test_product_draft_reuses_the_same_pending_copy(
+        self, orm_product, orm_team, client_with_token
+    ):
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"description": "New Description"},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["name"] == "New Name"
+        assert response.data["description"] == "New Description"
+
+    def test_product_draft_update_fails_for_non_published_product(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}/draft",
+            data={"name": "New Name"},
+        )
+
+        assert response.status_code == 400
+        assert "only available for externally published products" in response.data
+
+    def test_product_draft_update_rejects_access_url(
+        self, orm_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"access_url": "https://data.amsterdam.nl/report/1"},
+        )
+
+        assert response.status_code == 400
+        assert "Cannot update access_url through a product working copy." in response.data
+
+    def test_product_draft_update_refresh_period(self, orm_product, orm_team, client_with_token):
+        data = {"refresh_period": {"unit": "MONTH", "frequency": 2}}
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data=data,
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["refresh_period"] == data["refresh_period"]
+
+        live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+        assert live_response.status_code == 200
+        assert live_response.data["refresh_period"] == {"unit": "MONTH", "frequency": 3}
+
+    def test_product_draft_update_custom_owner_and_contact_email(
+        self, orm_product, orm_team, client_with_token
+    ):
+        data = {
+            "owner": "new.owner@amsterdam.nl",
+            "contact_email": "new.contact@amsterdam.nl",
+        }
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data=data,
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["owner"] == data["owner"]
+        assert response.data["contact_email"] == data["contact_email"]
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+
+        assert draft_response.status_code == 200
+        assert draft_response.data["owner"] == data["owner"]
+        assert draft_response.data["contact_email"] == data["contact_email"]
+        assert live_response.status_code == 200
+        assert live_response.data["owner"] == orm_team.po_name
+        assert live_response.data["contact_email"] == orm_team.contact_email
+
+    def test_product_draft_can_be_discarded(self, orm_product, orm_team, client_with_token):
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}/draft")
+
+        assert response.status_code == 204
+
+        draft_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/draft"
+        )
+        live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+
+        assert draft_response.status_code == 404
+        assert live_response.status_code == 200
+        assert live_response.data["name"] == "Bomen"
+
+    def test_product_draft_discard_fails_for_non_published_product(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_draft_product.id}/draft"
+        )
+
+        assert response.status_code == 400
+        assert "only available for externally published products" in response.data
+
     def test_product_update_reflected_in_me_view(
         self, orm_draft_product, orm_team, client_with_token
     ):

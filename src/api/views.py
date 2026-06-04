@@ -249,6 +249,36 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(dtos.to_response_object(product), status=200)
 
+    @extend_schema(responses={200: dtos.ProductDetail})
+    @action(detail=True, methods=["get"], url_path="draft", url_name="draft-detail")
+    def draft_detail(self, request, pk: str):
+        product = product_service.get_product_draft(
+            product_id=int(pk),
+            scopes=request.get_token_scopes,
+        )
+        return Response(dtos.to_response_object(product), status=200)
+
+    @extend_schema(request=dtos.ProductUpdate, responses={200: dtos.ProductDetail})
+    @draft_detail.mapping.patch
+    def update_draft(self, request, pk: str):
+        product_dto = self._validate_dto(request.data, dto_type=dtos.ProductUpdate)
+        last_editor = self._get_last_editor(request)
+        product = product_service.update_product_draft(
+            product_id=int(pk),
+            data=product_dto.model_dump(exclude_unset=True, exclude={"contracts", "services"}),
+            scopes=request.get_token_scopes,
+            last_editor=last_editor,
+        )
+        return Response(dtos.to_response_object(product), status=200)
+
+    @draft_detail.mapping.delete
+    def delete_draft(self, request, pk: str):
+        product_service.discard_product_draft(
+            product_id=int(pk),
+            scopes=request.get_token_scopes,
+        )
+        return Response(status=204)
+
     @extend_schema(
         summary="Delete a product",
         description="Deletes a product. If the product is published, it will get the "
