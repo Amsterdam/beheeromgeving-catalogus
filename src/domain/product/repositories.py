@@ -6,7 +6,7 @@ from api.datatransferobjects import MyProduct, ProductList
 from beheeromgeving import models as orm
 from domain import exceptions
 from domain.base import AbstractRepository
-from domain.product import Product, enums
+from domain.product import DataContract, Product, enums
 from domain.team import Team
 
 # alias for typing
@@ -29,6 +29,9 @@ class ProductRepository(AbstractRepository[Product]):
             "product__contracts__distributions",
             "product__services",
         )
+        self.contract_draft_manager = orm.DataContractWorkingCopy.objects.select_related(
+            "contract", "contract__product"
+        ).prefetch_related("contract__distributions")
 
     def get(self, id: int) -> Product:
         try:
@@ -233,6 +236,37 @@ class ProductRepository(AbstractRepository[Product]):
             )
 
         return id
+
+    def get_contract_draft(self, *, product_id: int, contract_id: int) -> DataContract:
+        try:
+            return self.contract_draft_manager.get(
+                contract_id=contract_id,
+                contract__product_id=product_id,
+            ).to_domain()
+        except orm.DataContractWorkingCopy.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist(
+                f"Contract working copy for contract with id {contract_id} does not exist."
+            ) from e
+
+    def save_contract_draft(self, *, product_id: int, contract: DataContract) -> DataContract:
+        try:
+            return orm.DataContractWorkingCopy.from_domain(contract, product_id)
+        except orm.DataContract.DoesNotExist as e:
+            raise exceptions.ObjectDoesNotExist from e
+        except IntegrityError as e:
+            raise exceptions.ValidationError(f"Error for {contract.name}: {e!s}") from e
+
+    def delete_contract_draft(self, *, product_id: int, contract_id: int) -> int:
+        num_delete, _ = orm.DataContractWorkingCopy.objects.filter(
+            contract_id=contract_id,
+            contract__product_id=product_id,
+        ).delete()
+        if num_delete == 0:
+            raise exceptions.ObjectDoesNotExist(
+                f"Contract working copy for contract with id {contract_id} does not exist."
+            )
+
+        return contract_id
 
     def delete(self, id: int) -> int:
         num_delete, _ = orm.Product.objects.filter(pk=id).delete()

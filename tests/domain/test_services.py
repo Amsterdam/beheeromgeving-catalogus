@@ -475,6 +475,79 @@ class TestProductService:
         result = product_service.get_contract(published_product.id, published_contract.id)
         assert result == published_contract
 
+    def test_update_published_contract_through_working_copy(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        assert published_product.id
+        published_contract = next(
+            c
+            for c in published_product.contracts
+            if c.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        assert published_contract.id
+
+        result = product_service.update_contract_draft(
+            product_id=published_product.id,
+            contract_id=published_contract.id,
+            data={"purpose": "nieuw doel"},
+            scopes=[team.scope],
+        )
+
+        draft = product_service.get_contract_draft(
+            product_id=published_product.id,
+            contract_id=published_contract.id,
+            scopes=[team.scope],
+        )
+        live = product_service.get_contract(
+            published_product.id,
+            published_contract.id,
+            scopes=[team.scope],
+        )
+
+        assert result.purpose == "nieuw doel"
+        assert draft.purpose == "nieuw doel"
+        assert live.purpose == "onderhoud van bomen"
+
+    def test_discard_published_contract_working_copy(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        assert published_product.id
+        published_contract = next(
+            c
+            for c in published_product.contracts
+            if c.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        assert published_contract.id
+
+        product_service.update_contract_draft(
+            product_id=published_product.id,
+            contract_id=published_contract.id,
+            data={"purpose": "nieuw doel"},
+            scopes=[team.scope],
+        )
+
+        result = product_service.discard_contract_draft(
+            product_id=published_product.id,
+            contract_id=published_contract.id,
+            scopes=[team.scope],
+        )
+
+        assert result == published_contract.id
+
+        with pytest.raises(ObjectDoesNotExist):
+            product_service.get_contract_draft(
+                product_id=published_product.id,
+                contract_id=published_contract.id,
+                scopes=[team.scope],
+            )
+
+        live = product_service.get_contract(
+            published_product.id,
+            published_contract.id,
+            scopes=[team.scope],
+        )
+        assert live.purpose == "onderhoud van bomen"
+
     def test_get_contract_team_member(self, product_service: ProductService, product: Product):
         assert product.id
         assert product.contracts[0].id

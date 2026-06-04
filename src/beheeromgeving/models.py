@@ -236,6 +236,8 @@ class Product(models.Model):
 
 
 class ProductWorkingCopy(models.Model):
+    team_id: int
+
     product = models.OneToOneField(
         Product,
         on_delete=models.CASCADE,
@@ -530,6 +532,102 @@ class DataContract(models.Model):
             # Exclude the distribution that still exists.
             to_delete = to_delete.exclude(pk=distro_id)
         to_delete.delete()
+        return instance.to_domain()
+
+
+class DataContractWorkingCopy(models.Model):
+    contract = models.OneToOneField(
+        DataContract,
+        on_delete=models.CASCADE,
+        related_name="working_copy",
+    )
+    name = models.CharField(max_length=64, blank=True, null=True)
+    purpose = models.TextField(blank=True, null=True)
+    privacy_level = models.CharField(
+        choices=enums.PrivacyLevel.choices(),
+        null=True,
+        blank=True,
+    )
+    last_updated = models.DateTimeField(auto_now=True)
+    last_editor = models.CharField(
+        max_length=128,
+        null=True,
+        blank=True,
+        default="import",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    confidentiality = models.CharField(
+        choices=enums.ConfidentialityLevel.choices(),
+        blank=True,
+        null=True,
+    )
+    retainment_period = models.IntegerField(blank=True, null=True)
+    start_date = models.DateField(blank=True, null=True)
+    scopes = ArrayField(models.CharField(max_length=64), null=True, blank=True)
+    tables = ArrayField(models.CharField(max_length=64), null=True, blank=True)
+    base_last_updated = models.DateTimeField()
+
+    def __str__(self):
+        return self.name or str(self.pk)
+
+    @property
+    def schema_url(self) -> str | None:
+        if self.contract.product.schema_url:
+            base_url = self.contract.product.schema_url
+        if self.scopes:
+            scopes = ",".join(self.scopes)
+        if self.tables:
+            tables = ",".join(self.tables)
+
+        if self.contract.product.schema_url and self.scopes and self.tables:
+            return f"{base_url}?scopes={scopes}&tables={tables}"
+        elif self.contract.product.schema_url and self.scopes:
+            return f"{base_url}?scopes={scopes}"
+        else:
+            return None
+
+    def to_domain(self):
+        domain_contract = self.contract.to_domain()
+        domain_contract.update_from_dict(
+            {
+                "name": self.name,
+                "purpose": self.purpose,
+                "privacy_level": self.privacy_level,
+                "last_updated": self.last_updated,
+                "last_editor": self.last_editor,
+                "confidentiality": self.confidentiality,
+                "retainment_period": self.retainment_period,
+                "start_date": self.start_date,
+                "scopes": self.scopes,
+                "tables": self.tables,
+                "schema_url": self.schema_url,
+            }
+        )
+        return domain_contract
+
+    @classmethod
+    def from_domain(cls, contract: objects.DataContract, product_id: int):
+        if contract.id is None:
+            raise ValueError("Contract working copy requires a persisted contract id.")
+
+        live_contract = DataContract.objects.select_related("product").get(
+            pk=contract.id,
+            product_id=product_id,
+        )
+        instance = cls.objects.filter(contract=live_contract).first()
+        if instance is None:
+            instance = cls(contract=live_contract, base_last_updated=live_contract.last_updated)
+
+        instance.name = contract.name
+        instance.purpose = contract.purpose
+        instance.privacy_level = contract.privacy_level
+        instance.last_editor = contract.last_editor
+        instance.confidentiality = contract.confidentiality
+        instance.retainment_period = contract.retainment_period
+        instance.start_date = contract.start_date
+        instance.scopes = contract.scopes
+        instance.tables = contract.tables
+        instance.save()
         return instance.to_domain()
 
 

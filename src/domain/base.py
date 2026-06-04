@@ -82,6 +82,15 @@ class AbstractRepository[T](abc.ABC):
     def delete_draft(self, id: int) -> int:
         raise NotImplementedError
 
+    def get_contract_draft(self, *, product_id: int, contract_id: int) -> Any:
+        raise NotImplementedError
+
+    def save_contract_draft(self, *, product_id: int, contract: Any) -> Any:
+        raise NotImplementedError
+
+    def delete_contract_draft(self, *, product_id: int, contract_id: int) -> int:
+        raise NotImplementedError
+
     @abc.abstractmethod
     def delete(self, id: int) -> int:
         raise NotImplementedError
