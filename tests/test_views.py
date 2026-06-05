@@ -2360,6 +2360,8 @@ class TestViews:
             "type",
             "last_updated",
             "publication_status",
+            "has_revision",
+            "revision_url",
             "contracts",
         ]:
             assert key in response.data["products"]["results"][0]
@@ -2372,8 +2374,44 @@ class TestViews:
             "confidentiality",
             "last_updated",
             "publication_status",
+            "has_revision",
+            "revision_url",
         ]:
             assert key in response.data["products"]["results"][0]["contracts"][0]
+
+    def test_me_includes_product_revision_metadata(self, orm_product, orm_team, client_with_token):
+        patch_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision",
+            data={"name": "New Name"},
+        )
+        assert patch_response.status_code == 200, patch_response.data
+
+        response = client_with_token([orm_team.scope]).get("/me")
+
+        assert response.status_code == 200
+        product = response.data["products"]["results"][0]
+        assert product["has_revision"] is True
+        assert product["revision_url"] == f"http://testserver/products/{orm_product.id}/revision"
+
+    def test_me_includes_contract_revision_metadata(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract_id = orm_product.contracts.first().id
+
+        patch_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
+            data={"name": "New Name"},
+        )
+        assert patch_response.status_code == 200, patch_response.data
+
+        response = client_with_token([orm_team.scope]).get("/me")
+
+        assert response.status_code == 200
+        contract = response.data["products"]["results"][0]["contracts"][0]
+        assert contract["has_revision"] is True
+        assert contract["revision_url"] == (
+            f"http://testserver/products/{orm_product.id}/contracts/{contract_id}/revision"
+        )
 
     def test_me_admin_scope(
         self, orm_product, orm_product2, orm_team, orm_other_team, client_with_token
@@ -2499,5 +2537,7 @@ class TestViews:
                 "publication_status",
                 "last_updated",
                 "other_identifier",
+                "has_revision",
+                "revision_url",
                 "contracts",
             }

@@ -204,6 +204,8 @@ class MyContract(ModelMixin, BaseModel):
     confidentiality: enums.ConfidentialityLevel | None = None
     last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
+    has_revision: bool = False
+    revision_url: str | None = None
 
     @classmethod
     def from_django(cls, contract: ORMDataContract) -> MyContract:
@@ -214,6 +216,7 @@ class MyContract(ModelMixin, BaseModel):
             confidentiality=contract.confidentiality,
             last_updated=contract.last_updated,
             publication_status=contract.publication_status,
+            has_revision=hasattr(contract, "revision"),
         )
 
 
@@ -225,6 +228,8 @@ class MyProduct(ModelMixin, BaseModel):
     type: enums.ProductType | None = None
     last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
+    has_revision: bool = False
+    revision_url: str | None = None
     contracts: list[MyContract]
 
     @classmethod
@@ -237,6 +242,7 @@ class MyProduct(ModelMixin, BaseModel):
             type=product.type,
             last_updated=product.last_updated,
             publication_status=product.publication_status,
+            has_revision=hasattr(product, "revision"),
             contracts=[MyContract.from_django(c) for c in product.contracts.order_by("id")],
         )
 

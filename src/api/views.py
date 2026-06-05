@@ -643,6 +643,23 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(status=204)
 
 
+def _attach_product_revision_metadata(*, request, product_data: dict) -> dict:
+    product_id = product_data["id"]
+    product_data["revision_url"] = (
+        request.build_absolute_uri(f"/products/{product_id}/revision")
+        if product_data.get("has_revision")
+        else None
+    )
+    for contract_data in product_data.get("contracts", []):
+        contract_id = contract_data["id"]
+        contract_data["revision_url"] = (
+            request.build_absolute_uri(f"/products/{product_id}/contracts/{contract_id}/revision")
+            if contract_data.get("has_revision")
+            else None
+        )
+    return product_data
+
+
 @extend_schema(responses={200: dtos.MeDetail})
 @api_view(["GET"])
 def me(request):
@@ -665,6 +682,15 @@ def me(request):
         order=params.order or ("last_updated", True),
         fields=params.fields,
     )
+    if params.fields in (None, "*") or {
+        "has_revision",
+        "revision_url",
+        "contracts",
+    }.intersection(params.fields or []):
+        product_data = [
+            _attach_product_revision_metadata(request=request, product_data=product)
+            for product in product_data
+        ]
     pagination = Pagination()
     try:
         product_data = pagination.paginate(product_data, request)
