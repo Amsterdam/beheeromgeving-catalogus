@@ -978,6 +978,21 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == "New Name"
 
+    def test_product_detail_makes_working_copy_discoverable(
+        self, orm_product, orm_team, client_with_token
+    ):
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+
+        assert response.status_code == 200
+        assert response.data["name"] == "Bomen"
+        assert response.data["has_working_copy"] is True
+        assert response.data["draft_url"] == f"http://testserver/products/{orm_product.id}/draft"
+
     def test_product_draft_detail_fails_for_non_published_product(
         self, orm_draft_product, orm_team, client_with_token
     ):
@@ -1497,6 +1512,27 @@ class TestViews:
 
         assert response.status_code == 200
         assert response.data["name"] == "New Name"
+
+    def test_contract_detail_makes_working_copy_discoverable(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract_id = orm_product.contracts.first().id
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            data={"name": "New Name"},
+        )
+
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert response.status_code == 200
+        assert response.data["name"] == "beheer bomen"
+        assert response.data["has_working_copy"] is True
+        assert response.data["draft_url"] == (
+            f"http://testserver/products/{orm_product.id}/contracts/{contract_id}/draft"
+        )
 
     def test_contract_draft_can_be_published(self, orm_product, orm_team, client_with_token):
         contract = orm_product.contracts.first()

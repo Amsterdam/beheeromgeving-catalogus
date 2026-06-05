@@ -177,6 +177,7 @@ class Product(models.Model):
             ]
         return objects.Product(
             id=self.pk,
+            has_working_copy=hasattr(self, "working_copy"),
             type=self.type,
             name=self.name,
             description=self.description,
@@ -504,6 +505,7 @@ class DataContract(models.Model):
     def to_domain(self):
         return objects.DataContract(
             id=self.pk,
+            has_working_copy=hasattr(self, "working_copy"),
             publication_status=self.publication_status,
             publication_date=self.publication_date,
             purpose=self.purpose,
