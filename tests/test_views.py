@@ -13,7 +13,13 @@ from datetime import UTC, datetime
 import pytest
 from django.conf import settings
 
-from beheeromgeving.models import DataContract, Product, Team
+from beheeromgeving.models import (
+    DataContract,
+    DataContractWorkingCopy,
+    Product,
+    ProductWorkingCopy,
+    Team,
+)
 
 
 @pytest.mark.django_db
@@ -786,6 +792,20 @@ class TestViews:
         orm_product.refresh_from_db()
         assert orm_product.publication_status == "X"  # DELETED
 
+    def test_published_product_delete_clears_working_copy(
+        self, orm_product, orm_team, client_with_token
+    ):
+        create_draft_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "Draft Name"},
+        )
+        assert create_draft_response.status_code == 200, create_draft_response.data
+
+        delete_response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}")
+
+        assert delete_response.status_code == 204
+        assert not ProductWorkingCopy.objects.filter(product_id=orm_product.id).exists()
+
     def test_product_delete_unauthorized(self, orm_product, client_with_token):
         response = client_with_token([]).delete(f"/products/{orm_product.id}")
         assert response.status_code == 401
@@ -1177,6 +1197,23 @@ class TestViews:
         assert orm_product.publication_date is not None
         assert response.data["publication_status"] == orm_product.publication_status
 
+    def test_set_state_product_soft_delete_clears_working_copy(
+        self, orm_product, orm_team, client_with_token
+    ):
+        create_draft_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/draft",
+            data={"name": "Draft Name"},
+        )
+        assert create_draft_response.status_code == 200, create_draft_response.data
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/set-state",
+            data={"publication_status": "X"},
+        )
+
+        assert response.status_code == 200, response.data
+        assert not ProductWorkingCopy.objects.filter(product_id=orm_product.id).exists()
+
     def test_set_state_dataproduct_internal_not_possible(
         self, orm_product, orm_team, client_with_token
     ):
@@ -1214,6 +1251,32 @@ class TestViews:
             update_to_draft.data["publication_status"]
             == orm_product.contracts.first().publication_status
         )
+
+    def test_set_state_contract_soft_delete_clears_working_copy(
+        self, orm_product, orm_team, client_with_token
+    ):
+        published_contract = DataContract.objects.create(
+            product=orm_product,
+            name="published contract with draft",
+            publication_status="P",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+
+        create_draft_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{published_contract.pk}/draft",
+            data={"name": "Draft contract"},
+        )
+        assert create_draft_response.status_code == 200, create_draft_response.data
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{published_contract.pk}/set-state",
+            data={"publication_status": "X"},
+        )
+
+        assert response.status_code == 200, response.data
+        assert not DataContractWorkingCopy.objects.filter(
+            contract_id=published_contract.pk
+        ).exists()
 
     def test_contract_list_shows_only_published_contracts(self, orm_product, api_client):
         response = api_client.get(f"/products/{orm_product.id}/contracts")
@@ -1818,6 +1881,31 @@ class TestViews:
         assert response.status_code == 204
         published_contract.refresh_from_db()
         assert published_contract.publication_status == "X"  # DELETED
+
+    def test_published_contract_delete_clears_working_copy(
+        self, orm_product, orm_team, client_with_token
+    ):
+        published_contract = DataContract.objects.create(
+            product=orm_product,
+            name="published contract with draft",
+            publication_status="P",
+            publication_date=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+
+        create_draft_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{published_contract.pk}/draft",
+            data={"name": "Draft contract"},
+        )
+        assert create_draft_response.status_code == 200, create_draft_response.data
+
+        delete_response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{published_contract.pk}"
+        )
+
+        assert delete_response.status_code == 204
+        assert not DataContractWorkingCopy.objects.filter(
+            contract_id=published_contract.pk
+        ).exists()
 
     def test_distribution_list(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
