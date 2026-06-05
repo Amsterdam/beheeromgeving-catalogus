@@ -149,6 +149,10 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         # Raises if data is invalid
         return dto_type(**data)
 
+    def _attach_draft_metadata(self, *, request, data: dict, path: str):
+        data["draft_url"] = request.build_absolute_uri(path) if data["has_working_copy"] else None
+        return data
+
     @extend_schema(
         responses={200: dtos.PaginatedResponse[dtos.ProductList]},
         parameters=[
@@ -221,10 +225,23 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         paginated_data = pagination.paginate(data, request)
         return pagination.get_paginated_response(paginated_data)
 
-    @extend_schema(responses={200: dtos.ProductDetail})
+    @extend_schema(
+        responses={200: dtos.ProductDetail},
+        description="Returns the live product state. If a working copy exists, the response "
+        "includes draft discoverability metadata so clients can navigate to the explicit "
+        "draft endpoint intentionally.",
+    )
     def retrieve(self, request, pk: str):
         product = product_service.get_product(product_id=int(pk), scopes=request.get_token_scopes)
-        return Response(dtos.to_response_object(product), status=200)
+        data = dtos.to_response_object(product)
+        return Response(
+            self._attach_draft_metadata(
+                request=request,
+                data=data,
+                path=f"/products/{pk}/draft",
+            ),
+            status=200,
+        )
 
     @extend_schema(request=dtos.ProductCreate, responses={200: dtos.ProductDetail})
     def create(self, request):
@@ -249,7 +266,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(dtos.to_response_object(product), status=200)
 
-    @extend_schema(responses={200: dtos.ProductDetail})
+    @extend_schema(
+        responses={200: dtos.ProductDetail},
+        description="Returns the explicit product working copy. Live reads continue to use the "
+        "regular product detail endpoint.",
+    )
     @action(detail=True, methods=["get"], url_path="draft", url_name="draft-detail")
     def draft_detail(self, request, pk: str):
         product = product_service.get_product_draft(
@@ -347,7 +368,12 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=201)
 
-    @extend_schema(responses={200: dtos.DataContract})
+    @extend_schema(
+        responses={200: dtos.DataContract},
+        description="Returns the live contract state. If a working copy exists, the response "
+        "includes draft discoverability metadata so clients can navigate to the explicit "
+        "draft endpoint intentionally.",
+    )
     @action(
         detail=True,
         methods=["get"],
@@ -361,7 +387,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             scopes=request.get_token_scopes,
         )
         data = dtos.to_response_object(contract)
-        return Response(data, status=200)
+        return Response(
+            self._attach_draft_metadata(
+                request=request,
+                data=data,
+                path=f"/products/{pk}/contracts/{contract_id}/draft",
+            ),
+            status=200,
+        )
 
     @extend_schema(request=dtos.DataContractCreateOrUpdate, responses={200: dtos.DataContract})
     @contract_detail.mapping.patch
@@ -378,7 +411,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
-    @extend_schema(responses={200: dtos.DataContract})
+    @extend_schema(
+        responses={200: dtos.DataContract},
+        description="Returns the explicit contract working copy. Live reads continue to use the "
+        "regular contract detail endpoint.",
+    )
     @action(
         detail=True,
         methods=["get"],
