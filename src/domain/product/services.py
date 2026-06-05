@@ -279,16 +279,42 @@ class ProductService(AbstractService):
             )
         return self.repository.publish_draft(product_id)
 
+    def _delete_product_draft_if_exists(self, *, product_id: int) -> None:
+        try:
+            self.repository.delete_draft(product_id)
+        except exceptions.ObjectDoesNotExist:
+            pass
+
+    def _delete_contract_draft_if_exists(self, *, product_id: int, contract_id: int) -> None:
+        try:
+            self.repository.delete_contract_draft(
+                product_id=product_id,
+                contract_id=contract_id,
+            )
+        except exceptions.ObjectDoesNotExist:
+            pass
+
     @authorize.is_admin
     @authorize.is_team_member
     def delete_product(self, *, product_id: int, **kwargs) -> None:
         product = self.get_product(product_id=product_id, **kwargs)
         if product.publication_date is not None:
+            published_contract_ids = [
+                contract.id
+                for contract in product.contracts
+                if contract.id is not None and contract.publication_date is not None
+            ]
             product.update_state({"publication_status": enums.PublicationStatus.DELETED})
             for contract in product.contracts:
                 if contract.id:
                     product.delete_contract(contract.id)
             self._persist(product)
+            self._delete_product_draft_if_exists(product_id=product_id)
+            for contract_id in published_contract_ids:
+                self._delete_contract_draft_if_exists(
+                    product_id=product_id,
+                    contract_id=contract_id,
+                )
         else:
             self.repository.delete(product_id)
 
@@ -520,21 +546,35 @@ class ProductService(AbstractService):
         product = self.get_product(product_id=product_id, **kwargs)
         updated_contract = product.update_contract_state(contract_id, data)
         self._persist(product)
+        if updated_contract.publication_status == enums.PublicationStatus.DELETED:
+            self._delete_contract_draft_if_exists(
+                product_id=product_id,
+                contract_id=contract_id,
+            )
         return updated_contract
 
     @authorize.is_admin
     @authorize.is_team_member
     def delete_contract(self, product_id: int, contract_id: int, **kwargs):
         product = self.get_product(product_id=product_id, **kwargs)
+        contract = product.get_contract(contract_id)
         product.delete_contract(contract_id)
         self._persist(product)
+        if contract.publication_date is not None:
+            self._delete_contract_draft_if_exists(
+                product_id=product_id,
+                contract_id=contract_id,
+            )
 
     @authorize.is_admin
     @authorize.is_team_member
     def update_publication_status(self, product_id: int, data: dict, **kwargs) -> Product:
         existing_product = self.repository.get(product_id)
         existing_product.update_state(data)
-        return self._persist(existing_product)
+        updated_product = self._persist(existing_product)
+        if updated_product.publication_status == enums.PublicationStatus.DELETED:
+            self._delete_product_draft_if_exists(product_id=product_id)
+        return updated_product
 
     def get_distributions(
         self,
