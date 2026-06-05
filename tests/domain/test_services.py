@@ -4,6 +4,7 @@ import pytest
 from django.conf import settings
 
 from domain.exceptions import (
+    IllegalOperation,
     NotAuthenticated,
     NotAuthorized,
     ObjectDoesNotExist,
@@ -216,6 +217,20 @@ class TestProductService:
         )
         assert result == product
 
+    def test_get_product_by_name_employee_falls_back_to_internal(
+        self, product_service: ProductService, published_product: Product
+    ):
+        assert published_product.name
+        result = product_service.get_product_by_name(
+            published_product.name,
+            scopes=[settings.EMPLOYEE_ROLE_NAME],
+        )
+        assert result.id == published_product.id
+        assert {c.publication_status for c in result.contracts} <= {
+            enums.PublicationStatus.PUBLISHED,
+            enums.PublicationStatus.INTERNALLY_PUBLISHED,
+        }
+
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_get_product_non_existent(self, product_service: ProductService):
         product_service.get_product(1337)  # non-existent
@@ -327,6 +342,15 @@ class TestProductService:
         live = product_service.get_product(published_product.id, scopes=[team.scope])
         assert live.description == "bomen in Amsterdam"
 
+    def test_publish_product_draft_fails_for_non_published_product(
+        self, product_service: ProductService, product: Product, team: Team
+    ):
+        with pytest.raises(IllegalOperation, match="externally published products"):
+            product_service.publish_product_draft(
+                product_id=product.id,
+                scopes=[team.scope],
+            )
+
     def test_update_product_with_access_url_edits_report_distribution(
         self, product_service: ProductService, information_product: Product, team: Team
     ):
@@ -381,6 +405,42 @@ class TestProductService:
             == "https://example.com/report_test_new"
         )
         assert updated.contracts[0].distributions[0].refresh_period.to_string == "1.DAY"
+
+    def test_update_product_with_access_url_adds_distribution_to_existing_empty_contract(
+        self, product_service: ProductService, team: Team
+    ):
+        created = product_service.create_product(
+            data={"type": "I", "team_id": team.id, "name": "leeg contract"},
+            scopes=[team.scope],
+        )
+        assert created.id
+
+        contract = product_service.create_contract(
+            product_id=created.id,
+            data={"purpose": "rapportage"},
+            scopes=[team.scope],
+        )
+        assert contract.id
+        assert contract.distributions == []
+
+        product_service.update_product(
+            product_id=created.id,
+            data={
+                "access_url": "https://example.com/report_existing_contract",
+                "refresh_period": {"frequency": 1, "unit": "DAY"},
+            },
+            scopes=[team.scope],
+        )
+
+        updated = product_service.get_product(created.id, scopes=[team.scope])
+        updated_contract = updated.get_contract(contract.id)
+        assert len(updated_contract.distributions) == 1
+        assert (
+            updated_contract.distributions[0].access_url
+            == "https://example.com/report_existing_contract"
+        )
+        assert updated_contract.distributions[0].type == enums.DistributionType.REPORT
+        assert updated_contract.distributions[0].refresh_period.to_string == "1.DAY"
 
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_update_product_non_existent(self, product_service: ProductService, team: Team):

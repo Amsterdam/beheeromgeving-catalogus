@@ -1843,6 +1843,116 @@ class TestViews:
         )
         assert response.status_code == 200
 
+    def test_distribution_create_fails_on_published_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.filter(publication_status="P").first()
+        assert contract is not None
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions",
+            data={
+                "download_url": "https://bomen.amsterdam.nl/new.csv",
+                "format": "csv",
+                "type": "F",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "working copy" in response.data
+
+        contract.refresh_from_db()
+        assert contract.distributions.count() == 2
+
+    def test_unpublished_contract_on_published_product_uses_live_contract_update(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.filter(publication_status="D").first()
+        assert contract is not None
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract.id}",
+            data={"name": "Draft contract update"},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["name"] == "Draft contract update"
+
+        contract.refresh_from_db()
+        assert contract.name == "Draft contract update"
+
+    def test_unpublished_contract_on_published_product_uses_live_distribution_crud(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.filter(publication_status="D").first()
+        assert contract is not None
+
+        create_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions",
+            data={
+                "download_url": "https://bomen.amsterdam.nl/draft-live.csv",
+                "format": "csv",
+                "type": "F",
+            },
+        )
+
+        assert create_response.status_code == 201, create_response.data
+        distribution_id = create_response.data["id"]
+
+        update_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution_id}",
+            data={"format": "geojson", "type": "F"},
+        )
+
+        assert update_response.status_code == 200, update_response.data
+        assert update_response.data["format"] == "geojson"
+
+        delete_response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution_id}"
+        )
+
+        assert delete_response.status_code == 204
+
+        contract.refresh_from_db()
+        assert contract.distributions.count() == 0
+
+    def test_distribution_update_fails_on_published_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.filter(publication_status="P").first()
+        assert contract is not None
+        distribution = contract.distributions.order_by("id").last()
+        assert distribution is not None
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution.id}",
+            data={"format": "geojson", "type": distribution.type},
+        )
+
+        assert response.status_code == 400
+        assert "working copy" in response.data
+
+        distribution.refresh_from_db()
+        assert distribution.format == "csv"
+
+    def test_distribution_delete_fails_on_published_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.filter(publication_status="P").first()
+        assert contract is not None
+        distribution = contract.distributions.order_by("id").last()
+        assert distribution is not None
+
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution.id}"
+        )
+
+        assert response.status_code == 400
+        assert "working copy" in response.data
+
+        contract.refresh_from_db()
+        assert contract.distributions.count() == 2
+
     def test_distribution_detail(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
         distribution_id = orm_product.contracts.first().distributions.first().id
@@ -1878,19 +1988,21 @@ class TestViews:
         assert response.status_code == 200
 
     def test_distribution_create(self, orm_product, orm_team, client_with_token):
-        contract_id = orm_product.contracts.first().id
+        contract = orm_product.contracts.filter(publication_status="D").first()
+        assert contract is not None
         data = {"format": "TEST", "type": "F"}
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions",
             data=data,
         )
         assert response.status_code == 201
 
     def test_distribution_create_empty(self, orm_product, orm_team, client_with_token):
-        contract_id = orm_product.contracts.first().id
+        contract = orm_product.contracts.filter(publication_status="D").first()
+        assert contract is not None
         data = {}
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions",
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions",
             data=data,
         )
         assert response.status_code == 201
@@ -1914,19 +2026,6 @@ class TestViews:
         )
         assert response.status_code == 200
         assert response.data["format"] == "TEST"
-
-    def test_distribution_update_fails_on_published_contract(
-        self, orm_product, orm_team, client_with_token
-    ):
-        contract_id = orm_product.contracts.first().id
-        distribution_id = orm_product.contracts.first().distributions.first().id
-        data = {"format": "TEST", "type": "F"}
-        response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}",
-            data=data,
-        )
-        assert response.status_code == 400
-        assert orm_product.contracts.first().distributions.first().format != "TEST"
 
     def test_distribution_patch_and_then_get(self, orm_draft_product, orm_team, client_with_token):
         contract_id = orm_draft_product.contracts.first().id
@@ -1971,16 +2070,6 @@ class TestViews:
         orm_draft_product.refresh_from_db()
         orm_contract = orm_draft_product.contracts.first()
         assert not orm_contract.distributions.filter(pk=distribution_id).exists()
-
-    def test_distribution_delete_fails_on_published_contract(
-        self, orm_product, orm_team, client_with_token
-    ):
-        contract = orm_product.contracts.first()
-        distribution_id = orm_product.contracts.first().distributions.first().id
-        response = client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_product.id}/contracts/{contract.id}/distributions/{distribution_id}"
-        )
-        assert response.status_code == 400
 
     def test_distribution_delete_not_allowed(
         self, orm_draft_product, orm_other_team, client_with_token
