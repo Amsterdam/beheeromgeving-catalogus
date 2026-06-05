@@ -15,9 +15,9 @@ from django.conf import settings
 
 from beheeromgeving.models import (
     DataContract,
-    DataContractWorkingCopy,
+    DataContractRevision,
     Product,
-    ProductWorkingCopy,
+    ProductRevision,
     Team,
 )
 
@@ -792,11 +792,11 @@ class TestViews:
         orm_product.refresh_from_db()
         assert orm_product.publication_status == "X"  # DELETED
 
-    def test_published_product_delete_clears_working_copy(
+    def test_published_product_delete_clears_revision(
         self, orm_product, orm_team, client_with_token
     ):
         create_draft_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "Draft Name"},
         )
         assert create_draft_response.status_code == 200, create_draft_response.data
@@ -804,7 +804,7 @@ class TestViews:
         delete_response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}")
 
         assert delete_response.status_code == 204
-        assert not ProductWorkingCopy.objects.filter(product_id=orm_product.id).exists()
+        assert not ProductRevision.objects.filter(product_id=orm_product.id).exists()
 
     def test_product_delete_unauthorized(self, orm_product, client_with_token):
         response = client_with_token([]).delete(f"/products/{orm_product.id}")
@@ -949,11 +949,11 @@ class TestViews:
         orm_product.refresh_from_db()
         assert orm_product.name != "New Name"
 
-    def test_product_draft_update_for_published_product_keeps_live_product_unchanged(
+    def test_product_revision_update_for_published_product_keeps_live_product_unchanged(
         self, orm_product, orm_team, client_with_token
     ):
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "New Name"},
         )
 
@@ -965,24 +965,24 @@ class TestViews:
         assert live_response.status_code == 200
         assert live_response.data["name"] == "Bomen"
 
-    def test_product_draft_can_be_retrieved_explicitly(
+    def test_product_revision_can_be_retrieved_explicitly(
         self, orm_product, orm_team, client_with_token
     ):
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "New Name"},
         )
 
-        response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}/draft")
+        response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}/revision")
 
         assert response.status_code == 200
         assert response.data["name"] == "New Name"
 
-    def test_product_detail_makes_working_copy_discoverable(
+    def test_product_detail_makes_revision_discoverable(
         self, orm_product, orm_team, client_with_token
     ):
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "New Name"},
         )
 
@@ -990,29 +990,31 @@ class TestViews:
 
         assert response.status_code == 200
         assert response.data["name"] == "Bomen"
-        assert response.data["has_working_copy"] is True
-        assert response.data["draft_url"] == f"http://testserver/products/{orm_product.id}/draft"
+        assert response.data["has_revision"] is True
+        assert response.data["revision_url"] == (
+            f"http://testserver/products/{orm_product.id}/revision"
+        )
 
-    def test_product_draft_detail_fails_for_non_published_product(
+    def test_product_revision_detail_fails_for_non_published_product(
         self, orm_draft_product, orm_team, client_with_token
     ):
         response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_draft_product.id}/draft"
+            f"/products/{orm_draft_product.id}/revision"
         )
 
         assert response.status_code == 400
         assert "only available for externally published products" in response.data
 
-    def test_product_draft_reuses_the_same_pending_copy(
+    def test_product_revision_reuses_the_same_pending_copy(
         self, orm_product, orm_team, client_with_token
     ):
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "New Name"},
         )
 
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"description": "New Description"},
         )
 
@@ -1020,33 +1022,35 @@ class TestViews:
         assert response.data["name"] == "New Name"
         assert response.data["description"] == "New Description"
 
-    def test_product_draft_update_fails_for_non_published_product(
+    def test_product_revision_update_fails_for_non_published_product(
         self, orm_draft_product, orm_team, client_with_token
     ):
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_draft_product.id}/draft",
+            f"/products/{orm_draft_product.id}/revision",
             data={"name": "New Name"},
         )
 
         assert response.status_code == 400
         assert "only available for externally published products" in response.data
 
-    def test_product_draft_update_rejects_access_url(
+    def test_product_revision_update_rejects_access_url(
         self, orm_product, orm_team, client_with_token
     ):
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"access_url": "https://data.amsterdam.nl/report/1"},
         )
 
         assert response.status_code == 400
-        assert "Cannot update access_url through a product working copy." in response.data
+        assert "Cannot update access_url through a product revision." in response.data
 
-    def test_product_draft_update_refresh_period(self, orm_product, orm_team, client_with_token):
+    def test_product_revision_update_refresh_period(
+        self, orm_product, orm_team, client_with_token
+    ):
         data = {"refresh_period": {"unit": "MONTH", "frequency": 2}}
 
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data=data,
         )
 
@@ -1057,7 +1061,7 @@ class TestViews:
         assert live_response.status_code == 200
         assert live_response.data["refresh_period"] == {"unit": "MONTH", "frequency": 3}
 
-    def test_product_draft_update_custom_owner_and_contact_email(
+    def test_product_revision_update_custom_owner_and_contact_email(
         self, orm_product, orm_team, client_with_token
     ):
         data = {
@@ -1066,7 +1070,7 @@ class TestViews:
         }
 
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data=data,
         )
 
@@ -1074,45 +1078,47 @@ class TestViews:
         assert response.data["owner"] == data["owner"]
         assert response.data["contact_email"] == data["contact_email"]
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
 
-        assert draft_response.status_code == 200
-        assert draft_response.data["owner"] == data["owner"]
-        assert draft_response.data["contact_email"] == data["contact_email"]
+        assert revision_response.status_code == 200
+        assert revision_response.data["owner"] == data["owner"]
+        assert revision_response.data["contact_email"] == data["contact_email"]
         assert live_response.status_code == 200
         assert live_response.data["owner"] == orm_team.po_name
         assert live_response.data["contact_email"] == orm_team.contact_email
 
-    def test_product_draft_can_be_discarded(self, orm_product, orm_team, client_with_token):
+    def test_product_revision_can_be_discarded(self, orm_product, orm_team, client_with_token):
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "New Name"},
         )
 
-        response = client_with_token([orm_team.scope]).delete(f"/products/{orm_product.id}/draft")
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/revision"
+        )
 
         assert response.status_code == 204
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
 
-        assert draft_response.status_code == 404
+        assert revision_response.status_code == 404
         assert live_response.status_code == 200
         assert live_response.data["name"] == "Bomen"
 
-    def test_product_draft_can_be_published(self, orm_product, orm_team, client_with_token):
+    def test_product_revision_can_be_published(self, orm_product, orm_team, client_with_token):
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "New Name"},
         )
 
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/draft/publish",
+            f"/products/{orm_product.id}/revision/publish",
             data={},
         )
 
@@ -1120,21 +1126,21 @@ class TestViews:
         assert response.data["id"] == orm_product.id
         assert response.data["name"] == "New Name"
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
 
-        assert draft_response.status_code == 404
+        assert revision_response.status_code == 404
         assert live_response.status_code == 200
         assert live_response.data["id"] == orm_product.id
         assert live_response.data["name"] == "New Name"
 
-    def test_product_draft_publish_rejects_stale_working_copy(
+    def test_product_revision_publish_rejects_stale_revision(
         self, orm_product, orm_team, client_with_token
     ):
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "New Name"},
         )
 
@@ -1142,29 +1148,29 @@ class TestViews:
         orm_product.save()
 
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/draft/publish",
+            f"/products/{orm_product.id}/revision/publish",
             data={},
         )
 
         assert response.status_code == 400
         assert "live product has changed" in response.data
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
 
-        assert draft_response.status_code == 200
-        assert draft_response.data["name"] == "New Name"
+        assert revision_response.status_code == 200
+        assert revision_response.data["name"] == "New Name"
         assert live_response.status_code == 200
         assert live_response.data["name"] == "Bomen"
         assert live_response.data["description"] == "Live change"
 
-    def test_product_draft_discard_fails_for_non_published_product(
+    def test_product_revision_discard_fails_for_non_published_product(
         self, orm_draft_product, orm_team, client_with_token
     ):
         response = client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_draft_product.id}/draft"
+            f"/products/{orm_draft_product.id}/revision"
         )
 
         assert response.status_code == 400
@@ -1212,11 +1218,11 @@ class TestViews:
         assert orm_product.publication_date is not None
         assert response.data["publication_status"] == orm_product.publication_status
 
-    def test_set_state_product_soft_delete_clears_working_copy(
+    def test_set_state_product_soft_delete_clears_revision(
         self, orm_product, orm_team, client_with_token
     ):
         create_draft_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/draft",
+            f"/products/{orm_product.id}/revision",
             data={"name": "Draft Name"},
         )
         assert create_draft_response.status_code == 200, create_draft_response.data
@@ -1227,7 +1233,7 @@ class TestViews:
         )
 
         assert response.status_code == 200, response.data
-        assert not ProductWorkingCopy.objects.filter(product_id=orm_product.id).exists()
+        assert not ProductRevision.objects.filter(product_id=orm_product.id).exists()
 
     def test_set_state_dataproduct_internal_not_possible(
         self, orm_product, orm_team, client_with_token
@@ -1267,7 +1273,7 @@ class TestViews:
             == orm_product.contracts.first().publication_status
         )
 
-    def test_set_state_contract_soft_delete_clears_working_copy(
+    def test_set_state_contract_soft_delete_clears_revision(
         self, orm_product, orm_team, client_with_token
     ):
         published_contract = DataContract.objects.create(
@@ -1278,7 +1284,7 @@ class TestViews:
         )
 
         create_draft_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{published_contract.pk}/draft",
+            f"/products/{orm_product.id}/contracts/{published_contract.pk}/revision",
             data={"name": "Draft contract"},
         )
         assert create_draft_response.status_code == 200, create_draft_response.data
@@ -1289,9 +1295,7 @@ class TestViews:
         )
 
         assert response.status_code == 200, response.data
-        assert not DataContractWorkingCopy.objects.filter(
-            contract_id=published_contract.pk
-        ).exists()
+        assert not DataContractRevision.objects.filter(contract_id=published_contract.pk).exists()
 
     def test_contract_list_shows_only_published_contracts(self, orm_product, api_client):
         response = api_client.get(f"/products/{orm_product.id}/contracts")
@@ -1476,13 +1480,13 @@ class TestViews:
         assert response.status_code == 400
         assert orm_product.contracts.first().name != "New Name"
 
-    def test_contract_draft_update_for_published_contract_keeps_live_contract_unchanged(
+    def test_contract_revision_update_for_published_contract_keeps_live_contract_unchanged(
         self, orm_product, orm_team, client_with_token
     ):
         contract_id = orm_product.contracts.first().id
 
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={"name": "New Name"},
         )
 
@@ -1496,30 +1500,30 @@ class TestViews:
         assert live_response.status_code == 200
         assert live_response.data["name"] == "beheer bomen"
 
-    def test_contract_draft_can_be_retrieved_explicitly(
+    def test_contract_revision_can_be_retrieved_explicitly(
         self, orm_product, orm_team, client_with_token
     ):
         contract_id = orm_product.contracts.first().id
 
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={"name": "New Name"},
         )
 
         response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
 
         assert response.status_code == 200
         assert response.data["name"] == "New Name"
 
-    def test_contract_detail_makes_working_copy_discoverable(
+    def test_contract_detail_makes_revision_discoverable(
         self, orm_product, orm_team, client_with_token
     ):
         contract_id = orm_product.contracts.first().id
 
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={"name": "New Name"},
         )
 
@@ -1529,22 +1533,22 @@ class TestViews:
 
         assert response.status_code == 200
         assert response.data["name"] == "beheer bomen"
-        assert response.data["has_working_copy"] is True
-        assert response.data["draft_url"] == (
-            f"http://testserver/products/{orm_product.id}/contracts/{contract_id}/draft"
+        assert response.data["has_revision"] is True
+        assert response.data["revision_url"] == (
+            f"http://testserver/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
 
-    def test_contract_draft_can_be_published(self, orm_product, orm_team, client_with_token):
+    def test_contract_revision_can_be_published(self, orm_product, orm_team, client_with_token):
         contract = orm_product.contracts.first()
         contract_id = contract.id
 
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={"name": "New Name"},
         )
 
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft/publish",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/publish",
             data={},
         )
 
@@ -1552,26 +1556,26 @@ class TestViews:
         assert response.data["id"] == contract_id
         assert response.data["name"] == "New Name"
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
 
-        assert draft_response.status_code == 404
+        assert revision_response.status_code == 404
         assert live_response.status_code == 200
         assert live_response.data["id"] == contract_id
         assert live_response.data["name"] == "New Name"
 
-    def test_contract_draft_publish_rejects_stale_working_copy(
+    def test_contract_revision_publish_rejects_stale_revision(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
         contract_id = contract.id
 
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={"name": "New Name"},
         )
 
@@ -1579,27 +1583,27 @@ class TestViews:
         contract.save()
 
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft/publish",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/publish",
             data={},
         )
 
         assert response.status_code == 400
         assert "live contract has changed" in response.data
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
 
-        assert draft_response.status_code == 200
-        assert draft_response.data["name"] == "New Name"
+        assert revision_response.status_code == 200
+        assert revision_response.data["name"] == "New Name"
         assert live_response.status_code == 200
         assert live_response.data["name"] == contract.name
         assert live_response.data["purpose"] == "Live change"
 
-    def test_contract_draft_publish_rejects_unpublished_service_reference(
+    def test_contract_revision_publish_rejects_unpublished_service_reference(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
@@ -1607,7 +1611,7 @@ class TestViews:
         live_distributions = list(contract.distributions.order_by("id"))
 
         patch_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={
                 "distributions": [
                     {
@@ -1628,49 +1632,49 @@ class TestViews:
         assert patch_response.status_code == 200, patch_response.data
 
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft/publish",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/publish",
             data={},
         )
 
         assert response.status_code == 400
         assert "published service set" in response.data
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
 
-        assert draft_response.status_code == 200
-        assert draft_response.data["distributions"][0]["access_service_id"] == 999999
+        assert revision_response.status_code == 200
+        assert revision_response.data["distributions"][0]["access_service_id"] == 999999
         assert live_response.status_code == 200
         assert live_response.data["distributions"][0]["access_service_id"] != 999999
 
-    def test_contract_draft_detail_fails_for_non_published_contract(
+    def test_contract_revision_detail_fails_for_non_published_contract(
         self, orm_draft_product, orm_team, client_with_token
     ):
         contract_id = orm_draft_product.contracts.first().id
 
         response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_draft_product.id}/contracts/{contract_id}/draft"
+            f"/products/{orm_draft_product.id}/contracts/{contract_id}/revision"
         )
 
         assert response.status_code == 400
         assert "only available for externally published dataproduct contracts" in response.data
 
-    def test_contract_draft_reuses_the_same_pending_copy(
+    def test_contract_revision_reuses_the_same_pending_copy(
         self, orm_product, orm_team, client_with_token
     ):
         contract_id = orm_product.contracts.first().id
 
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={"name": "New Name"},
         )
 
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={"purpose": "New Purpose"},
         )
 
@@ -1678,7 +1682,7 @@ class TestViews:
         assert response.data["name"] == "New Name"
         assert response.data["purpose"] == "New Purpose"
 
-    def test_contract_draft_can_add_a_new_distribution_without_mutating_live_contract(
+    def test_contract_revision_can_add_a_new_distribution_without_mutating_live_contract(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
@@ -1686,7 +1690,7 @@ class TestViews:
         live_distributions = list(contract.distributions.order_by("id"))
 
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={
                 "distributions": [
                     {
@@ -1728,16 +1732,16 @@ class TestViews:
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
 
         assert live_response.status_code == 200
         assert len(live_response.data["distributions"]) == 2
-        assert draft_response.status_code == 200
-        assert len(draft_response.data["distributions"]) == 3
+        assert revision_response.status_code == 200
+        assert len(revision_response.data["distributions"]) == 3
 
-    def test_contract_draft_can_update_a_draft_only_distribution_by_draft_id(
+    def test_contract_revision_can_update_a_revision_only_distribution_by_revision_id(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
@@ -1745,7 +1749,7 @@ class TestViews:
         live_distributions = list(contract.distributions.order_by("id"))
 
         create_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={
                 "distributions": [
                     {
@@ -1767,14 +1771,14 @@ class TestViews:
                 ]
             },
         )
-        draft_only_distribution = next(
+        revision_only_distribution = next(
             distribution
             for distribution in create_response.data["distributions"]
             if distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
         )
 
         update_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={
                 "distributions": [
                     {
@@ -1789,7 +1793,7 @@ class TestViews:
                         "type": live_distributions[1].type,
                     },
                     {
-                        "id": draft_only_distribution["id"],
+                        "id": revision_only_distribution["id"],
                         "download_url": "https://bomen.amsterdam.nl/draft-updated.geojson",
                         "format": "geojson",
                         "filename": "draft.geojson",
@@ -1800,22 +1804,22 @@ class TestViews:
         )
 
         assert update_response.status_code == 200, update_response.data
-        updated_draft_only_distribution = next(
+        updated_revision_only_distribution = next(
             distribution
             for distribution in update_response.data["distributions"]
-            if distribution["id"] == draft_only_distribution["id"]
+            if distribution["id"] == revision_only_distribution["id"]
         )
-        assert updated_draft_only_distribution["download_url"] == (
+        assert updated_revision_only_distribution["download_url"] == (
             "https://bomen.amsterdam.nl/draft-updated.geojson"
         )
-        assert updated_draft_only_distribution["filename"] == "draft.geojson"
+        assert updated_revision_only_distribution["filename"] == "draft.geojson"
 
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
         assert len(live_response.data["distributions"]) == 2
 
-    def test_contract_draft_can_delete_a_distribution_without_mutating_live_contract(
+    def test_contract_revision_can_delete_a_distribution_without_mutating_live_contract(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
@@ -1823,7 +1827,7 @@ class TestViews:
         live_distributions = list(contract.distributions.order_by("id"))
 
         response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={
                 "distributions": [
                     {
@@ -1840,40 +1844,40 @@ class TestViews:
             live_distributions[0].id
         ]
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
 
-        assert draft_response.status_code == 200
-        assert len(draft_response.data["distributions"]) == 1
+        assert revision_response.status_code == 200
+        assert len(revision_response.data["distributions"]) == 1
         assert live_response.status_code == 200
         assert len(live_response.data["distributions"]) == 2
 
-    def test_contract_draft_can_be_discarded(self, orm_product, orm_team, client_with_token):
+    def test_contract_revision_can_be_discarded(self, orm_product, orm_team, client_with_token):
         contract_id = orm_product.contracts.first().id
 
         client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
             data={"name": "New Name"},
         )
 
         response = client_with_token([orm_team.scope]).delete(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
 
         assert response.status_code == 204
 
-        draft_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/contracts/{contract_id}/draft"
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
         )
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
 
-        assert draft_response.status_code == 404
+        assert revision_response.status_code == 404
         assert live_response.status_code == 200
         assert live_response.data["name"] == "beheer bomen"
 
@@ -1918,7 +1922,7 @@ class TestViews:
         published_contract.refresh_from_db()
         assert published_contract.publication_status == "X"  # DELETED
 
-    def test_published_contract_delete_clears_working_copy(
+    def test_published_contract_delete_clears_revision(
         self, orm_product, orm_team, client_with_token
     ):
         published_contract = DataContract.objects.create(
@@ -1929,7 +1933,7 @@ class TestViews:
         )
 
         create_draft_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{published_contract.pk}/draft",
+            f"/products/{orm_product.id}/contracts/{published_contract.pk}/revision",
             data={"name": "Draft contract"},
         )
         assert create_draft_response.status_code == 200, create_draft_response.data
@@ -1939,9 +1943,7 @@ class TestViews:
         )
 
         assert delete_response.status_code == 204
-        assert not DataContractWorkingCopy.objects.filter(
-            contract_id=published_contract.pk
-        ).exists()
+        assert not DataContractRevision.objects.filter(contract_id=published_contract.pk).exists()
 
     def test_distribution_list(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
@@ -1983,7 +1985,7 @@ class TestViews:
         )
 
         assert response.status_code == 400
-        assert "working copy" in response.data
+        assert "revision" in response.data
 
         contract.refresh_from_db()
         assert contract.distributions.count() == 2
@@ -2054,7 +2056,7 @@ class TestViews:
         )
 
         assert response.status_code == 400
-        assert "working copy" in response.data
+        assert "revision" in response.data
 
         distribution.refresh_from_db()
         assert distribution.format == "csv"
@@ -2072,7 +2074,7 @@ class TestViews:
         )
 
         assert response.status_code == 400
-        assert "working copy" in response.data
+        assert "revision" in response.data
 
         contract.refresh_from_db()
         assert contract.distributions.count() == 2

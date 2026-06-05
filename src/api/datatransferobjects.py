@@ -188,8 +188,8 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
 class DataContract(IdMixin, DataContractCreateOrUpdate):
     """DataContract detail view"""
 
-    has_working_copy: bool = False
-    draft_url: str | None = None
+    has_revision: bool = False
+    revision_url: str | None = None
     publication_status: enums.PublicationStatus
     publication_date: datetime | None = None
     distributions: list[Distribution] | None = None
@@ -285,8 +285,8 @@ class ProductCreate(ModelMixin, BaseModel):
 class ProductDetail(IdMixin, ProductCreate):
     """Product detail view"""
 
-    has_working_copy: bool = False
-    draft_url: str | None = None
+    has_revision: bool = False
+    revision_url: str | None = None
     publication_status: enums.PublicationStatus
     publication_date: datetime | None = None
     missing_fields: list[str] | None = None

@@ -177,7 +177,7 @@ class Product(models.Model):
             ]
         return objects.Product(
             id=self.pk,
-            has_working_copy=hasattr(self, "working_copy"),
+            has_revision=hasattr(self, "revision"),
             type=self.type,
             name=self.name,
             description=self.description,
@@ -236,18 +236,18 @@ class Product(models.Model):
         return instance.to_domain()
 
 
-class ProductWorkingCopy(models.Model):
+class ProductRevision(models.Model):
     team_id: int
 
     product = models.OneToOneField(
         Product,
         on_delete=models.CASCADE,
-        related_name="working_copy",
+        related_name="revision",
     )
     team = models.ForeignKey(
         "Team",
         on_delete=models.CASCADE,
-        related_name="product_working_copies",
+        related_name="product_revisions",
     )
     name = models.CharField(max_length=64, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -355,7 +355,7 @@ class ProductWorkingCopy(models.Model):
     @classmethod
     def from_domain(cls, product: objects.Product):
         if product.id is None:
-            raise ValueError("Product working copy requires a persisted product id.")
+            raise ValueError("Product revision requires a persisted product id.")
 
         live_product = Product.objects.select_related("team").get(pk=product.id)
         instance = cls.objects.filter(product=live_product).first()
@@ -505,7 +505,7 @@ class DataContract(models.Model):
     def to_domain(self):
         return objects.DataContract(
             id=self.pk,
-            has_working_copy=hasattr(self, "working_copy"),
+            has_revision=hasattr(self, "revision"),
             publication_status=self.publication_status,
             publication_date=self.publication_date,
             purpose=self.purpose,
@@ -537,13 +537,13 @@ class DataContract(models.Model):
         return instance.to_domain()
 
 
-class DataContractWorkingCopy(models.Model):
-    distributions: models.Manager[DataContractWorkingCopyDistribution]
+class DataContractRevision(models.Model):
+    distributions: models.Manager[DataContractRevisionDistribution]
 
     contract = models.OneToOneField(
         DataContract,
         on_delete=models.CASCADE,
-        related_name="working_copy",
+        related_name="revision",
     )
     name = models.CharField(max_length=64, blank=True, null=True)
     purpose = models.TextField(blank=True, null=True)
@@ -620,7 +620,7 @@ class DataContractWorkingCopy(models.Model):
     @classmethod
     def from_domain(cls, contract: objects.DataContract, product_id: int):
         if contract.id is None:
-            raise ValueError("Contract working copy requires a persisted contract id.")
+            raise ValueError("Contract revision requires a persisted contract id.")
 
         live_contract = DataContract.objects.select_related("product").get(
             pk=contract.id,
@@ -648,29 +648,29 @@ class DataContractWorkingCopy(models.Model):
         }
         draft_distribution_ids = set()
         for distribution in contract.distributions or []:
-            draft_distribution = DataContractWorkingCopyDistribution.from_domain(
+            revision_distribution = DataContractRevisionDistribution.from_domain(
                 distribution=distribution,
-                working_copy=instance,
+                revision=instance,
                 live_distribution=live_distributions_by_id.get(distribution.id),
             )
-            draft_distribution_ids.add(draft_distribution.pk)
+            draft_distribution_ids.add(revision_distribution.pk)
 
         instance.distributions.exclude(pk__in=draft_distribution_ids).delete()
         return instance.to_domain()
 
 
-class DataContractWorkingCopyDistribution(models.Model):
+class DataContractRevisionDistribution(models.Model):
     live_distribution_id: int | None
 
-    working_copy = models.ForeignKey(
-        DataContractWorkingCopy,
+    revision = models.ForeignKey(
+        DataContractRevision,
         on_delete=models.CASCADE,
         related_name="distributions",
     )
     live_distribution = models.OneToOneField(
         "Distribution",
         on_delete=models.SET_NULL,
-        related_name="draft_copy",
+        related_name="revision_copy",
         null=True,
         blank=True,
     )
@@ -748,24 +748,24 @@ class DataContractWorkingCopyDistribution(models.Model):
         cls,
         *,
         distribution: objects.Distribution,
-        working_copy: DataContractWorkingCopy,
+        revision: DataContractRevision,
         live_distribution: Distribution | None,
     ):
         instance = None
         if live_distribution is not None:
             instance = cls.objects.filter(
-                working_copy=working_copy,
+                revision=revision,
                 live_distribution=live_distribution,
             ).first()
         elif distribution.id is not None and distribution.id < 0:
             instance = cls.objects.filter(
-                working_copy=working_copy,
+                revision=revision,
                 pk=abs(distribution.id),
                 live_distribution__isnull=True,
             ).first()
 
         if instance is None:
-            instance = cls(working_copy=working_copy, live_distribution=live_distribution)
+            instance = cls(revision=revision, live_distribution=live_distribution)
 
         instance.access_service_id = distribution.access_service_id
         instance.access_url = distribution.access_url

@@ -149,8 +149,8 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         # Raises if data is invalid
         return dto_type(**data)
 
-    def _attach_draft_metadata(self, *, request, data: dict, path: str):
-        data["draft_url"] = request.build_absolute_uri(path) if data["has_working_copy"] else None
+    def _attach_revision_metadata(self, *, request, data: dict, path: str):
+        data["revision_url"] = request.build_absolute_uri(path) if data["has_revision"] else None
         return data
 
     @extend_schema(
@@ -227,18 +227,18 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(
         responses={200: dtos.ProductDetail},
-        description="Returns the live product state. If a working copy exists, the response "
-        "includes draft discoverability metadata so clients can navigate to the explicit "
-        "draft endpoint intentionally.",
+        description="Returns the live product state. If a revision exists, the response "
+        "includes revision discoverability metadata so clients can navigate to the explicit "
+        "revision endpoint intentionally.",
     )
     def retrieve(self, request, pk: str):
         product = product_service.get_product(product_id=int(pk), scopes=request.get_token_scopes)
         data = dtos.to_response_object(product)
         return Response(
-            self._attach_draft_metadata(
+            self._attach_revision_metadata(
                 request=request,
                 data=data,
-                path=f"/products/{pk}/draft",
+                path=f"/products/{pk}/revision",
             ),
             status=200,
         )
@@ -268,23 +268,23 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(
         responses={200: dtos.ProductDetail},
-        description="Returns the explicit product working copy. Live reads continue to use the "
+        description="Returns the explicit product revision. Live reads continue to use the "
         "regular product detail endpoint.",
     )
-    @action(detail=True, methods=["get"], url_path="draft", url_name="draft-detail")
-    def draft_detail(self, request, pk: str):
-        product = product_service.get_product_draft(
+    @action(detail=True, methods=["get"], url_path="revision", url_name="revision-detail")
+    def revision_detail(self, request, pk: str):
+        product = product_service.get_product_revision(
             product_id=int(pk),
             scopes=request.get_token_scopes,
         )
         return Response(dtos.to_response_object(product), status=200)
 
     @extend_schema(request=dtos.ProductUpdate, responses={200: dtos.ProductDetail})
-    @draft_detail.mapping.patch
-    def update_draft(self, request, pk: str):
+    @revision_detail.mapping.patch
+    def update_revision(self, request, pk: str):
         product_dto = self._validate_dto(request.data, dto_type=dtos.ProductUpdate)
         last_editor = self._get_last_editor(request)
-        product = product_service.update_product_draft(
+        product = product_service.update_product_revision(
             product_id=int(pk),
             data=product_dto.model_dump(exclude_unset=True, exclude={"contracts", "services"}),
             scopes=request.get_token_scopes,
@@ -292,18 +292,23 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(dtos.to_response_object(product), status=200)
 
-    @draft_detail.mapping.delete
-    def delete_draft(self, request, pk: str):
-        product_service.discard_product_draft(
+    @revision_detail.mapping.delete
+    def delete_revision(self, request, pk: str):
+        product_service.discard_product_revision(
             product_id=int(pk),
             scopes=request.get_token_scopes,
         )
         return Response(status=204)
 
     @extend_schema(responses={200: dtos.ProductDetail})
-    @action(detail=True, methods=["post"], url_path="draft/publish", url_name="draft-publish")
-    def publish_draft(self, request, pk: str):
-        product = product_service.publish_product_draft(
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="revision/publish",
+        url_name="revision-publish",
+    )
+    def publish_revision(self, request, pk: str):
+        product = product_service.publish_product_revision(
             product_id=int(pk),
             scopes=request.get_token_scopes,
         )
@@ -370,9 +375,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(
         responses={200: dtos.DataContract},
-        description="Returns the live contract state. If a working copy exists, the response "
-        "includes draft discoverability metadata so clients can navigate to the explicit "
-        "draft endpoint intentionally.",
+        description="Returns the live contract state. If a revision exists, the response "
+        "includes revision discoverability metadata so clients can navigate to the explicit "
+        "revision endpoint intentionally.",
     )
     @action(
         detail=True,
@@ -388,10 +393,10 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         data = dtos.to_response_object(contract)
         return Response(
-            self._attach_draft_metadata(
+            self._attach_revision_metadata(
                 request=request,
                 data=data,
-                path=f"/products/{pk}/contracts/{contract_id}/draft",
+                path=f"/products/{pk}/contracts/{contract_id}/revision",
             ),
             status=200,
         )
@@ -413,17 +418,17 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
     @extend_schema(
         responses={200: dtos.DataContract},
-        description="Returns the explicit contract working copy. Live reads continue to use the "
+        description="Returns the explicit contract revision. Live reads continue to use the "
         "regular contract detail endpoint.",
     )
     @action(
         detail=True,
         methods=["get"],
-        url_path="contracts/(?P<contract_id>[^/.]+)/draft",
-        url_name="contract-draft-detail",
+        url_path="contracts/(?P<contract_id>[^/.]+)/revision",
+        url_name="contract-revision-detail",
     )
-    def contract_draft_detail(self, request, pk: str, contract_id: str):
-        contract = product_service.get_contract_draft(
+    def contract_revision_detail(self, request, pk: str, contract_id: str):
+        contract = product_service.get_contract_revision(
             product_id=int(pk),
             contract_id=int(contract_id),
             scopes=request.get_token_scopes,
@@ -432,11 +437,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         return Response(data, status=200)
 
     @extend_schema(request=dtos.DataContractCreateOrUpdate, responses={200: dtos.DataContract})
-    @contract_draft_detail.mapping.patch
-    def update_contract_draft(self, request, pk: str, contract_id: str):
+    @contract_revision_detail.mapping.patch
+    def update_contract_revision(self, request, pk: str, contract_id: str):
         contract_dto = self._validate_dto(request.data, dtos.DataContractCreateOrUpdate)
         last_editor = self._get_last_editor(request)
-        contract = product_service.update_contract_draft(
+        contract = product_service.update_contract_revision(
             product_id=int(pk),
             contract_id=int(contract_id),
             data=contract_dto.model_dump(exclude_unset=True),
@@ -446,9 +451,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
-    @contract_draft_detail.mapping.delete
-    def delete_contract_draft(self, request, pk: str, contract_id: str):
-        product_service.discard_contract_draft(
+    @contract_revision_detail.mapping.delete
+    def delete_contract_revision(self, request, pk: str, contract_id: str):
+        product_service.discard_contract_revision(
             product_id=int(pk),
             contract_id=int(contract_id),
             scopes=request.get_token_scopes,
@@ -459,11 +464,11 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @action(
         detail=True,
         methods=["post"],
-        url_path="contracts/(?P<contract_id>[^/.]+)/draft/publish",
-        url_name="contract-draft-publish",
+        url_path="contracts/(?P<contract_id>[^/.]+)/revision/publish",
+        url_name="contract-revision-publish",
     )
-    def publish_contract_draft(self, request, pk: str, contract_id: str):
-        contract = product_service.publish_contract_draft(
+    def publish_contract_revision(self, request, pk: str, contract_id: str):
+        contract = product_service.publish_contract_revision(
             product_id=int(pk),
             contract_id=int(contract_id),
             scopes=request.get_token_scopes,

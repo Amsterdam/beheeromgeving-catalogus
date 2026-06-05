@@ -294,39 +294,39 @@ class TestProductService:
 
         assert result.description == "a fancy product"
 
-    def test_update_published_product_through_working_copy(
+    def test_update_published_product_through_revision(
         self, product_service: ProductService, published_product: Product, team: Team
     ):
         assert published_product.id
 
-        result = product_service.update_product_draft(
+        result = product_service.update_product_revision(
             product_id=published_product.id,
             data={"description": "a fancy product"},
             scopes=[team.scope],
         )
 
-        draft = product_service.get_product_draft(
+        revision = product_service.get_product_revision(
             product_id=published_product.id,
             scopes=[team.scope],
         )
         live = product_service.get_product(published_product.id, scopes=[team.scope])
 
         assert result.description == "a fancy product"
-        assert draft.description == "a fancy product"
+        assert revision.description == "a fancy product"
         assert live.description == "bomen in Amsterdam"
 
-    def test_discard_published_product_working_copy(
+    def test_discard_published_product_revision(
         self, product_service: ProductService, published_product: Product, team: Team
     ):
         assert published_product.id
 
-        product_service.update_product_draft(
+        product_service.update_product_revision(
             product_id=published_product.id,
             data={"description": "a fancy product"},
             scopes=[team.scope],
         )
 
-        result = product_service.discard_product_draft(
+        result = product_service.discard_product_revision(
             product_id=published_product.id,
             scopes=[team.scope],
         )
@@ -334,7 +334,7 @@ class TestProductService:
         assert result == published_product.id
 
         with pytest.raises(ObjectDoesNotExist):
-            product_service.get_product_draft(
+            product_service.get_product_revision(
                 product_id=published_product.id,
                 scopes=[team.scope],
             )
@@ -342,11 +342,11 @@ class TestProductService:
         live = product_service.get_product(published_product.id, scopes=[team.scope])
         assert live.description == "bomen in Amsterdam"
 
-    def test_publish_product_draft_fails_for_non_published_product(
+    def test_publish_product_revision_fails_for_non_published_product(
         self, product_service: ProductService, product: Product, team: Team
     ):
         with pytest.raises(IllegalOperation, match="externally published products"):
-            product_service.publish_product_draft(
+            product_service.publish_product_revision(
                 product_id=product.id,
                 scopes=[team.scope],
             )
@@ -535,7 +535,7 @@ class TestProductService:
         result = product_service.get_contract(published_product.id, published_contract.id)
         assert result == published_contract
 
-    def test_update_published_contract_through_working_copy(
+    def test_update_published_contract_through_revision(
         self, product_service: ProductService, published_product: Product, team: Team
     ):
         assert published_product.id
@@ -546,14 +546,14 @@ class TestProductService:
         )
         assert published_contract.id
 
-        result = product_service.update_contract_draft(
+        result = product_service.update_contract_revision(
             product_id=published_product.id,
             contract_id=published_contract.id,
             data={"purpose": "nieuw doel"},
             scopes=[team.scope],
         )
 
-        draft = product_service.get_contract_draft(
+        revision = product_service.get_contract_revision(
             product_id=published_product.id,
             contract_id=published_contract.id,
             scopes=[team.scope],
@@ -565,10 +565,10 @@ class TestProductService:
         )
 
         assert result.purpose == "nieuw doel"
-        assert draft.purpose == "nieuw doel"
+        assert revision.purpose == "nieuw doel"
         assert live.purpose == "onderhoud van bomen"
 
-    def test_discard_published_contract_working_copy(
+    def test_discard_published_contract_revision(
         self, product_service: ProductService, published_product: Product, team: Team
     ):
         assert published_product.id
@@ -579,14 +579,14 @@ class TestProductService:
         )
         assert published_contract.id
 
-        product_service.update_contract_draft(
+        product_service.update_contract_revision(
             product_id=published_product.id,
             contract_id=published_contract.id,
             data={"purpose": "nieuw doel"},
             scopes=[team.scope],
         )
 
-        result = product_service.discard_contract_draft(
+        result = product_service.discard_contract_revision(
             product_id=published_product.id,
             contract_id=published_contract.id,
             scopes=[team.scope],
@@ -595,7 +595,7 @@ class TestProductService:
         assert result == published_contract.id
 
         with pytest.raises(ObjectDoesNotExist):
-            product_service.get_contract_draft(
+            product_service.get_contract_revision(
                 product_id=published_product.id,
                 contract_id=published_contract.id,
                 scopes=[team.scope],
@@ -608,7 +608,7 @@ class TestProductService:
         )
         assert live.purpose == "onderhoud van bomen"
 
-    def test_publish_contract_working_copy_rejects_unpublished_service_reference(
+    def test_publish_contract_revision_rejects_unpublished_service_reference(
         self, product_service: ProductService, published_product: Product, team: Team
     ):
         assert published_product.id
@@ -620,7 +620,7 @@ class TestProductService:
         assert published_contract.id
         live_distributions = published_contract.distributions
 
-        product_service.update_contract_draft(
+        product_service.update_contract_revision(
             product_id=published_product.id,
             contract_id=published_contract.id,
             data={
@@ -636,7 +636,7 @@ class TestProductService:
         )
 
         with pytest.raises(ValidationError, match="published service set"):
-            product_service.publish_contract_draft(
+            product_service.publish_contract_revision(
                 product_id=published_product.id,
                 contract_id=published_contract.id,
                 scopes=[team.scope],

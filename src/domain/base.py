@@ -70,28 +70,28 @@ class AbstractRepository[T](abc.ABC):
     def save(self, item: T) -> T:
         raise NotImplementedError
 
-    def get_draft(self, id: int) -> T:
+    def get_revision(self, id: int) -> T:
         raise NotImplementedError
 
-    def save_draft(self, item: T) -> T:
+    def save_revision(self, item: T) -> T:
         raise NotImplementedError
 
-    def publish_draft(self, id: int) -> T:
+    def publish_revision(self, id: int) -> T:
         raise NotImplementedError
 
-    def delete_draft(self, id: int) -> int:
+    def delete_revision(self, id: int) -> int:
         raise NotImplementedError
 
-    def get_contract_draft(self, *, product_id: int, contract_id: int) -> Any:
+    def get_contract_revision(self, *, product_id: int, contract_id: int) -> Any:
         raise NotImplementedError
 
-    def save_contract_draft(self, *, product_id: int, contract: Any) -> Any:
+    def save_contract_revision(self, *, product_id: int, contract: Any) -> Any:
         raise NotImplementedError
 
-    def publish_contract_draft(self, *, product_id: int, contract_id: int) -> Any:
+    def publish_contract_revision(self, *, product_id: int, contract_id: int) -> Any:
         raise NotImplementedError
 
-    def delete_contract_draft(self, *, product_id: int, contract_id: int) -> int:
+    def delete_contract_revision(self, *, product_id: int, contract_id: int) -> int:
         raise NotImplementedError
 
     @abc.abstractmethod

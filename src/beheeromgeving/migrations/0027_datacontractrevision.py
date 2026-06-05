@@ -7,12 +7,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("beheeromgeving", "0026_productworkingcopy"),
+        ("beheeromgeving", "0026_productrevision"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name="DataContractWorkingCopy",
+            name="DataContractRevision",
             fields=[
                 (
                     "id",
@@ -78,7 +78,7 @@ class Migration(migrations.Migration):
                     "contract",
                     models.OneToOneField(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="working_copy",
+                        related_name="revision",
                         to="beheeromgeving.datacontract",
                     ),
                 ),

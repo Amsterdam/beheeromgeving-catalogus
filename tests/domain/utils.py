@@ -146,25 +146,25 @@ class DummyRepository(AbstractRepository):
         self.auth_repo.add_object(item)  # ty:ignore[unresolved-attribute]
         return item
 
-    def get_draft(self, id):
+    def get_revision(self, id):
         try:
             return copy.deepcopy(self._drafts[id])
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object draft with id {id} does not exist") from e
 
-    def save_draft(self, item: DummyRepoItem):
+    def save_revision(self, item: DummyRepoItem):
         self._add_ids(item)
         self._drafts[item.id] = copy.deepcopy(item)
         return copy.deepcopy(item)
 
-    def delete_draft(self, id):
+    def delete_revision(self, id):
         try:
             self._drafts.pop(id)
         except KeyError as e:
             raise exceptions.ObjectDoesNotExist(f"Object draft with id {id} does not exist") from e
         return id
 
-    def get_contract_draft(self, *, product_id, contract_id):
+    def get_contract_revision(self, *, product_id, contract_id):
         try:
             return copy.deepcopy(self._contract_drafts[(product_id, contract_id)])
         except KeyError as e:
@@ -172,12 +172,12 @@ class DummyRepository(AbstractRepository):
                 f"Object draft with id {contract_id} does not exist"
             ) from e
 
-    def save_contract_draft(self, *, product_id, contract):
+    def save_contract_revision(self, *, product_id, contract):
         self._add_ids(contract)
         self._contract_drafts[(product_id, contract.id)] = copy.deepcopy(contract)
         return copy.deepcopy(contract)
 
-    def delete_contract_draft(self, *, product_id, contract_id):
+    def delete_contract_revision(self, *, product_id, contract_id):
         try:
             self._contract_drafts.pop((product_id, contract_id))
         except KeyError as e:
