@@ -334,6 +334,27 @@ class ProductService(AbstractService):
             )
         return contract
 
+    def _get_product_for_contract_live_mutation(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> Product:
+        product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
+        contract = product.get_contract(contract_id)
+        if (
+            product.type == enums.ProductType.DATAPRODUCT
+            and product.publication_status == enums.PublicationStatus.PUBLISHED
+            and contract.publication_status == enums.PublicationStatus.PUBLISHED
+        ):
+            raise exceptions.IllegalOperation(
+                "Published dataproduct contracts must be edited through the contract "
+                "working copy flow."
+            )
+        return product
+
     def _validate_contract_draft_service_references(
         self,
         *,
@@ -480,7 +501,11 @@ class ProductService(AbstractService):
     def update_contract(
         self, product_id: int, contract_id: int, data: dict, **kwargs
     ) -> DataContract:
-        product = self.get_product(product_id=product_id, **kwargs)
+        product = self._get_product_for_contract_live_mutation(
+            product_id=product_id,
+            contract_id=contract_id,
+            **kwargs,
+        )
         if kwargs.get("last_editor"):
             data["last_editor"] = kwargs["last_editor"]
         contract = product.update_contract(contract_id, data)
@@ -542,7 +567,11 @@ class ProductService(AbstractService):
     def create_distribution(
         self, *, product_id: int, contract_id: int, data: dict, **kwargs
     ) -> Distribution:
-        product = self.get_product(product_id=product_id, **kwargs)
+        product = self._get_product_for_contract_live_mutation(
+            product_id=product_id,
+            contract_id=contract_id,
+            **kwargs,
+        )
         refresh_period = data.pop("refresh_period", None)
         distribution = Distribution(
             **data,
@@ -558,7 +587,11 @@ class ProductService(AbstractService):
     def update_distribution(
         self, *, product_id: int, contract_id: int, distribution_id: int, data: dict, **kwargs
     ) -> Distribution:
-        product = self.repository.get(product_id)
+        product = self._get_product_for_contract_live_mutation(
+            product_id=product_id,
+            contract_id=contract_id,
+            **kwargs,
+        )
         distribution = product.update_distribution(contract_id, distribution_id, data)
         self._persist(product)
         return distribution
@@ -568,7 +601,11 @@ class ProductService(AbstractService):
     def delete_distribution(
         self, product_id: int, contract_id: int, distribution_id: int, **kwargs
     ) -> int:
-        product = self.repository.get(product_id)
+        product = self._get_product_for_contract_live_mutation(
+            product_id=product_id,
+            contract_id=contract_id,
+            **kwargs,
+        )
         product.delete_distribution(contract_id, distribution_id)
         self._persist(product)
         return distribution_id
