@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="ProductWorkingCopy",
+            name="ProductRevision",
             fields=[
                 (
                     "id",
@@ -118,7 +118,7 @@ class Migration(migrations.Migration):
                     "product",
                     models.OneToOneField(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="working_copy",
+                        related_name="revision",
                         to="beheeromgeving.product",
                     ),
                 ),
@@ -126,7 +126,7 @@ class Migration(migrations.Migration):
                     "team",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="product_working_copies",
+                        related_name="product_revisions",
                         to="beheeromgeving.team",
                     ),
                 ),

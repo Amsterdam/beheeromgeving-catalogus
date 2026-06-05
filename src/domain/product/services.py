@@ -221,17 +221,17 @@ class ProductService(AbstractService):
 
     @authorize.is_admin
     @authorize.is_team_member
-    def get_product_draft(self, *, product_id: int, **kwargs) -> Product:
+    def get_product_revision(self, *, product_id: int, **kwargs) -> Product:
         product = self.repository.get(product_id)
         if product.publication_status != enums.PublicationStatus.PUBLISHED:
             raise exceptions.IllegalOperation(
                 "Product working copies are only available for externally published products."
             )
-        return self.repository.get_draft(product_id)
+        return self.repository.get_revision(product_id)
 
     @authorize.is_admin
     @authorize.is_team_member
-    def update_product_draft(self, *, product_id: int, data: dict, **kwargs) -> Product:
+    def update_product_revision(self, *, product_id: int, data: dict, **kwargs) -> Product:
         live_product = self.repository.get(product_id)
         if live_product.publication_status != enums.PublicationStatus.PUBLISHED:
             raise exceptions.IllegalOperation(
@@ -239,7 +239,7 @@ class ProductService(AbstractService):
             )
         if "access_url" in data:
             raise exceptions.IllegalOperation(
-                "Cannot update access_url through a product working copy."
+                "Cannot update access_url through a product revision."
             )
         if data.get("refresh_period"):
             data["refresh_period"] = RefreshPeriod.from_dict(data["refresh_period"])
@@ -247,47 +247,47 @@ class ProductService(AbstractService):
             data["last_editor"] = kwargs["last_editor"]
 
         try:
-            draft_product = self.repository.get_draft(product_id)
+            revision_product = self.repository.get_revision(product_id)
         except exceptions.ObjectDoesNotExist:
-            draft_product = copy.deepcopy(live_product)
+            revision_product = copy.deepcopy(live_product)
 
         live_status = live_product.publication_status
         live_publication_date = live_product.publication_date
-        draft_product.publication_status = enums.PublicationStatus.DRAFT
-        draft_product.update(data)
-        draft_product.publication_status = live_status
-        draft_product.publication_date = live_publication_date
-        return self.repository.save_draft(draft_product)
+        revision_product.publication_status = enums.PublicationStatus.DRAFT
+        revision_product.update(data)
+        revision_product.publication_status = live_status
+        revision_product.publication_date = live_publication_date
+        return self.repository.save_revision(revision_product)
 
     @authorize.is_admin
     @authorize.is_team_member
-    def discard_product_draft(self, *, product_id: int, **kwargs) -> int:
+    def discard_product_revision(self, *, product_id: int, **kwargs) -> int:
         product = self.repository.get(product_id)
         if product.publication_status != enums.PublicationStatus.PUBLISHED:
             raise exceptions.IllegalOperation(
                 "Product working copies are only available for externally published products."
             )
-        return self.repository.delete_draft(product_id)
+        return self.repository.delete_revision(product_id)
 
     @authorize.is_admin
     @authorize.is_team_member
-    def publish_product_draft(self, *, product_id: int, **kwargs) -> Product:
+    def publish_product_revision(self, *, product_id: int, **kwargs) -> Product:
         product = self.repository.get(product_id)
         if product.publication_status != enums.PublicationStatus.PUBLISHED:
             raise exceptions.IllegalOperation(
                 "Product working copies are only available for externally published products."
             )
-        return self.repository.publish_draft(product_id)
+        return self.repository.publish_revision(product_id)
 
-    def _delete_product_draft_if_exists(self, *, product_id: int) -> None:
+    def _delete_product_revision_if_exists(self, *, product_id: int) -> None:
         try:
-            self.repository.delete_draft(product_id)
+            self.repository.delete_revision(product_id)
         except exceptions.ObjectDoesNotExist:
             pass
 
-    def _delete_contract_draft_if_exists(self, *, product_id: int, contract_id: int) -> None:
+    def _delete_contract_revision_if_exists(self, *, product_id: int, contract_id: int) -> None:
         try:
-            self.repository.delete_contract_draft(
+            self.repository.delete_contract_revision(
                 product_id=product_id,
                 contract_id=contract_id,
             )
@@ -309,9 +309,9 @@ class ProductService(AbstractService):
                 if contract.id:
                     product.delete_contract(contract.id)
             self._persist(product)
-            self._delete_product_draft_if_exists(product_id=product_id)
+            self._delete_product_revision_if_exists(product_id=product_id)
             for contract_id in published_contract_ids:
-                self._delete_contract_draft_if_exists(
+                self._delete_contract_revision_if_exists(
                     product_id=product_id,
                     contract_id=contract_id,
                 )
@@ -339,7 +339,7 @@ class ProductService(AbstractService):
         product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
         return product.get_contract(contract_id)
 
-    def _get_contract_for_working_copy(
+    def _get_contract_for_revision(
         self,
         *,
         product_id: int,
@@ -355,7 +355,7 @@ class ProductService(AbstractService):
             or contract.publication_status != enums.PublicationStatus.PUBLISHED
         ):
             raise exceptions.IllegalOperation(
-                "Contract working copies are only available for externally published "
+                "Contract revisions are only available for externally published "
                 "dataproduct contracts."
             )
         return contract
@@ -377,11 +377,11 @@ class ProductService(AbstractService):
         ):
             raise exceptions.IllegalOperation(
                 "Published dataproduct contracts must be edited through the contract "
-                "working copy flow."
+                "revision flow."
             )
         return product
 
-    def _validate_contract_draft_service_references(
+    def _validate_contract_revision_service_references(
         self,
         *,
         product: Product,
@@ -400,13 +400,13 @@ class ProductService(AbstractService):
         )
         if invalid_service_ids:
             raise exceptions.ValidationError(
-                "Cannot publish contract working copy because distributions must "
+                "Cannot publish contract revision because distributions must "
                 "reference the published service set."
             )
 
     @authorize.is_admin
     @authorize.is_team_member
-    def get_contract_draft(
+    def get_contract_revision(
         self,
         *,
         product_id: int,
@@ -414,17 +414,20 @@ class ProductService(AbstractService):
         scopes: list[Scope] | None = None,
         **kwargs,
     ) -> DataContract:
-        self._get_contract_for_working_copy(
+        self._get_contract_for_revision(
             product_id=product_id,
             contract_id=contract_id,
             scopes=scopes,
             **kwargs,
         )
-        return self.repository.get_contract_draft(product_id=product_id, contract_id=contract_id)
+        return self.repository.get_contract_revision(
+            product_id=product_id,
+            contract_id=contract_id,
+        )
 
     @authorize.is_admin
     @authorize.is_team_member
-    def update_contract_draft(
+    def update_contract_revision(
         self,
         *,
         product_id: int,
@@ -433,7 +436,7 @@ class ProductService(AbstractService):
         scopes: list[Scope] | None = None,
         **kwargs,
     ) -> DataContract:
-        live_contract = self._get_contract_for_working_copy(
+        live_contract = self._get_contract_for_revision(
             product_id=product_id,
             contract_id=contract_id,
             scopes=scopes,
@@ -443,25 +446,28 @@ class ProductService(AbstractService):
             data["last_editor"] = kwargs["last_editor"]
 
         try:
-            draft_contract = self.repository.get_contract_draft(
+            revision_contract = self.repository.get_contract_revision(
                 product_id=product_id,
                 contract_id=contract_id,
             )
         except exceptions.ObjectDoesNotExist:
-            draft_contract = copy.deepcopy(live_contract)
+            revision_contract = copy.deepcopy(live_contract)
 
         data = self._normalize_contract_draft_data(data)
         live_status = live_contract.publication_status
         live_publication_date = live_contract.publication_date
-        draft_contract.publication_status = enums.PublicationStatus.DRAFT
-        draft_contract.update_from_dict(data)
-        draft_contract.publication_status = live_status
-        draft_contract.publication_date = live_publication_date
-        return self.repository.save_contract_draft(product_id=product_id, contract=draft_contract)
+        revision_contract.publication_status = enums.PublicationStatus.DRAFT
+        revision_contract.update_from_dict(data)
+        revision_contract.publication_status = live_status
+        revision_contract.publication_date = live_publication_date
+        return self.repository.save_contract_revision(
+            product_id=product_id,
+            contract=revision_contract,
+        )
 
     @authorize.is_admin
     @authorize.is_team_member
-    def discard_contract_draft(
+    def discard_contract_revision(
         self,
         *,
         product_id: int,
@@ -469,19 +475,19 @@ class ProductService(AbstractService):
         scopes: list[Scope] | None = None,
         **kwargs,
     ) -> int:
-        self._get_contract_for_working_copy(
+        self._get_contract_for_revision(
             product_id=product_id,
             contract_id=contract_id,
             scopes=scopes,
             **kwargs,
         )
-        return self.repository.delete_contract_draft(
+        return self.repository.delete_contract_revision(
             product_id=product_id, contract_id=contract_id
         )
 
     @authorize.is_admin
     @authorize.is_team_member
-    def publish_contract_draft(
+    def publish_contract_revision(
         self,
         *,
         product_id: int,
@@ -489,22 +495,22 @@ class ProductService(AbstractService):
         scopes: list[Scope] | None = None,
         **kwargs,
     ) -> DataContract:
-        self._get_contract_for_working_copy(
+        self._get_contract_for_revision(
             product_id=product_id,
             contract_id=contract_id,
             scopes=scopes,
             **kwargs,
         )
         product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
-        draft_contract = self.repository.get_contract_draft(
+        revision_contract = self.repository.get_contract_revision(
             product_id=product_id,
             contract_id=contract_id,
         )
-        self._validate_contract_draft_service_references(
+        self._validate_contract_revision_service_references(
             product=product,
-            contract=draft_contract,
+            contract=revision_contract,
         )
-        return self.repository.publish_contract_draft(
+        return self.repository.publish_contract_revision(
             product_id=product_id,
             contract_id=contract_id,
         )
@@ -547,7 +553,7 @@ class ProductService(AbstractService):
         updated_contract = product.update_contract_state(contract_id, data)
         self._persist(product)
         if updated_contract.publication_status == enums.PublicationStatus.DELETED:
-            self._delete_contract_draft_if_exists(
+            self._delete_contract_revision_if_exists(
                 product_id=product_id,
                 contract_id=contract_id,
             )
@@ -561,7 +567,7 @@ class ProductService(AbstractService):
         product.delete_contract(contract_id)
         self._persist(product)
         if contract.publication_date is not None:
-            self._delete_contract_draft_if_exists(
+            self._delete_contract_revision_if_exists(
                 product_id=product_id,
                 contract_id=contract_id,
             )
@@ -573,7 +579,7 @@ class ProductService(AbstractService):
         existing_product.update_state(data)
         updated_product = self._persist(existing_product)
         if updated_product.publication_status == enums.PublicationStatus.DELETED:
-            self._delete_product_draft_if_exists(product_id=product_id)
+            self._delete_product_revision_if_exists(product_id=product_id)
         return updated_product
 
     def get_distributions(

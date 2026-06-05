@@ -92,7 +92,7 @@ class ContractValidator:
 @dataclass(kw_only=True)
 class DataContract(BaseObject):
     id: int | None = None
-    has_working_copy: bool = False
+    has_revision: bool = False
     publication_status: enums.PublicationStatus | None = None
     publication_date: datetime | None = None
     purpose: str | None = None
@@ -108,7 +108,7 @@ class DataContract(BaseObject):
     tables: list[str] | None = None
     schema_url: str | None = None
 
-    _skip_keys = {"contact_email", "distributions", "schema_url", "has_working_copy"}
+    _skip_keys = {"contact_email", "distributions", "schema_url", "has_revision"}
 
     def __post_init__(self):
         self.validate = ContractValidator(self)
@@ -258,7 +258,7 @@ class ProductValidator:
 @dataclass(kw_only=True)
 class Product(BaseObject):
     id: int | None = None
-    has_working_copy: bool = False
+    has_revision: bool = False
     name: str | None = None
     description: str | None = None
     other_identifier: str | None = None
@@ -285,7 +285,7 @@ class Product(BaseObject):
 
     _skip_keys = {
         "contracts",
-        "has_working_copy",
+        "has_revision",
         "team",
         "owner",
         "refresh_period",

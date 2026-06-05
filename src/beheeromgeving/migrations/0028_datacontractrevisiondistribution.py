@@ -7,17 +7,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("beheeromgeving", "0027_datacontractworkingcopy"),
+        ("beheeromgeving", "0027_datacontractrevision"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="datacontractworkingcopy",
+            model_name="datacontractrevision",
             name="has_distribution_draft",
             field=models.BooleanField(default=False),
         ),
         migrations.CreateModel(
-            name="DataContractWorkingCopyDistribution",
+            name="DataContractRevisionDistribution",
             fields=[
                 (
                     "id",
@@ -117,16 +117,16 @@ class Migration(migrations.Migration):
                         blank=True,
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="draft_copy",
+                        related_name="revision_copy",
                         to="beheeromgeving.distribution",
                     ),
                 ),
                 (
-                    "working_copy",
+                    "revision",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="distributions",
-                        to="beheeromgeving.datacontractworkingcopy",
+                        to="beheeromgeving.datacontractrevision",
                     ),
                 ),
             ],
