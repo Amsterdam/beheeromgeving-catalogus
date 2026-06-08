@@ -2,6 +2,9 @@
 
 ## Changelog
 
+2026-06-08: Added Product Aggregate update about revision-based editing for externally published
+resources.
+
 2026-05-11: Added update about auth refactor with more specific methods.
 
 2026-04-30: Added section on authorization policies.
@@ -104,6 +107,24 @@ The main entity users will encounter is the Product, which can be either a DataP
 InformationProduct. Each Product can have multiple Contracts, each containing one or more
 distributions. The ProductService is the one entrypoint for interacting with the Product and
 its underlying elements, the latter should not be altered directly.
+
+**Updated (2026-06-08)**
+For already externally published products, edits do not mutate the live aggregate directly.
+Instead, separate /revision endpoints exist to create a shared Product/Contract Revision which can
+then be read, updated, discarded, and published explicitly through these endpoints. The normal
+endpoints always return the published data.
+
+Publishing a Product Revision applies the staged snapshot back onto the existing live
+resource in place, preserves the live identity, removes the revision after success, and rejects
+stale revisions when the live product changed in the meantime. The same pattern applies to already
+externally published contracts: these are edited through a contract-scoped revision, draft
+distribution changes live inside that revision, existing distributions keep their live identity
+while drafting, and revision-only distributions receive live ids on publish.
+
+This boundary is explicit: unpublished child entities continue to use the normal live CRUD flow,
+while published contracts must use the revision flow and may reference only the currently
+published product-level service set. (Soft-)deleting a live published product or contract clears
+any attached revision, while discarding a revision deletes only that staged copy.
 
 #### Aggregate Root: Product
 
