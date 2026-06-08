@@ -2487,9 +2487,15 @@ class TestViews:
     def test_me_includes_unpublished_products_by_default(
         self, many_orm_products, non_published_products, orm_team, client_with_token
     ):
-        response = client_with_token([orm_team.scope]).get("/me")
+        response = client_with_token([orm_team.scope]).get("/me?pagesize=50")
         assert response.status_code == 200
         assert response.data["products"]["count"] == 30
+        for product in response.data["products"]["results"]:
+            assert (
+                product["revision_url"] == f"http://testserver/products/{product['id']}/revision"
+                if product["publication_status"] == "P"
+                else f"http://testserver/products/{product['id']}"
+            )
 
     def test_me_can_filter_on_publication_status(
         self, many_orm_products, non_published_products, orm_team, client_with_token

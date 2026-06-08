@@ -149,8 +149,13 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         # Raises if data is invalid
         return dto_type(**data)
 
-    def _attach_revision_metadata(self, *, request, data: dict, path: str):
-        data["revision_url"] = request.build_absolute_uri(path) if data["has_revision"] else None
+    def _attach_revision_metadata(self, *, request, data: dict, base_path: str):
+        path = (
+            f"{base_path}/revision"
+            if data["has_revision"] or data["publication_status"] == "P"
+            else base_path
+        )
+        data["revision_url"] = request.build_absolute_uri(path)
         return data
 
     @extend_schema(
@@ -238,7 +243,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             self._attach_revision_metadata(
                 request=request,
                 data=data,
-                path=f"/products/{pk}/revision",
+                base_path=f"/products/{pk}",
             ),
             status=200,
         )
@@ -396,7 +401,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             self._attach_revision_metadata(
                 request=request,
                 data=data,
-                path=f"/products/{pk}/contracts/{contract_id}/revision",
+                base_path=f"/products/{pk}/contracts/{contract_id}",
             ),
             status=200,
         )
@@ -645,18 +650,20 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
 def _attach_product_revision_metadata(*, request, product_data: dict) -> dict:
     product_id = product_data["id"]
-    product_data["revision_url"] = (
-        request.build_absolute_uri(f"/products/{product_id}/revision")
-        if product_data.get("has_revision")
-        else None
+    path = (
+        f"/products/{product_id}/revision"
+        if product_data["has_revision"] or product_data["publication_status"] == "P"
+        else f"/products/{product_id}"
     )
+    product_data["revision_url"] = request.build_absolute_uri(path)
     for contract_data in product_data.get("contracts", []):
         contract_id = contract_data["id"]
-        contract_data["revision_url"] = (
-            request.build_absolute_uri(f"/products/{product_id}/contracts/{contract_id}/revision")
-            if contract_data.get("has_revision")
-            else None
+        path = (
+            f"/products/{product_id}/contracts/{contract_id}/revision"
+            if contract_data["has_revision"] or contract_data["publication_status"] == "P"
+            else f"/products/{product_id}/contracts/{contract_id}"
         )
+        contract_data["revision_url"] = request.build_absolute_uri(path)
     return product_data
 
 
