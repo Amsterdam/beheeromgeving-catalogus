@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.db.models import F, Q, QuerySet, Value
 from django.db.utils import IntegrityError
+from django.utils import timezone
 
 from api.datatransferobjects import MyProduct, ProductList
 from beheeromgeving import models as orm
@@ -220,7 +221,9 @@ class ProductRepository(AbstractRepository[Product]):
                         "Cannot publish product revision because the live product has changed."
                     )
 
-                published_product = self.save(revision.to_domain())
+                revision_product = revision.to_domain()
+                revision_product.last_updated = timezone.now()
+                published_product = self.save(revision_product)
                 revision.delete()
                 return published_product
         except orm.Product.DoesNotExist as e:
@@ -284,6 +287,7 @@ class ProductRepository(AbstractRepository[Product]):
                     )
 
                 published_contract = revision.to_domain()
+                published_contract.last_updated = timezone.now()
                 for distribution in published_contract.distributions:
                     if distribution.id is not None and distribution.id < 0:
                         distribution.id = None

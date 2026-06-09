@@ -230,7 +230,7 @@ class TestProductRepository:
         repo.save(product)
         saved_product = repo.get(product.id)
         assert saved_product.team_id == orm_team.id
-        assert saved_product.last_updated > product.last_updated
+        assert saved_product.last_updated == product.last_updated
 
     def test_save_updates_services(self, orm_product: ORMProduct):
         repo = ProductRepository()

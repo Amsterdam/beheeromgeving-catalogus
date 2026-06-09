@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from domain.base import BaseObject
 from domain.exceptions import ObjectDoesNotExist, ValidationError
@@ -297,6 +297,14 @@ class Product(BaseObject):
     def __post_init__(self):
         self.validate = ProductValidator(self)
 
+    def touch(self) -> Product:
+        self.last_updated = datetime.now(tz=UTC)
+        return self
+
+    def touch_contract(self, contract: DataContract) -> DataContract:
+        contract.last_updated = datetime.now(tz=UTC)
+        return contract
+
     def create_contract(self, contract: DataContract):
         if self.validate.can_create_contract():
             self.contracts.append(contract)
@@ -320,11 +328,13 @@ class Product(BaseObject):
     def update(self, data: dict) -> Product:
         if self.validate.can_update(data):
             self.update_from_dict(data)
+            self.touch()
         return self
 
     def update_state(self, data: dict) -> Product:
         if self.validate.can_change_publication_status(data):
             self.update_from_dict(data)
+            self.touch()
             if self.type == enums.ProductType.INFORMATIEPRODUCT:
                 for contract in self.contracts:
                     contract.update_from_dict(data)
@@ -334,6 +344,7 @@ class Product(BaseObject):
         contract = self.get_contract(contract_id)
         if contract.validate.can_update():
             contract.update_from_dict(data)
+            self.touch_contract(contract)
         return contract
 
     def update_contract_state(self, contract_id: int, data: dict) -> DataContract:
@@ -342,6 +353,7 @@ class Product(BaseObject):
             data
         ) and self.validate.can_change_contract_status(data, contract_id):
             contract.update_from_dict(data)
+            self.touch_contract(contract)
         return contract
 
     def delete_contract(self, contract_id: int) -> int:
@@ -370,6 +382,7 @@ class Product(BaseObject):
         contract = self.get_contract(contract_id)
         if self.validate.can_add_distribution_to_contract(contract):
             contract.distributions.append(distribution)
+            self.touch_contract(contract)
 
     def update_distribution(
         self, contract_id: int, distribution_id: int, data: dict
@@ -384,6 +397,7 @@ class Product(BaseObject):
                 if isinstance(refresh_period, RefreshPeriod)
                 else RefreshPeriod(**refresh_period)
             )
+        self.touch_contract(contract)
         return distribution
 
     def delete_distribution(self, contract_id: int, distribution_id: int) -> int:
@@ -395,17 +409,20 @@ class Product(BaseObject):
             for distribution in contract.distributions
             if distribution.id != distribution_id
         ]
+        self.touch_contract(contract)
         return distribution_id
 
     def create_service(self, data: dict) -> DataService:
         service = DataService(**data)
         self.services.append(service)
+        self.touch()
         return service
 
     def update_service(self, service_id: int, data: dict) -> DataService:
         self.validate.can_update()
         service = self.get_service(service_id)
         service.update_from_dict(data)
+        self.touch()
         return service
 
     def delete_service(self, service_id: int) -> int:
@@ -423,6 +440,7 @@ class Product(BaseObject):
                 f"Service with id {service_id} does not exist on Product {self.id}"
             ) from None
         self.services = [service for service in self.services if service.id != service_id]
+        self.touch()
         return service_id
 
     @property

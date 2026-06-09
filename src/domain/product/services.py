@@ -251,12 +251,10 @@ class ProductService(AbstractService):
         except exceptions.ObjectDoesNotExist:
             revision_product = copy.deepcopy(live_product)
 
-        live_status = live_product.publication_status
-        live_publication_date = live_product.publication_date
         revision_product.publication_status = enums.PublicationStatus.DRAFT
         revision_product.update(data)
-        revision_product.publication_status = live_status
-        revision_product.publication_date = live_publication_date
+        revision_product.publication_status = live_product.publication_status
+        revision_product.publication_date = live_product.publication_date
         return self.repository.save_revision(revision_product)
 
     @authorize.is_admin
@@ -454,12 +452,10 @@ class ProductService(AbstractService):
             revision_contract = copy.deepcopy(live_contract)
 
         data = self._normalize_contract_draft_data(data)
-        live_status = live_contract.publication_status
-        live_publication_date = live_contract.publication_date
         revision_contract.publication_status = enums.PublicationStatus.DRAFT
         revision_contract.update_from_dict(data)
-        revision_contract.publication_status = live_status
-        revision_contract.publication_date = live_publication_date
+        revision_contract.publication_status = live_contract.publication_status
+        revision_contract.publication_date = live_contract.publication_date
         return self.repository.save_contract_revision(
             product_id=product_id,
             contract=revision_contract,
@@ -540,9 +536,9 @@ class ProductService(AbstractService):
         )
         if kwargs.get("last_editor"):
             data["last_editor"] = kwargs["last_editor"]
-        contract = product.update_contract(contract_id, data)
-        self._persist(product)
-        return contract
+        product.update_contract(contract_id, data)
+        updated_product = self._persist(product)
+        return updated_product.get_contract(contract_id)
 
     @authorize.is_admin
     @authorize.is_team_member
@@ -550,8 +546,9 @@ class ProductService(AbstractService):
         self, product_id: int, contract_id: int, data: dict, **kwargs
     ) -> DataContract:
         product = self.get_product(product_id=product_id, **kwargs)
-        updated_contract = product.update_contract_state(contract_id, data)
-        self._persist(product)
+        product.update_contract_state(contract_id, data)
+        updated_product = self._persist(product)
+        updated_contract = updated_product.get_contract(contract_id)
         if updated_contract.publication_status == enums.PublicationStatus.DELETED:
             self._delete_contract_revision_if_exists(
                 product_id=product_id,
