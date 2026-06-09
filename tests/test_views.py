@@ -1144,7 +1144,8 @@ class TestViews:
             data={"name": "New Name"},
         )
 
-        orm_product.description = "Live change"
+        now = datetime.now(tz=UTC)
+        orm_product.last_updated = now
         orm_product.save()
 
         response = client_with_token([orm_team.scope]).post(
@@ -1164,7 +1165,7 @@ class TestViews:
         assert revision_response.data["name"] == "New Name"
         assert live_response.status_code == 200
         assert live_response.data["name"] == "Bomen"
-        assert live_response.data["description"] == "Live change"
+        assert live_response.data["last_updated"] == now
 
     def test_product_revision_discard_fails_for_non_published_product(
         self, orm_draft_product, orm_team, client_with_token
@@ -1197,6 +1198,29 @@ class TestViews:
         orm_draft_product.refresh_from_db()
         assert orm_draft_product.refresh_period == "2.MONTH"  # DB stores in this way.
         assert response.data["refresh_period"] == data["refresh_period"]
+        assert response.data["last_updated"] == orm_draft_product.last_updated
+
+    def test_product_patch_updates_product_timestamp_only(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        original_product_last_updated = orm_draft_product.last_updated
+        contract = orm_draft_product.contracts.first()
+        assert contract is not None
+        original_contract_last_updated = contract.last_updated
+        assert original_product_last_updated is not None
+        assert original_contract_last_updated is not None
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}",
+            data={"name": "New Name"},
+        )
+
+        assert response.status_code == 200
+        orm_draft_product.refresh_from_db()
+        contract.refresh_from_db()
+
+        assert orm_draft_product.last_updated > original_product_last_updated
+        assert contract.last_updated == original_contract_last_updated
         assert response.data["last_updated"] == orm_draft_product.last_updated
 
     @pytest.mark.parametrize(
@@ -1480,6 +1504,29 @@ class TestViews:
         assert response.status_code == 400
         assert orm_product.contracts.first().name != "New Name"
 
+    def test_contract_patch_updates_contract_timestamp_only(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        original_product_last_updated = orm_draft_product.last_updated
+        contract = orm_draft_product.contracts.first()
+        assert contract is not None
+        original_contract_last_updated = contract.last_updated
+        assert original_product_last_updated is not None
+        assert original_contract_last_updated is not None
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}/contracts/{contract.id}",
+            data={"name": "New Name"},
+        )
+
+        assert response.status_code == 200
+        orm_draft_product.refresh_from_db()
+        contract.refresh_from_db()
+
+        assert orm_draft_product.last_updated == original_product_last_updated
+        assert contract.last_updated > original_contract_last_updated
+        assert response.data["last_updated"] == contract.last_updated
+
     def test_contract_revision_update_for_published_contract_keeps_live_contract_unchanged(
         self, orm_product, orm_team, client_with_token
     ):
@@ -1579,7 +1626,8 @@ class TestViews:
             data={"name": "New Name"},
         )
 
-        contract.purpose = "Live change"
+        now = datetime.now(tz=UTC)
+        contract.last_updated = now
         contract.save()
 
         response = client_with_token([orm_team.scope]).post(
@@ -1601,7 +1649,7 @@ class TestViews:
         assert revision_response.data["name"] == "New Name"
         assert live_response.status_code == 200
         assert live_response.data["name"] == contract.name
-        assert live_response.data["purpose"] == "Live change"
+        assert live_response.data["last_updated"] == now
 
     def test_contract_revision_publish_rejects_unpublished_service_reference(
         self, orm_product, orm_team, client_with_token

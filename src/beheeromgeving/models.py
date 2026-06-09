@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import EmailValidator
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from domain.product import enums, objects
@@ -98,7 +99,7 @@ class Product(models.Model):
         help_text='De ververstermijn in de vorm {"frequency": int, "unit": periodString}, '
         'waarbij periodStr iets is als "uur", "dag", "week", "maand", "jaar"',
     )
-    last_updated = models.DateTimeField(auto_now=True)
+    last_updated = models.DateTimeField(default=timezone.now)
     last_editor = models.CharField(
         _("Last Editor"),
         null=True,
@@ -209,8 +210,9 @@ class Product(models.Model):
 
     @classmethod
     def from_domain(cls, product: objects.Product):
+        last_updated = product.last_updated or timezone.now()
         instance, _created = cls.objects.filter(pk=product.id).update_or_create(
-            defaults=product.items()
+            defaults={**product.items(), "last_updated": last_updated}
         )
         instance.owner = product.owner
         instance.refresh_period = (
@@ -430,7 +432,7 @@ class DataContract(models.Model):
         blank=True,
         help_text="Het privacyniveau van het contract",
     )
-    last_updated = models.DateTimeField(auto_now=True)
+    last_updated = models.DateTimeField(default=timezone.now)
     last_editor = models.CharField(
         _("Last Editor"),
         null=True,
@@ -524,8 +526,13 @@ class DataContract(models.Model):
 
     @classmethod
     def from_domain(cls, contract: objects.DataContract, product_id: int):
+        last_updated = contract.last_updated or timezone.now()
         instance, _created = cls.objects.filter(pk=contract.id).update_or_create(
-            defaults={**contract.items(), "product_id": product_id}
+            defaults={
+                **contract.items(),
+                "product_id": product_id,
+                "last_updated": last_updated,
+            }
         )
         # Handle distributions, they may potentially all be deleted:
         to_delete = instance.distributions.all()
