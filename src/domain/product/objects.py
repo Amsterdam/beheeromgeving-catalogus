@@ -338,6 +338,7 @@ class Product(BaseObject):
             if self.type == enums.ProductType.INFORMATIEPRODUCT:
                 for contract in self.contracts:
                     contract.update_from_dict(data)
+                    self.touch_contract(contract)
         return self
 
     def update_contract(self, contract_id: int, data: dict) -> DataContract:

@@ -264,9 +264,13 @@ class ProductRepository(AbstractRepository[Product]):
     def publish_contract_revision(self, *, product_id: int, contract_id: int) -> DataContract:
         try:
             with transaction.atomic():
-                live_contract = orm.DataContract.objects.select_related("product").get(
-                    pk=contract_id,
-                    product_id=product_id,
+                live_contract = (
+                    orm.DataContract.objects.select_related("product")
+                    .select_for_update()
+                    .get(
+                        pk=contract_id,
+                        product_id=product_id,
+                    )
                 )
                 revision = (
                     orm.DataContractRevision.objects.select_related(
