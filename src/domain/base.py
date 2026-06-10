@@ -31,7 +31,7 @@ class BaseObject:
         for k, v in data.items():
             setattr(self, k, v)
             # when published, set the publication_date.
-            if k == "publication_status" and v == "P":
+            if k == "publication_status" and v == "P" and not self.publication_date:
                 self.publication_date = datetime.now(tz=UTC)
 
 
