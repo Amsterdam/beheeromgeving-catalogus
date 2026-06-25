@@ -13,7 +13,7 @@ dependencies = [
     "datapunt-authorization-django==2.1.0",
     "django==5.2.15",
     "django-cors-headers==4.9.0",
-    "django-environ==0.13.0",
+    "django-environ==0.14.0",
     "django-healthchecks==1.5.0",
     "djangorestframework==3.17.1",
     "drf-spectacular==0.29.0",
@@ -39,14 +39,14 @@ dev = [
     "django-extensions==4.1",
     "django-stubs==5.2.9",
     "pre-commit==4.6.0",
-    "pytest==9.1.0",
+    "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "pytest-django==4.12.0",
     "pytest-sugar==1.1.1",
     "requests-mock==1.12.1",
-    "ruff==0.15.18",
+    "ruff==0.15.20",
     "termcolor==3.3.0",
-    "ty>=0.0.50",
+    "ty>=0.0.54",
 ]
 
 [build-system]
