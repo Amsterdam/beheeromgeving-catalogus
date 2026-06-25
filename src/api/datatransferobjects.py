@@ -357,6 +357,7 @@ class ProductList(ModelMixin, BaseModel):
     publication_status: enums.PublicationStatus | None
     contract_count: int
     team_id: int
+    endorsement: enums.EndorsementLevel | None = None
 
     @classmethod
     def from_django(cls, product: ORMProduct) -> ProductList:
@@ -377,6 +378,7 @@ class ProductList(ModelMixin, BaseModel):
                 publication_status=enums.PublicationStatus.PUBLISHED.value
             ).count(),
             team_id=product.team.pk,
+            endorsement=product.endorsement,
             summary={
                 "services": [s.type for s in product.services.all() if s.type is not None],
                 "distributions": [
