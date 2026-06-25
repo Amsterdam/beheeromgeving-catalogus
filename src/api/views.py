@@ -297,6 +297,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(dtos.to_response_object(product), status=200)
 
+    @extend_schema(description="Delete a product revision", responses={204: None})
     @revision_detail.mapping.delete
     def delete_revision(self, request, pk: str):
         product_service.discard_product_revision(
@@ -456,6 +457,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data = dtos.to_response_object(contract)
         return Response(data, status=200)
 
+    @extend_schema(description="Delete a contract revision", responses={204: None})
     @contract_revision_detail.mapping.delete
     def delete_contract_revision(self, request, pk: str, contract_id: str):
         product_service.discard_contract_revision(
