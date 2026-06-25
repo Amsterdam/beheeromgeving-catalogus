@@ -140,10 +140,14 @@ class TestViews:
         assert Team.objects.count() == 1
 
     def test_products_list(self, orm_product, api_client):
+        orm_product.endorsement = "P"
+        orm_product.save(update_fields=["endorsement"])
+
         response = api_client.get("/products")
         assert response.status_code == 200
         product = response.data["results"][0]
         assert product["name"] == orm_product.name
+        assert product["endorsement"] == orm_product.endorsement
         assert product["summary"] == {"distributions": ["F"], "services": ["REST"]}
         for key in [
             "description",
@@ -157,6 +161,7 @@ class TestViews:
             "schema_url",
             "contract_count",
             "publication_status",
+            "endorsement",
         ]:
             assert key in product
 
@@ -538,6 +543,7 @@ class TestViews:
                 "publication_status",
                 "other_identifier",
                 "summary",
+                "endorsement",
             }
 
     def test_product_list_fields_parameter_invalid_field_ignored(self, orm_product, api_client):
