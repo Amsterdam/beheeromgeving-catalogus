@@ -46,7 +46,7 @@ dev = [
     "requests-mock==1.12.1",
     "ruff==0.16.0",
     "termcolor==3.3.0",
-    "ty>=0.0.63",
+    "ty>=0.0.64",
 ]
 
 [build-system]
