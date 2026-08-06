@@ -1,7 +1,7 @@
 import pytest
 
 from domain.exceptions import ValidationError
-from domain.product import DataContract, Distribution, Product, enums
+from domain.product import DataContract, DataService, Distribution, Product, enums
 
 
 class TestProductValidator:
@@ -35,6 +35,36 @@ class TestProductValidator:
             match="Information product cannot have multiple contracts or distributions.",
         ):
             product.validate.can_update({"type": "I"})
+
+
+class TestProduct:
+    def test_summary_sorts_and_deduplicates_distribution_and_service_metadata(self):
+        product = Product(
+            team_id=1,
+            contracts=[
+                DataContract(
+                    distributions=[
+                        Distribution(type=enums.DistributionType.API),
+                        Distribution(type=enums.DistributionType.FILE, format="csv"),
+                        Distribution(type=enums.DistributionType.FILE, format="geojson"),
+                        Distribution(type=enums.DistributionType.FILE, format="csv"),
+                        Distribution(type=enums.DistributionType.API, format="json"),
+                        Distribution(format="xml"),
+                    ]
+                )
+            ],
+            services=[
+                DataService(type=enums.DataServiceType.WMS),
+                DataService(type=enums.DataServiceType.ATOM),
+                DataService(type=enums.DataServiceType.WMS),
+            ],
+        )
+
+        assert product.summary == {
+            "availability": ["API", "FILE"],
+            "service_types": ["ATOM", "WMS"],
+            "file_formats": ["CSV", "GEOJSON"],
+        }
 
     def test_product_cannot_update_to_information_type_with_multiple_distributions(self):
         product = Product(
