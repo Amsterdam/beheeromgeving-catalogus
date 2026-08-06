@@ -302,6 +302,7 @@ class ProductDetail(IdMixin, ProductCreate):
     publication_status: enums.PublicationStatus
     publication_date: datetime | None = None
     missing_fields: list[str] | None = None
+    summary: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class ProductUpdate(ModelMixin, BaseModel):
