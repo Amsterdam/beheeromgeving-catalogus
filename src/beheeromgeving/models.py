@@ -288,6 +288,7 @@ class ProductRevision(models.Model):
     )
     refresh_period = models.JSONField(null=True, default=dict)
     last_updated = models.DateTimeField(auto_now=True)
+    source_last_updated = models.DateTimeField(null=True, blank=True)
     last_editor = models.CharField(
         max_length=128,
         null=True,
@@ -342,6 +343,7 @@ class ProductRevision(models.Model):
                 "team_id": self.team_id,
                 "themes": self.themes,
                 "last_updated": self.last_updated,
+                "source_last_updated": self.source_last_updated,
                 "last_editor": self.last_editor,
                 "refresh_period": (
                     objects.RefreshPeriod.from_string(self.refresh_period)
@@ -378,6 +380,7 @@ class ProductRevision(models.Model):
         instance.refresh_period = (
             product.refresh_period.to_string if product.refresh_period is not None else None
         )
+        instance.source_last_updated = product.source_last_updated
         instance.last_editor = product.last_editor
         instance.data_steward = product.data_steward
         instance.endorsement = product.endorsement
