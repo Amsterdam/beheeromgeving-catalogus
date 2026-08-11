@@ -730,6 +730,24 @@ class TestViews:
         )
         assert response.status_code == 201
 
+    def test_product_create_ignores_client_last_updated(self, orm_team, client_with_token):
+        supplied_last_updated = "2000-01-01T00:00:00Z"
+
+        response = client_with_token([orm_team.scope]).post(
+            "/products",
+            data={
+                "type": "D",
+                "team_id": orm_team.id,
+                "last_updated": supplied_last_updated,
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.data["last_updated"] != supplied_last_updated
+
+        orm_product = Product.objects.get(id=response.data["id"])
+        assert orm_product.last_updated.isoformat() != "2000-01-01T00:00:00+00:00"
+
     def test_product_create_information_product_with_access_url(self, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
             "/products",
@@ -943,6 +961,21 @@ class TestViews:
         assert orm_draft_product.description == "New Description"
         assert response.data["last_updated"] == orm_draft_product.last_updated
         assert orm_draft_product.last_editor == "test@example.com"
+
+    def test_product_update_ignores_client_last_updated(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        supplied_last_updated = "2000-01-01T00:00:00Z"
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}",
+            data={"name": "New Name", "last_updated": supplied_last_updated},
+        )
+
+        assert response.status_code == 200
+        orm_draft_product.refresh_from_db()
+        assert response.data["last_updated"] != supplied_last_updated
+        assert orm_draft_product.last_updated.isoformat() != "2000-01-01T00:00:00+00:00"
 
     def test_product_update_fails_on_published_product(
         self, orm_product, orm_team, client_with_token
@@ -1458,6 +1491,26 @@ class TestViews:
         orm_contract = DataContract.objects.get(id=response.data["id"])
         assert orm_contract.purpose == "Purpose of contract"
 
+    def test_contract_create_ignores_client_last_updated(
+        self, orm_product, orm_team, client_with_token
+    ):
+        supplied_last_updated = "2000-01-01T00:00:00Z"
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts",
+            data={
+                "name": "contract1",
+                "purpose": "Purpose of contract",
+                "last_updated": supplied_last_updated,
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.data["last_updated"] != supplied_last_updated
+
+        orm_contract = DataContract.objects.get(id=response.data["id"])
+        assert orm_contract.last_updated.isoformat() != "2000-01-01T00:00:00+00:00"
+
     @pytest.mark.parametrize(
         "data",
         [
@@ -1498,6 +1551,22 @@ class TestViews:
         orm_draft_product.refresh_from_db()
         assert orm_draft_product.contracts.first().purpose == "New Purpose"
         assert orm_draft_product.contracts.first().last_editor == "test@example.com"
+
+    def test_contract_update_ignores_client_last_updated(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        contract = orm_draft_product.contracts.first()
+        supplied_last_updated = "2000-01-01T00:00:00Z"
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}/contracts/{contract.id}",
+            data={"name": "New Name", "last_updated": supplied_last_updated},
+        )
+
+        assert response.status_code == 200
+        contract.refresh_from_db()
+        assert response.data["last_updated"] != supplied_last_updated
+        assert contract.last_updated.isoformat() != "2000-01-01T00:00:00+00:00"
 
     def test_contract_update_fails_on_published_contract(
         self, orm_product, orm_team, client_with_token

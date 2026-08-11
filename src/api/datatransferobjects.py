@@ -165,7 +165,6 @@ class DataContractList(ModelMixin, BaseModel):
 class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     purpose: str | None = None
     name: str | None = None
-    last_updated: datetime | None = None
     privacy_level: enums.PrivacyLevel | None = None
     scopes: list[str] | None = None
     confidentiality: enums.ConfidentialityLevel | None = None
@@ -190,6 +189,7 @@ class DataContract(IdMixin, DataContractCreateOrUpdate):
 
     has_revision: bool = False
     revision_url: str | None = None
+    last_updated: datetime | None = None
     publication_status: enums.PublicationStatus
     publication_date: datetime | None = None
     distributions: list[Distribution] | None = None
@@ -258,7 +258,6 @@ class ProductCreate(ModelMixin, BaseModel):
     type: enums.ProductType | None = None
     contracts: list[DataContract] | None = None
     themes: list[enums.Theme] | None = None
-    last_updated: datetime | None = None
     refresh_period: RefreshPeriod | None = None
     owner: str | None = None
     contact_email: str | None = None
@@ -293,6 +292,7 @@ class ProductDetail(IdMixin, ProductCreate):
 
     has_revision: bool = False
     revision_url: str | None = None
+    last_updated: datetime | None = None
     publication_status: enums.PublicationStatus
     publication_date: datetime | None = None
     missing_fields: list[str] | None = None
@@ -311,7 +311,6 @@ class ProductUpdate(ModelMixin, BaseModel):
     type: enums.ProductType | None = None
     contracts: list[DataContract] | None = None
     themes: list[enums.Theme] | None = None
-    last_updated: datetime | None = None
     refresh_period: RefreshPeriod | None = None
     owner: str | None = None
     contact_email: str | None = None
