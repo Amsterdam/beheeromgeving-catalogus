@@ -1180,6 +1180,70 @@ class TestViews:
         assert live_response.data["owner"] == orm_team.po_name
         assert live_response.data["contact_email"] == orm_team.contact_email
 
+    def test_product_revision_update_source_last_updated(
+        self, orm_product, orm_team, client_with_token
+    ):
+        source_last_updated = "2024-05-06T12:30:00Z"
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision",
+            data={"source_last_updated": source_last_updated},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["source_last_updated"].isoformat() == "2024-05-06T12:30:00+00:00"
+
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision"
+        )
+        live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+
+        assert revision_response.status_code == 200
+        assert revision_response.data["source_last_updated"].isoformat() == (
+            "2024-05-06T12:30:00+00:00"
+        )
+        assert live_response.status_code == 200
+        assert live_response.data["source_last_updated"] is None
+
+    def test_product_revision_can_clear_source_last_updated(
+        self, orm_product, orm_team, client_with_token
+    ):
+        orm_product.source_last_updated = datetime(2024, 5, 6, 12, 30, tzinfo=UTC)
+        orm_product.save(update_fields=["source_last_updated"])
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision",
+            data={"source_last_updated": None},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["source_last_updated"] is None
+
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision"
+        )
+        assert revision_response.status_code == 200
+        assert revision_response.data["source_last_updated"] is None
+
+    def test_product_revision_publish_applies_source_last_updated(
+        self, orm_product, orm_team, client_with_token
+    ):
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision",
+            data={"source_last_updated": "2024-05-06T12:30:00Z"},
+        )
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/revision/publish",
+            data={},
+        )
+
+        assert response.status_code == 200, response.data
+        assert response.data["source_last_updated"].isoformat() == "2024-05-06T12:30:00+00:00"
+
+        orm_product.refresh_from_db()
+        assert orm_product.source_last_updated.isoformat() == "2024-05-06T12:30:00+00:00"
+
     def test_product_revision_can_be_discarded(self, orm_product, orm_team, client_with_token):
         client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/revision",
@@ -1200,6 +1264,27 @@ class TestViews:
         assert revision_response.status_code == 404
         assert live_response.status_code == 200
         assert live_response.data["name"] == "Bomen"
+
+    def test_product_revision_discard_keeps_live_source_last_updated_unchanged(
+        self, orm_product, orm_team, client_with_token
+    ):
+        orm_product.source_last_updated = datetime(2024, 1, 1, 0, 0, tzinfo=UTC)
+        orm_product.save(update_fields=["source_last_updated"])
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision",
+            data={"source_last_updated": "2024-05-06T12:30:00Z"},
+        )
+
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/revision"
+        )
+
+        assert response.status_code == 204
+
+        live_response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}")
+        assert live_response.status_code == 200
+        assert live_response.data["source_last_updated"].isoformat() == "2024-01-01T00:00:00+00:00"
 
     def test_product_revision_can_be_published(self, orm_product, orm_team, client_with_token):
         client_with_token([orm_team.scope]).patch(
