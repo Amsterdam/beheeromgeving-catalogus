@@ -100,6 +100,7 @@ class Product(models.Model):
         'waarbij periodStr iets is als "uur", "dag", "week", "maand", "jaar"',
     )
     last_updated = models.DateTimeField(default=timezone.now)
+    source_last_updated = models.DateTimeField(null=True, blank=True)
     last_editor = models.CharField(
         _("Last Editor"),
         null=True,
@@ -190,6 +191,7 @@ class Product(models.Model):
             contracts=contracts,
             themes=self.themes,
             last_updated=self.last_updated,
+            source_last_updated=self.source_last_updated,
             last_editor=self.last_editor,
             created_at=self.created_at,
             refresh_period=(

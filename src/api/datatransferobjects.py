@@ -227,6 +227,7 @@ class MyProduct(ModelMixin, BaseModel):
     other_identifier: str | None = None
     type: enums.ProductType | None = None
     last_updated: datetime | None = None
+    source_last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
     has_revision: bool = False
     revision_url: str | None = None
@@ -241,6 +242,7 @@ class MyProduct(ModelMixin, BaseModel):
             other_identifier=product.other_identifier,
             type=product.type,
             last_updated=product.last_updated,
+            source_last_updated=product.source_last_updated,
             publication_status=product.publication_status,
             has_revision=hasattr(product, "revision"),
             contracts=[MyContract.from_django(c) for c in product.contracts.order_by("id")],
@@ -258,6 +260,7 @@ class ProductCreate(ModelMixin, BaseModel):
     type: enums.ProductType | None = None
     contracts: list[DataContract] | None = None
     themes: list[enums.Theme] | None = None
+    source_last_updated: datetime | None = None
     refresh_period: RefreshPeriod | None = None
     owner: str | None = None
     contact_email: str | None = None
@@ -311,6 +314,7 @@ class ProductUpdate(ModelMixin, BaseModel):
     type: enums.ProductType | None = None
     contracts: list[DataContract] | None = None
     themes: list[enums.Theme] | None = None
+    source_last_updated: datetime | None = None
     refresh_period: RefreshPeriod | None = None
     owner: str | None = None
     contact_email: str | None = None
@@ -349,6 +353,7 @@ class ProductList(ModelMixin, BaseModel):
     owner: str | None = None
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
+    source_last_updated: datetime | None = None
     language: enums.Language | None = None
     summary: dict[str, list[enums.DistributionType | enums.DataServiceType | None]] | None = None
     is_geo: bool | None = None
@@ -369,6 +374,7 @@ class ProductList(ModelMixin, BaseModel):
             owner=product.owner,
             themes=product.themes,
             last_updated=product.last_updated,
+            source_last_updated=product.source_last_updated,
             language=product.language,
             is_geo=product.is_geo,
             schema_url=product.schema_url,

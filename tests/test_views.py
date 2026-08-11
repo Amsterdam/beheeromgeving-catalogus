@@ -748,6 +748,24 @@ class TestViews:
         orm_product = Product.objects.get(id=response.data["id"])
         assert orm_product.last_updated.isoformat() != "2000-01-01T00:00:00+00:00"
 
+    def test_product_create_with_source_last_updated(self, orm_team, client_with_token):
+        source_last_updated = "2024-05-06T12:30:00Z"
+
+        response = client_with_token([orm_team.scope]).post(
+            "/products",
+            data={
+                "type": "D",
+                "team_id": orm_team.id,
+                "source_last_updated": source_last_updated,
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.data["source_last_updated"].isoformat() == "2024-05-06T12:30:00+00:00"
+
+        orm_product = Product.objects.get(id=response.data["id"])
+        assert orm_product.source_last_updated.isoformat() == "2024-05-06T12:30:00+00:00"
+
     def test_product_create_information_product_with_access_url(self, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
             "/products",
@@ -976,6 +994,39 @@ class TestViews:
         orm_draft_product.refresh_from_db()
         assert response.data["last_updated"] != supplied_last_updated
         assert orm_draft_product.last_updated.isoformat() != "2000-01-01T00:00:00+00:00"
+
+    def test_product_update_source_last_updated(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        source_last_updated = "2024-05-06T12:30:00Z"
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}",
+            data={"source_last_updated": source_last_updated},
+        )
+
+        assert response.status_code == 200
+        assert response.data["source_last_updated"].isoformat() == "2024-05-06T12:30:00+00:00"
+
+        orm_draft_product.refresh_from_db()
+        assert orm_draft_product.source_last_updated.isoformat() == "2024-05-06T12:30:00+00:00"
+
+    def test_product_update_can_clear_source_last_updated(
+        self, orm_draft_product, orm_team, client_with_token
+    ):
+        orm_draft_product.source_last_updated = datetime(2024, 5, 6, 12, 30, tzinfo=UTC)
+        orm_draft_product.save(update_fields=["source_last_updated"])
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_draft_product.id}",
+            data={"source_last_updated": None},
+        )
+
+        assert response.status_code == 200
+        assert response.data["source_last_updated"] is None
+
+        orm_draft_product.refresh_from_db()
+        assert orm_draft_product.source_last_updated is None
 
     def test_product_update_fails_on_published_product(
         self, orm_product, orm_team, client_with_token

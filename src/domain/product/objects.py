@@ -269,6 +269,7 @@ class Product(BaseObject):
     contracts: list[DataContract] = field(default_factory=list)
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
+    source_last_updated: datetime | None = None
     last_editor: str | None = None
     created_at: datetime | None = None
     refresh_period: RefreshPeriod | None = None
