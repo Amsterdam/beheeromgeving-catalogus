@@ -227,6 +227,7 @@ class MyProduct(ModelMixin, BaseModel):
     other_identifier: str | None = None
     type: enums.ProductType | None = None
     last_updated: datetime | None = None
+    created_at: datetime | None = None
     source_last_updated: datetime | None = None
     publication_status: enums.PublicationStatus | None = None
     has_revision: bool = False
@@ -242,6 +243,7 @@ class MyProduct(ModelMixin, BaseModel):
             other_identifier=product.other_identifier,
             type=product.type,
             last_updated=product.last_updated,
+            created_at=product.created_at,
             source_last_updated=product.source_last_updated,
             publication_status=product.publication_status,
             has_revision=hasattr(product, "revision"),
@@ -296,6 +298,7 @@ class ProductDetail(IdMixin, ProductCreate):
     has_revision: bool = False
     revision_url: str | None = None
     last_updated: datetime | None = None
+    created_at: datetime | None = None
     publication_status: enums.PublicationStatus
     publication_date: datetime | None = None
     missing_fields: list[str] | None = None
@@ -353,6 +356,7 @@ class ProductList(ModelMixin, BaseModel):
     owner: str | None = None
     themes: list[enums.Theme] | None = None
     last_updated: datetime | None = None
+    created_at: datetime | None = None
     source_last_updated: datetime | None = None
     language: enums.Language | None = None
     summary: dict[str, list[enums.DistributionType | enums.DataServiceType | None]] | None = None
@@ -374,6 +378,7 @@ class ProductList(ModelMixin, BaseModel):
             owner=product.owner,
             themes=product.themes,
             last_updated=product.last_updated,
+            created_at=product.created_at,
             source_last_updated=product.source_last_updated,
             language=product.language,
             is_geo=product.is_geo,
