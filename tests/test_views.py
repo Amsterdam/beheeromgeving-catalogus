@@ -148,6 +148,7 @@ class TestViews:
         product = response.data["results"][0]
         assert product["name"] == orm_product.name
         assert product["endorsement"] == orm_product.endorsement
+        assert product["created_at"] == orm_product.created_at
         assert product["summary"] == {"distributions": ["F"], "services": ["REST"]}
         for key in [
             "description",
@@ -156,6 +157,7 @@ class TestViews:
             "type",
             "themes",
             "last_updated",
+            "created_at",
             "team_id",
             "is_geo",
             "schema_url",
@@ -536,6 +538,7 @@ class TestViews:
                 "type",
                 "themes",
                 "last_updated",
+                "created_at",
                 "source_last_updated",
                 "team_id",
                 "is_geo",
@@ -569,6 +572,7 @@ class TestViews:
         response = api_client.get(f"/products/{orm_product.id}")
         assert response.status_code == 200
         assert response.data["name"] == orm_product.name
+        assert response.data["created_at"] == orm_product.created_at
         assert response.data["missing_fields"] == []
 
     def test_product_detail_shows_internal_product_for_employee(
@@ -2614,11 +2618,13 @@ class TestViews:
         # product
         assert len(response.data["products"]["results"]) == 1
         assert response.data["products"]["results"][0]["name"] == orm_product.name
+        assert response.data["products"]["results"][0]["created_at"] == orm_product.created_at
         for key in [
             "team_id",
             "id",
             "type",
             "last_updated",
+            "created_at",
             "publication_status",
             "has_revision",
             "revision_url",
@@ -2802,6 +2808,7 @@ class TestViews:
                 "type",
                 "publication_status",
                 "last_updated",
+                "created_at",
                 "source_last_updated",
                 "other_identifier",
                 "has_revision",
