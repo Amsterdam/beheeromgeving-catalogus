@@ -10,12 +10,12 @@ context = "."
 dependencies = [
     "azure-identity==1.25.3",
     "azure-monitor-opentelemetry==1.8.9",
-    "datapunt-authorization-django==2.1.0",
+    "datapunt-authorization-django==2.1.1",
     "django==5.2.16",
     "django-cors-headers==4.9.0",
     "django-environ==0.14.0",
     "django-healthchecks==1.5.0",
-    "djangorestframework==3.17.1",
+    "djangorestframework==3.18.0",
     "drf-spectacular==0.30.0",
     "psycopg==3.3.4",
     "pydantic[email]==2.13.4",
@@ -35,18 +35,18 @@ dependencies = [
 dev = [
     "debugpy==1.8.21",
     "django-coverage-plugin==3.2.2",
-    "django-debug-toolbar==7.0.0",
+    "django-debug-toolbar==7.1.0",
     "django-extensions==4.1",
     "django-stubs==5.2.9",
     "pre-commit==4.6.1",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
-    "pytest-django==4.12.0",
+    "pytest-django==4.14.0",
     "pytest-sugar==1.1.1",
     "requests-mock==1.12.1",
-    "ruff==0.16.0",
+    "ruff==0.16.2",
     "termcolor==3.3.0",
-    "ty>=0.0.64",
+    "ty>=0.0.69",
 ]
 
 [build-system]
