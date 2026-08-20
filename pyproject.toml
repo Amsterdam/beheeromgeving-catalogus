@@ -37,7 +37,7 @@ dev = [
     "django-coverage-plugin==3.2.2",
     "django-debug-toolbar==7.1.0",
     "django-extensions==4.1",
-    "django-stubs==5.2.9",
+    "django-stubs==6.1.0",
     "pre-commit==4.6.1",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
