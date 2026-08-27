@@ -10,7 +10,7 @@ context = "."
 dependencies = [
     "azure-identity==1.25.3",
     "azure-monitor-opentelemetry==1.8.9",
-    "datapunt-authorization-django==2.1.1",
+    "datapunt-authorization-django==2.2.0",
     "django==5.2.17",
     "django-cors-headers==4.9.0",
     "django-environ==0.14.0",
@@ -44,7 +44,7 @@ dev = [
     "pytest-django==4.14.0",
     "pytest-sugar==1.1.1",
     "requests-mock==1.12.1",
-    "ruff==0.16.3",
+    "ruff==0.16.4",
     "termcolor==3.3.0",
     "ty>=0.0.69",
 ]
