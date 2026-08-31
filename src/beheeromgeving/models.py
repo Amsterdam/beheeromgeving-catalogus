@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from domain.product import enums, objects
-from domain.team import Team as DomainTeam
+from domain.team.objects import Team as DomainTeam
 
 
 class Product(models.Model):
@@ -901,7 +901,7 @@ class Distribution(models.Model):
             download_url=self.download_url,
             format=self.format,
             filename=self.filename,
-            type=self.type,
+            type=enums.DistributionType(self.type) if self.type else None,
             refresh_period=(
                 objects.RefreshPeriod.from_string(self.refresh_period)
                 if self.refresh_period
@@ -943,7 +943,11 @@ class DataService(models.Model):
         return f"{self.type}: {self.endpoint_url}"
 
     def to_domain(self):
-        return objects.DataService(id=self.pk, type=self.type, endpoint_url=self.endpoint_url)
+        return objects.DataService(
+            id=self.pk,
+            type=enums.DataServiceType(self.type) if self.type else None,
+            endpoint_url=self.endpoint_url,
+        )
 
     @classmethod
     def from_domain(cls, service: objects.DataService, product_id: int):
