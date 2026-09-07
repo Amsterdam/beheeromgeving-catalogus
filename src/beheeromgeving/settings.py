@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import environ
+from authorization_django.utils import get_trusted_jwks
 from pythonjsonlogger import json
 
 env = environ.Env()
@@ -377,14 +378,9 @@ if DEBUG:
     )
 
 DATAPUNT_AUTHZ = {
-    # To verify JWT tokens, either the PUB_JWKS or a OAUTH_JWKS_URL needs to be set.
-    "JWKS": os.getenv("PUB_JWKS"),
-    "JWKS_URL": os.getenv("OAUTH_JWKS_URL"),
-    "JWKS_URLS": env.list("OAUTH_JWKS_URLS", default=[]),  # To support both keyclock and Entra ID
-    "CHECK_CLAIMS": env.dict("OAUTH_CHECK_CLAIMS", default={}),
-    # "ALWAYS_OK": True if DEBUG else False,
     "ALWAYS_OK": False,
     "MIN_INTERVAL_KEYSET_UPDATE": 30 * 60,  # 30 minutes
+    "TRUSTED_JWKS": get_trusted_jwks(),
 }
 
 # App Config
