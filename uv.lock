@@ -171,7 +171,7 @@ dev = [
 requires-dist = [
     { name = "azure-identity", specifier = "==1.25.3" },
     { name = "azure-monitor-opentelemetry", specifier = "==1.8.9" },
-    { name = "datapunt-authorization-django", specifier = "==2.2.0" },
+    { name = "datapunt-authorization-django", specifier = "==3.0.0" },
     { name = "django", specifier = "==5.2.17" },
     { name = "django-cors-headers", specifier = "==4.9.0" },
     { name = "django-environ", specifier = "==0.14.0" },
@@ -382,16 +382,18 @@ wheels = [
 
 [[package]]
 name = "datapunt-authorization-django"
-version = "2.2.0"
+version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
+    { name = "django-environ" },
     { name = "jwcrypto" },
+    { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/7c/08f67853b08ec78f616327822a13e32cd316e617c8cd9efede33e538cc10/datapunt_authorization_django-2.2.0.tar.gz", hash = "sha256:28eedf126a92d6dd57f8633baaa3a08c5f8de8a10dc1fc24878a2ec4a44ee75b", size = 23096, upload-time = "2026-08-18T12:51:14.126Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/45/ed93d2f97a7339d330cbd4a72a6e4ce5e032b90d2a817054fb58cbbc6df2/datapunt_authorization_django-3.0.0.tar.gz", hash = "sha256:a072332c561705d9d28ff8f5adc99ac975fb728c96035206e5203508998663a9", size = 29949, upload-time = "2026-09-03T13:34:27.891Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/7e/fe6d98d2ac7c35a2ead78a276c4d4f19aa888b1e5840c10963f028820cba/datapunt_authorization_django-2.2.0-py3-none-any.whl", hash = "sha256:df18726514f6fc17005c303c76152e017e1812595ec0a937c9145ee99080fe9f", size = 20386, upload-time = "2026-08-18T12:51:12.987Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/34/f3b0f3b6a1e6bd3f1d9b5591f54e34a5db52cc582ee07972493ce61c2e1a/datapunt_authorization_django-3.0.0-py3-none-any.whl", hash = "sha256:130b9f488e93a3953f1205dd954f793324792f577433e5d9ea7a58d2c1cffa08", size = 21736, upload-time = "2026-09-03T13:34:26.957Z" },
 ]
 
 [[package]]
