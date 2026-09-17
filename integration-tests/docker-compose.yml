@@ -1,0 +1,17 @@
+include:
+  - ../docker-compose.yml
+  - web.health-check.override.yml
+services:
+  tests:
+    build:
+      context: .
+    links:
+      - web
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      TOKEN: "${TOKEN}"
+      CATALOGUS_URL: "${CATALOGUS_URL:-http://web:8000}"
+
+# start web, wait until web health check passes, start tests container
