@@ -1,0 +1,10 @@
+services:
+  web:
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+# "healthy" only if curl http://localhost:8000 returns a successful HTTP response
