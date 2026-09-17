@@ -21,10 +21,11 @@ direnv with an `.envrc` file or export a token from the command line:
 export TOKEN="$(docker compose run web python get-token.py FP/MDW)"
 ```
 
-After having a valid token in your environment you'll be able to start the tests using:
+The catalogus test container has both the `teams` and `products` endpoint available, so running the tests against the `bewoningen`. After having a valid token in your environment you'll be able to start the tests using:
 
 ```shell
-docker compose run tests
+docker compose run tests -e teams
+docker compose run tests -e products
 ```
 
 ## Using Local Python
