@@ -8,6 +8,9 @@ CATALOGUS_URL = os.environ.get("CATALOGUS_URL", "http://localhost:8096")
 DEBUG = os.environ.get("DEBUG", False)
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG" if DEBUG else "INFO").upper()
 ALLOWED_FAILURES = int(os.environ.get("ALLOWED_FAILURES", 0))
+TOKEN = os.environ.get("TOKEN")
+# dit nog aanpassen, werkt catalogus met entra en keycloak?
+# KEYCLOAK_TOKEN = os.environ.get("TOKEN")
 
 if CLOUD_ENV.startswith("azure"):
     TOKEN = None
