@@ -267,8 +267,8 @@ class TestProductRepository:
         product.contracts[0].distributions = [
             Distribution(
                 id=product.contracts[0].distributions[0].id,
-                type=enums.DistributionType.API,
-                access_service_id=product.services[0].id,
+                type=enums.DistributionType.REPORT,
+                access_url="https://bomen.amsterdam.nl/report",
                 refresh_period=RefreshPeriod.from_dict({"frequency": 1, "unit": "HOUR"}),
             ),
             Distribution(
@@ -286,18 +286,15 @@ class TestProductRepository:
         orm_product.refresh_from_db()
         contract = orm_product.contracts.first()
         assert hasattr(contract, "distributions")
-        distributions = list(contract.distributions.all().order_by("type"))
+        distributions = {
+            distribution.type: distribution for distribution in contract.distributions.all()
+        }
         assert len(distributions) == 3
-        assert distributions[0].type == "A"
-        assert distributions[0].access_service == orm_product.services.first()
-        assert distributions[0].refresh_period == "1.HOUR"
-
-        assert distributions[1].type == "D"
-        assert distributions[1].access_url == "https://bomen.amsterdam.nl/dashboard"
-
-        assert distributions[2].type == "F"
-        assert distributions[2].format == "txt"
-        assert distributions[2].download_url == "https://bomen.amsterdam.nl/bomen.txt"
+        assert distributions["R"].access_url == "https://bomen.amsterdam.nl/report"
+        assert distributions["R"].refresh_period == "1.HOUR"
+        assert distributions["D"].access_url == "https://bomen.amsterdam.nl/dashboard"
+        assert distributions["F"].format == "txt"
+        assert distributions["F"].download_url == "https://bomen.amsterdam.nl/bomen.txt"
 
     def test_save_contract_revision_and_get_contract_revision_with_schema_url(
         self, orm_incomplete_product: ORMProduct
@@ -359,18 +356,12 @@ class TestProductRepository:
         live_distributions = list(
             live_contract.distributions.order_by("id").values(
                 "id",
-                "access_service_id",
             )
         )
 
         contract.distributions = [
             Distribution(
                 id=live_distributions[0]["id"],
-                access_service_id=live_distributions[0]["access_service_id"],
-                type=enums.DistributionType.API,
-            ),
-            Distribution(
-                id=live_distributions[1]["id"],
                 download_url="https://bomen.amsterdam.nl/beheer-updated.csv",
                 format="csv",
                 type=enums.DistributionType.FILE,
@@ -388,7 +379,7 @@ class TestProductRepository:
             contract_id=contract.id,
         )
 
-        live_distribution_ids = {distribution["id"] for distribution in live_distributions}
+        retained_live_distribution_ids = {live_distributions[0]["id"]}
         saved_ids = {distribution.id for distribution in saved_contract.distributions}
         fetched_ids = {distribution.id for distribution in fetched_contract.distributions}
         draft_distribution = next(
@@ -397,8 +388,8 @@ class TestProductRepository:
             if distribution.download_url == "https://bomen.amsterdam.nl/draft.geojson"
         )
 
-        assert live_distribution_ids.issubset(saved_ids)
-        assert live_distribution_ids.issubset(fetched_ids)
+        assert retained_live_distribution_ids.issubset(saved_ids)
+        assert retained_live_distribution_ids.issubset(fetched_ids)
         assert draft_distribution.id is not None
         assert draft_distribution.id < 0
         assert (
@@ -431,17 +422,11 @@ class TestProductRepository:
         live_distributions = list(
             live_contract.distributions.order_by("id").values(
                 "id",
-                "access_service_id",
             )
         )
 
         contract.name = "gepubliceerde draft naam"
         contract.distributions = [
-            Distribution(
-                id=live_distributions[0]["id"],
-                access_service_id=live_distributions[0]["access_service_id"],
-                type=enums.DistributionType.API,
-            ),
             Distribution(
                 id=live_distributions[1]["id"],
                 download_url="https://bomen.amsterdam.nl/beheer-updated.csv",
@@ -478,7 +463,7 @@ class TestProductRepository:
         orm_product.refresh_from_db()
         live_contract = orm_product.contracts.get(pk=contract.id)
         assert live_contract.name == "gepubliceerde draft naam"
-        assert live_contract.distributions.count() == 3
+        assert live_contract.distributions.count() == 2
         assert live_contract.distributions.filter(
             download_url="https://bomen.amsterdam.nl/published.geojson"
         ).exists()
