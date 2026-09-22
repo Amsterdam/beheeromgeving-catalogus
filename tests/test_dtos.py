@@ -2,7 +2,8 @@ import pytest
 from django.http import QueryDict
 from pydantic import ValidationError
 
-from api.datatransferobjects import ProductCreate, ProductQueryParams, ProductUpdate
+from api.datatransferobjects import ProductCreate, ProductList, ProductQueryParams, ProductUpdate
+from beheeromgeving.models import DataContract, DataService, Distribution, Product
 from domain.product import enums
 
 
@@ -86,6 +87,85 @@ class TestQueryParams:
 
 
 class TestProductDTOValidation:
+    @pytest.mark.django_db
+    def test_product_summary_lists_alphabetically(self, orm_team):
+        product = Product.objects.create(
+            name="Bomen",
+            description="bomen in Amsterdam",
+            team=orm_team,
+            data_steward="meneerboom@amsterdam.nl",
+            language="NL",
+            is_geo=True,
+            schema_url="",
+            type="D",
+            themes=["NM"],
+            refresh_period="3.MONTH",
+            publication_status="P",
+            publication_date="2024-01-01T00:00:00Z",
+        )
+
+        service_wms = DataService.objects.create(
+            product=product,
+            type="WMS",
+            endpoint_url="https://api.data.amsterdam.nl/v1/bomen/wms",
+        )
+        DataService.objects.create(
+            product=product,
+            type="ATOM",
+            endpoint_url="https://api.data.amsterdam.nl/v1/bomen/atom",
+        )
+        DataService.objects.create(
+            product=product,
+            type="REST",
+            endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
+        )
+
+        contract = DataContract.objects.create(
+            product=product,
+            publication_status="P",
+            publication_date="2024-01-01T00:00:00Z",
+            purpose="onderhoud van bomen",
+            name="beheer bomen",
+            privacy_level="NPI",
+            scopes=["bomen_beheer"],
+            confidentiality="I",
+            start_date="2025-01-01",
+            retainment_period=12,
+            tables=["stamgegevens", "takgegevens"],
+        )
+
+        Distribution.objects.create(
+            contract=contract,
+            download_url="https://bomen.amsterdam.nl/beheer.geojson",
+            format="geojson",
+            type="F",
+        )
+        Distribution.objects.create(
+            contract=contract,
+            access_service=service_wms,
+            type="A",
+        )
+        Distribution.objects.create(
+            contract=contract,
+            download_url="https://bomen.amsterdam.nl/beheer.csv",
+            format="csv",
+            type="F",
+        )
+        Distribution.objects.create(
+            contract=contract,
+            download_url="https://bomen.amsterdam.nl/beheer.avro",
+            format="avro",
+            type="F",
+        )
+
+        dto = ProductList.from_django(product)
+
+        assert dto.summary == {
+            "availability": ["API", "FILE"],
+            "service_types": ["ATOM", "REST", "WMS"],
+            "file_formats": ["AVRO", "CSV", "GEOJSON"],
+        }
+
     def test_product_create_access_url_allowed_for_information_product(self):
         dto = ProductCreate(
             team_id=1,

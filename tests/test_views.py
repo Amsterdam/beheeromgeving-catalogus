@@ -149,7 +149,11 @@ class TestViews:
         assert product["name"] == orm_product.name
         assert product["endorsement"] == orm_product.endorsement
         assert product["created_at"] == orm_product.created_at
-        assert product["summary"] == {"distributions": ["F"], "services": ["REST"]}
+        assert product["summary"] == {
+            "availability": ["API", "FILE"],
+            "service_types": ["REST"],
+            "file_formats": ["CSV"],
+        }
         for key in [
             "description",
             "language",

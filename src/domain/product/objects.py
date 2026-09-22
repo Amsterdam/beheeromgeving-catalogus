@@ -446,16 +446,27 @@ class Product(BaseObject):
         return service_id
 
     @property
-    def summary(self) -> dict[str, list[enums.StrEnum]]:
-        return {
-            "services": [service.type for service in self.services if service.type is not None],
-            "distributions": [
-                distribution.type
+    def summary(self) -> dict[str, list[str]]:
+        availability = sorted(
+            {
+                d.type.name
                 for contract in self.contracts
-                for distribution in contract.distributions
-                if distribution.type != enums.DistributionType.API
-                and distribution.type is not None
-            ],
+                for d in contract.distributions
+                if d.type is not None
+            }
+        )
+        file_formats = sorted(
+            {
+                d.format.upper()
+                for contract in self.contracts
+                for d in contract.distributions
+                if d.format is not None and d.type == enums.DistributionType.FILE
+            }
+        )
+        return {
+            "availability": availability,
+            "service_types": sorted({s.type.name for s in self.services if s.type is not None}),
+            "file_formats": file_formats,
         }
 
     @property

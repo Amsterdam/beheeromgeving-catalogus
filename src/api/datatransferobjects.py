@@ -302,6 +302,7 @@ class ProductDetail(IdMixin, ProductCreate):
     publication_status: enums.PublicationStatus
     publication_date: datetime | None = None
     missing_fields: list[str] | None = None
+    summary: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class ProductUpdate(ModelMixin, BaseModel):
@@ -359,13 +360,39 @@ class ProductList(ModelMixin, BaseModel):
     created_at: datetime | None = None
     source_last_updated: datetime | None = None
     language: enums.Language | None = None
-    summary: dict[str, list[enums.DistributionType | enums.DataServiceType | None]] | None = None
+    summary: dict[str, list[str]] | None = None
     is_geo: bool | None = None
     schema_url: str | None = None
     publication_status: enums.PublicationStatus | None
     contract_count: int
     team_id: int
     endorsement: enums.EndorsementLevel | None = None
+
+    @classmethod
+    def _build_summary(cls, services, distributions) -> dict[str, list[str]]:
+        service_types = sorted(
+            {
+                enums.DataServiceType(service.type).name
+                for service in services
+                if service.type is not None
+            }
+        )
+
+        availability = set()
+        file_formats = set()
+        for distribution in distributions:
+            if distribution.type is None:
+                continue
+
+            availability.add(enums.DistributionType(distribution.type).name)
+            if distribution.type == enums.DistributionType.FILE.value and distribution.format:
+                file_formats.add(distribution.format.strip().upper())
+
+        return {
+            "availability": sorted(availability),
+            "service_types": service_types,
+            "file_formats": sorted(file_formats),
+        }
 
     @classmethod
     def from_django(cls, product: ORMProduct) -> ProductList:
@@ -389,15 +416,14 @@ class ProductList(ModelMixin, BaseModel):
             ).count(),
             team_id=product.team.pk,
             endorsement=product.endorsement,
-            summary={
-                "services": [s.type for s in product.services.all() if s.type is not None],
-                "distributions": [
-                    d.type
-                    for c in product.contracts.all()
-                    for d in c.distributions.all()
-                    if d.type is not None and d.type != enums.DistributionType.API.value
+            summary=cls._build_summary(
+                services=product.services.all(),
+                distributions=[
+                    distribution
+                    for contract in product.contracts.all()
+                    for distribution in contract.distributions.all()
                 ],
-            },
+            ),
         )
 
 
