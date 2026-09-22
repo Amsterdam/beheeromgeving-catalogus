@@ -137,7 +137,6 @@ class SetState(ModelMixin, BaseModel):
 
 
 class DistributionCreateOrUpdate(ModelMixin, BaseModel):
-    access_service_id: int | None = None
     access_url: str | None = None
     download_url: str | None = None
     format: str | None = None
@@ -395,7 +394,7 @@ class ProductList(ModelMixin, BaseModel):
                     d.type
                     for c in product.contracts.all()
                     for d in c.distributions.all()
-                    if d.type is not None and d.type != enums.DistributionType.API.value
+                    if d.type is not None
                 ],
             },
         )

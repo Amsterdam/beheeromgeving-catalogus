@@ -88,7 +88,6 @@ class DistributionType(StrChoicesEnum):
     FOLDER = "M"
     FILE = "F"
     CUSTOM = "C"
-    API = "A"
     REPORT = "R"
 
 
