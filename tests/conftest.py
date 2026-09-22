@@ -63,7 +63,7 @@ def orm_product(orm_team) -> Product:
         publication_date="2024-01-01T00:00:00Z",
     )
 
-    service = DataService.objects.create(
+    DataService.objects.create(
         product=product,
         type="REST",
         endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
@@ -97,14 +97,14 @@ def orm_product(orm_team) -> Product:
 
     Distribution.objects.create(
         contract=contract,
-        access_service=service,
-        type="A",
-    )
-    Distribution.objects.create(
-        contract=contract,
         download_url="https://bomen.amsterdam.nl/beheer.csv",
         format="csv",
         type="F",
+    )
+    Distribution.objects.create(
+        contract=contract,
+        access_url="https://bomen.amsterdam.nl/dashboard",
+        type="D",
     )
 
     return product
@@ -126,7 +126,7 @@ def orm_draft_product(orm_team) -> Product:
         publication_status="D",
     )
 
-    service = DataService.objects.create(
+    DataService.objects.create(
         product=product,
         type="REST",
         endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
@@ -146,14 +146,14 @@ def orm_draft_product(orm_team) -> Product:
 
     Distribution.objects.create(
         contract=contract,
-        access_service=service,
-        type="A",
-    )
-    Distribution.objects.create(
-        contract=contract,
         download_url="https://bomen.amsterdam.nl/beheer.csv",
         format="csv",
         type="F",
+    )
+    Distribution.objects.create(
+        contract=contract,
+        access_url="https://bomen.amsterdam.nl/dashboard",
+        type="D",
     )
 
     return product
@@ -175,7 +175,7 @@ def orm_product2(orm_other_team) -> Product:
         publication_status="P",
     )
 
-    service = DataService.objects.create(
+    DataService.objects.create(
         product=product,
         type="REST",
         endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
@@ -195,14 +195,9 @@ def orm_product2(orm_other_team) -> Product:
 
     Distribution.objects.create(
         contract=contract,
-        access_service=service,
-        type="A",
-    )
-    Distribution.objects.create(
-        contract=contract,
         download_url="https://fietspaaltjes.amsterdam.nl/beheer.csv",
         format="csv",
-        type="A",
+        type="F",
     )
 
     return product
@@ -225,7 +220,7 @@ def orm_product3(orm_other_team) -> Product:
         last_editor="test@example.com",
     )
 
-    service = DataService.objects.create(
+    DataService.objects.create(
         product=product,
         type="REST",
         endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
@@ -243,11 +238,6 @@ def orm_product3(orm_other_team) -> Product:
         retainment_period=12,
     )
 
-    Distribution.objects.create(
-        contract=contract,
-        access_service=service,
-        type="A",
-    )
     Distribution.objects.create(
         contract=contract,
         download_url="https://bomen.amsterdam.nl/beheer.csv",
@@ -347,7 +337,7 @@ def orm_incomplete_product(orm_team) -> Product:
         publication_status="D",
     )
 
-    service = DataService.objects.create(
+    DataService.objects.create(
         product=product,
         type="REST",
         endpoint_url="https://api.data.amsterdam.nl/v1/bomen",
@@ -365,11 +355,6 @@ def orm_incomplete_product(orm_team) -> Product:
         tables=["stamgegevens", "takgegevens"],
     )
 
-    Distribution.objects.create(
-        contract=contract,
-        access_service=service,
-        type="A",
-    )
     Distribution.objects.create(
         contract=contract,
         download_url="https://bomen.amsterdam.nl/beheer.csv",

@@ -608,7 +608,7 @@ class TestProductService:
         )
         assert live.purpose == "onderhoud van bomen"
 
-    def test_publish_contract_revision_rejects_unpublished_service_reference(
+    def test_publish_contract_revision_without_service_links(
         self, product_service: ProductService, published_product: Product, team: Team
     ):
         assert published_product.id
@@ -627,20 +627,31 @@ class TestProductService:
                 "distributions": [
                     {
                         "id": live_distributions[0].id,
-                        "access_service_id": 999999,
+                        "download_url": live_distributions[0].download_url,
+                        "format": live_distributions[0].format,
                         "type": live_distributions[0].type,
-                    }
+                    },
+                    {
+                        "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                        "format": "geojson",
+                        "type": enums.DistributionType.FILE,
+                    },
                 ]
             },
             scopes=[team.scope],
         )
 
-        with pytest.raises(ValidationError, match="published service set"):
-            product_service.publish_contract_revision(
-                product_id=published_product.id,
-                contract_id=published_contract.id,
-                scopes=[team.scope],
-            )
+        result = product_service.publish_contract_revision(
+            product_id=published_product.id,
+            contract_id=published_contract.id,
+            scopes=[team.scope],
+        )
+
+        assert len(result.distributions) == 2
+        assert any(
+            distribution.download_url == "https://bomen.amsterdam.nl/draft.geojson"
+            for distribution in result.distributions
+        )
 
     def test_get_contract_team_member(self, product_service: ProductService, product: Product):
         assert product.id
@@ -1419,15 +1430,13 @@ class TestProductService:
         assert saved_distribution.filename == "file.test"
 
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
-    def test_create_distribution_for_access_service(
+    def test_create_distribution_with_crs(
         self, product_service: ProductService, product: Product, team: Team, scope: str
     ):
         assert product.id
         assert product.contracts[0].id
-        access_service = product.services[0]
         data = {
-            "type": "A",
-            "access_service_id": access_service.id,
+            "type": "F",
             "crs": ["RD", "WGS84", "ETRS89", "UTM35S"],
         }
         distribution = product_service.create_distribution(
@@ -1660,8 +1669,7 @@ class TestProductService:
 
         assert len(product_service.get_services(product.id, scopes=[team.scope])) == 0
 
-    @pytest.mark.xfail(raises=ValidationError)
-    def test_delete_service_fails_when_distribution_accesses_it(
+    def test_delete_service_is_independent_from_distributions(
         self, product_service: ProductService, product: Product, team: Team
     ):
         assert product.id
@@ -1671,6 +1679,7 @@ class TestProductService:
             service_id=product.services[0].id,
             scopes=[team.scope],
         )
+        assert len(product_service.get_services(product.id, scopes=[team.scope])) == 0
 
     @pytest.mark.xfail(raises=ObjectDoesNotExist)
     def test_delete_service_non_existent(

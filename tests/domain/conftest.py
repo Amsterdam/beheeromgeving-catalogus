@@ -84,16 +84,16 @@ def product(team: Team) -> Product:
                 retainment_period=12,
                 distributions=[
                     Distribution(
-                        id=1,
-                        access_service_id=1,
-                        type=enums.DistributionType.API,
-                    ),
-                    Distribution(
                         id=2,
                         download_url="https://bomen.amsterdam.nl/beheer.csv",
                         format="csv",
                         type=enums.DistributionType.FILE,
                         filename="beheer.csv",
+                    ),
+                    Distribution(
+                        id=3,
+                        access_url="https://bomen.amsterdam.nl/dashboard",
+                        type=enums.DistributionType.DASHBOARD,
                     ),
                 ],
             ),
@@ -110,9 +110,11 @@ def product(team: Team) -> Product:
                 retainment_period=12,
                 distributions=[
                     Distribution(
-                        id=1,
-                        access_service_id=1,
-                        type=enums.DistributionType.API,
+                        id=4,
+                        download_url="https://bomen.amsterdam.nl/published.csv",
+                        format="csv",
+                        type=enums.DistributionType.FILE,
+                        filename="published.csv",
                     ),
                 ],
             ),
@@ -158,13 +160,7 @@ def published_product(team: Team) -> Product:
                 confidentiality=enums.ConfidentialityLevel.INTERN,
                 start_date=datetime.fromisoformat("2025-01-01T00:00:00+00"),
                 retainment_period=12,
-                distributions=[
-                    Distribution(
-                        id=1,
-                        access_service_id=1,
-                        type=enums.DistributionType.API,
-                    ),
-                ],
+                distributions=[],
             ),
             DataContract(
                 id=2,
@@ -179,9 +175,11 @@ def published_product(team: Team) -> Product:
                 retainment_period=12,
                 distributions=[
                     Distribution(
-                        id=1,
-                        access_service_id=1,
-                        type=enums.DistributionType.API,
+                        id=4,
+                        download_url="https://bomen.amsterdam.nl/published.csv",
+                        format="csv",
+                        type=enums.DistributionType.FILE,
+                        filename="published.csv",
                     ),
                 ],
             ),

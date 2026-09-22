@@ -43,13 +43,13 @@ class TestQueryParams:
                 None,
             ),
             (
-                "type=A&confidentiality=O",
+                "type=F&confidentiality=O",
                 ProductQueryParams(
-                    type="A",  # ty:ignore[invalid-argument-type]
+                    type="F",  # ty:ignore[invalid-argument-type]
                     confidentiality=enums.ConfidentialityLevel.OPENBAAR,  # ty:ignore[invalid-argument-type]
                 ),
                 {
-                    "contracts__distributions__type__in": [enums.DistributionType.API],
+                    "contracts__distributions__type__in": [enums.DistributionType.FILE],
                     "contracts__confidentiality__in": [enums.ConfidentialityLevel.OPENBAAR],
                     "publication_status": enums.PublicationStatus.PUBLISHED,
                 },

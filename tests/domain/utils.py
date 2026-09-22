@@ -186,6 +186,27 @@ class DummyRepository(AbstractRepository):
             ) from e
         return contract_id
 
+    def publish_contract_revision(self, *, product_id, contract_id):
+        try:
+            contract = copy.deepcopy(self._contract_drafts.pop((product_id, contract_id)))
+        except KeyError as e:
+            raise exceptions.ObjectDoesNotExist(
+                f"Object draft with id {contract_id} does not exist"
+            ) from e
+
+        product = self.get(product_id)
+        for index, existing_contract in enumerate(product.contracts):
+            if existing_contract.id == contract_id:
+                product.contracts[index] = contract
+                break
+        else:
+            raise exceptions.ObjectDoesNotExist(
+                f"Contract with id {contract_id} does not exist on product {product_id}"
+            )
+
+        self._items[product_id] = product
+        return copy.deepcopy(contract)
+
     def delete(self, id):
         try:
             self._items.pop(id)

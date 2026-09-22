@@ -149,7 +149,8 @@ class TestViews:
         assert product["name"] == orm_product.name
         assert product["endorsement"] == orm_product.endorsement
         assert product["created_at"] == orm_product.created_at
-        assert product["summary"] == {"distributions": ["F"], "services": ["REST"]}
+        assert set(product["summary"]["distributions"]) == {"F", "D"}
+        assert product["summary"]["services"] == ["REST"]
         for key in [
             "description",
             "language",
@@ -364,7 +365,7 @@ class TestViews:
 
     def test_product_list_filter_matches_type(self, orm_product, orm_product2, api_client):
         """Assert that we can filter the products on distribution type."""
-        response = api_client.get("/products?type=F")
+        response = api_client.get("/products?type=D")
         assert response.status_code == 200
         # only product1 is returned
         assert len(response.data["results"]) == 1
@@ -374,7 +375,7 @@ class TestViews:
         self, orm_product, orm_product2, api_client
     ):
         """Assert that we can filter the products on distribution type."""
-        response = api_client.get("/products?type=F,A")
+        response = api_client.get("/products?type=F,D")
         assert response.status_code == 200
         # both products are returned
         assert len(response.data["results"]) == 2
@@ -459,7 +460,7 @@ class TestViews:
 
     def test_product_list_no_filter_matches(self, orm_product, orm_product2, api_client):
         """Return status code 200 if no results return when filtered on."""
-        response = api_client.get(f"/products?confidentiality=I&team={orm_product.team.id}&type=A")
+        response = api_client.get(f"/products?confidentiality=I&team={orm_product.team.id}&type=R")
 
         assert response.status_code == 200
 
@@ -1867,7 +1868,7 @@ class TestViews:
         assert live_response.data["name"] == contract.name
         assert live_response.data["last_updated"] == now
 
-    def test_contract_revision_publish_rejects_unpublished_service_reference(
+    def test_contract_revision_publish_without_service_reference_validation(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
@@ -1880,14 +1881,14 @@ class TestViews:
                 "distributions": [
                     {
                         "id": live_distributions[0].id,
-                        "access_service_id": 999999,
+                        "download_url": live_distributions[0].download_url,
+                        "format": live_distributions[0].format,
                         "type": live_distributions[0].type,
                     },
                     {
-                        "id": live_distributions[1].id,
-                        "download_url": live_distributions[1].download_url,
-                        "format": live_distributions[1].format,
-                        "type": live_distributions[1].type,
+                        "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                        "format": "geojson",
+                        "type": "F",
                     },
                 ]
             },
@@ -1900,8 +1901,12 @@ class TestViews:
             data={},
         )
 
-        assert response.status_code == 400
-        assert "published service set" in response.data
+        assert response.status_code == 200, response.data
+        assert len(response.data["distributions"]) == 2
+        assert any(
+            distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
+            for distribution in response.data["distributions"]
+        )
 
         revision_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}/revision"
@@ -1910,10 +1915,8 @@ class TestViews:
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
 
-        assert revision_response.status_code == 200
-        assert revision_response.data["distributions"][0]["access_service_id"] == 999999
+        assert revision_response.status_code == 404
         assert live_response.status_code == 200
-        assert live_response.data["distributions"][0]["access_service_id"] != 999999
 
     def test_contract_revision_detail_fails_for_non_published_contract(
         self, orm_draft_product, orm_team, client_with_token
@@ -1959,7 +1962,6 @@ class TestViews:
                 "distributions": [
                     {
                         "id": live_distributions[0].id,
-                        "access_service_id": live_distributions[0].access_service_id,
                         "type": live_distributions[0].type,
                     },
                     {
@@ -1984,7 +1986,8 @@ class TestViews:
             distribution["id"] for distribution in response.data["distributions"]
         }
         live_distribution_ids = {distribution.id for distribution in live_distributions}
-        assert live_distribution_ids.issubset(draft_distribution_ids)
+        retained_live_distribution_ids = {live_distributions[0].id, live_distributions[1].id}
+        assert retained_live_distribution_ids.issubset(draft_distribution_ids)
 
         new_distribution = next(
             distribution
@@ -2018,7 +2021,6 @@ class TestViews:
                 "distributions": [
                     {
                         "id": live_distributions[0].id,
-                        "access_service_id": live_distributions[0].access_service_id,
                         "type": live_distributions[0].type,
                     },
                     {
@@ -2047,7 +2049,6 @@ class TestViews:
                 "distributions": [
                     {
                         "id": live_distributions[0].id,
-                        "access_service_id": live_distributions[0].access_service_id,
                         "type": live_distributions[0].type,
                     },
                     {
@@ -2096,7 +2097,6 @@ class TestViews:
                 "distributions": [
                     {
                         "id": live_distributions[0].id,
-                        "access_service_id": live_distributions[0].access_service_id,
                         "type": live_distributions[0].type,
                     }
                 ]
@@ -2323,7 +2323,7 @@ class TestViews:
         assert "revision" in response.data
 
         distribution.refresh_from_db()
-        assert distribution.format == "csv"
+        assert distribution.format == ("csv" if distribution.download_url else None)
 
     def test_distribution_delete_fails_on_published_contract(
         self, orm_product, orm_team, client_with_token
@@ -2350,7 +2350,7 @@ class TestViews:
             f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution_id}"
         )
         assert response.status_code == 200
-        assert response.data["type"] == "A"  # API
+        assert response.data["type"] == "F"
 
     def test_distribution_detail_404(self, orm_product, api_client):
         contract_id = orm_product.contracts.first().id
@@ -2597,15 +2597,15 @@ class TestViews:
 
         assert response.status_code == 400
 
-    def test_service_delete_not_allowed(self, orm_draft_product, orm_team, client_with_token):
+    def test_service_delete_allowed(self, orm_draft_product, orm_team, client_with_token):
         service_id = orm_draft_product.services.first().id
         response = client_with_token([orm_team.scope]).delete(
             f"/products/{orm_draft_product.id}/services/{service_id}"
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 204
         orm_draft_product.refresh_from_db()
-        assert len(orm_draft_product.services.all()) == 1
+        assert len(orm_draft_product.services.all()) == 0
 
     def test_me_with_scopes(self, orm_product, orm_team, orm_other_team, client_with_token):
         response = client_with_token([orm_team.scope]).get("/me")

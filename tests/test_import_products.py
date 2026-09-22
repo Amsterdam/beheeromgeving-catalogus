@@ -35,7 +35,7 @@ class TestImportProducts:
         distributions = import_products._create_distributions(
             product_json, new_product, new_contract, services, orm_team
         )
-        assert len(distributions) == 4  # 3 api endpoints and 1 file
+        assert len(distributions) == 1  # only file distributions remain
 
         assert Product.objects.filter(id=new_product.id).exists()
 
@@ -75,7 +75,7 @@ class TestImportProducts:
             == 1
         )
         assert DataService.objects.count() == 4
-        assert Distribution.objects.count() == 4
+        assert Distribution.objects.count() == 0
 
     def test_import_products_is_idempotent(
         self,
@@ -114,7 +114,7 @@ class TestImportProducts:
             == 1
         )
         assert DataService.objects.count() == 4
-        assert Distribution.objects.count() == 4
+        assert Distribution.objects.count() == 0
 
     def test_import_products_updates_from_marketplace(
         self,
