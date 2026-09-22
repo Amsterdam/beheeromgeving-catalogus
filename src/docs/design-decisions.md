@@ -2,6 +2,8 @@
 
 ## Changelog
 
+2026-09-22: Removed Distribution-Service coupling and removed API distributions.
+
 2026-06-08: Added Product Aggregate update about revision-based editing for externally published
 resources.
 
@@ -122,9 +124,10 @@ distribution changes live inside that revision, existing distributions keep thei
 while drafting, and revision-only distributions receive live ids on publish.
 
 This boundary is explicit: unpublished child entities continue to use the normal live CRUD flow,
-while published contracts must use the revision flow and may reference only the currently
-published product-level service set. (Soft-)deleting a live published product or contract clears
-any attached revision, while discarding a revision deletes only that staged copy.
+while published contracts must use the revision flow. Services remain a product-level branch and
+are managed independently from contract distributions. (Soft-)deleting a live published product
+or contract clears any attached revision, while discarding a revision deletes only that staged
+copy.
 
 #### Aggregate Root: Product
 
@@ -139,7 +142,8 @@ These entities are identifiable by their id.
 #### Value Objects: Distribution
 
 These are objects that don't receive incoming references and don't need to be stable over time.
-Within the domain, they don't need an id.
+Within the domain, they don't need an id. API access is represented by product-level services,
+not by API distributions.
 
 ### Team Aggregate
 

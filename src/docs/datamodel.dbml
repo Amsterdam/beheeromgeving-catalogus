@@ -74,7 +74,6 @@ Table Distribution {
   id                  int [pk]
   contract            DataContract [ref: > DataContract.id]
   type                DistributionType
-  service             DataService [ref: - DataService.id, null]
   format              string [Note: "MIME-type"]
   download_url        URL
   access_url          URL
@@ -89,7 +88,6 @@ Table DataService {
 }
 
 enum DistributionType {
-  "API"
   "Dashboard"
   "Map"
   "Bestand"
