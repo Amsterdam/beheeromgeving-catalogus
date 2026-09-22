@@ -686,7 +686,6 @@ class DataContractRevisionDistribution(models.Model):
         null=True,
         blank=True,
     )
-    access_service_id = models.IntegerField(null=True, blank=True)
     access_url = models.URLField(
         _("Access URL"),
         null=True,
@@ -741,7 +740,6 @@ class DataContractRevisionDistribution(models.Model):
     def to_domain(self):
         return objects.Distribution(
             id=self.live_distribution_id or -self.pk,
-            access_service_id=self.access_service_id,
             access_url=self.access_url,
             download_url=self.download_url,
             format=self.format,
@@ -779,7 +777,6 @@ class DataContractRevisionDistribution(models.Model):
         if instance is None:
             instance = cls(revision=revision, live_distribution=live_distribution)
 
-        instance.access_service_id = distribution.access_service_id
         instance.access_url = distribution.access_url
         instance.download_url = distribution.download_url
         instance.format = distribution.format
@@ -834,11 +831,6 @@ class Team(models.Model):
 
 
 class Distribution(models.Model):
-    access_service_id: int
-
-    access_service = models.OneToOneField(
-        "DataService", on_delete=models.CASCADE, related_name="distribution", null=True
-    )
     access_url = models.URLField(
         _("Access URL"),
         null=True,
@@ -896,7 +888,6 @@ class Distribution(models.Model):
     def to_domain(self):
         return objects.Distribution(
             id=self.pk,
-            access_service_id=self.access_service_id,
             access_url=self.access_url,
             download_url=self.download_url,
             format=self.format,

@@ -196,13 +196,6 @@ class Command(BaseCommand):
             except ObjectDoesNotExist, NotAuthorized:
                 # Create
                 self.stdout.write(f"Adding product {name}")
-                crs = dataset.get("crs")
-                crs_map = {
-                    "EPSG:28992": enums.CoordRefSystem.RD,
-                    "EPSG:4326": enums.CoordRefSystem.WGS84,
-                    "EPSG:4258": enums.CoordRefSystem.ETRS89,
-                    "EPSG:32735": enums.CoordRefSystem.UTM35S,
-                }
                 product = self._create_product(
                     team,
                     name[:64],
@@ -236,25 +229,15 @@ class Command(BaseCommand):
                     type=enums.DataServiceType.REST,
                     endpoint_url=f"https://api.data.amsterdam.nl/v1/{path}",
                 )
-                service = self.service.create_service(
+                self.service.create_service(
                     product_id=product.id, data=s.model_dump(), scopes=[team.scope]
-                )
-                d = DistributionCreateOrUpdate(
-                    access_service_id=service.id, type=enums.DistributionType.API
-                )
-                self.service.create_distribution(
-                    product_id=product.id,
-                    contract_id=contract.id,
-                    data=d.model_dump(),
-                    scopes=[team.scope],
-                    crs=[crs_map[crs] if crs else None],
                 )
 
     def _get_refresh_period(self, product):
         refresh_period_input = product["ververstermijn"]
         try:
             kwargs = REFRESH_MAP[refresh_period_input]
-            refresh_period = RefreshPeriod(**kwargs)  # ty:ignore[invalid-argument-type]
+            refresh_period = RefreshPeriod(**kwargs)
         except KeyError:
             try:
                 refresh_parts = refresh_period_input.split(" ")
@@ -388,30 +371,11 @@ class Command(BaseCommand):
                 scopes=[team.scope],
             )
 
-    def _create_distributions(self, product: dict, new_product, new_contract, services, team):
+    def _create_distributions(self, product: dict, new_product, new_contract, _services, team):
         distributions = []
-        crs = (
-            [product["geoCoördinaatreferentiesysteem"]]
-            if product["geoCoördinaatreferentiesysteem"] not in ["Niet van toepassing", ""]
-            else []
-        )
 
         for distribution in product["distributietype"]:
-            if distribution == "API":
-                for service in services:
-                    d = DistributionCreateOrUpdate(
-                        access_service_id=service.id, type=enums.DistributionType.API
-                    )
-                    distributions.append(
-                        self.service.create_distribution(
-                            product_id=new_product.id,
-                            contract_id=new_contract.id,
-                            data=d.model_dump(),
-                            scopes=[team.scope],
-                            crs=crs,
-                        )
-                    )
-            elif distribution == "Bestand":
+            if distribution == "Bestand":
                 for file in product["bestanden"]:
                     d = DistributionCreateOrUpdate(
                         download_url=file["bestandLink"],

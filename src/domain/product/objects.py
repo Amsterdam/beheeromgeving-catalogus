@@ -42,7 +42,6 @@ class DataService(BaseObject):
 @dataclass(kw_only=True)
 class Distribution(BaseObject):
     id: int | None = None
-    access_service_id: int | None = None
     access_url: str | None = None
     download_url: str | None = None
     format: str | None = None
@@ -430,12 +429,6 @@ class Product(BaseObject):
     def delete_service(self, service_id: int) -> int:
         self.validate.can_update()
         self.get_service(service_id)  # Raises if it doesn't exist
-        if any(
-            distribution.access_service_id == service_id
-            for contract in self.contracts
-            for distribution in contract.distributions
-        ):
-            raise ValidationError("Cannot delete service, it is still in use by distributions")
         service_ids = [s.id for s in self.services]
         if service_id not in service_ids:
             raise ObjectDoesNotExist(
@@ -453,8 +446,7 @@ class Product(BaseObject):
                 distribution.type
                 for contract in self.contracts
                 for distribution in contract.distributions
-                if distribution.type != enums.DistributionType.API
-                and distribution.type is not None
+                if distribution.type is not None
             ],
         }
 
