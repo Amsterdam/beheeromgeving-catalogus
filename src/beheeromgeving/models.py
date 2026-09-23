@@ -980,6 +980,7 @@ class Distribution(models.Model):
     def to_domain(self):
         return objects.Distribution(
             id=self.pk,
+            has_revision=hasattr(self, "revision_copy"),
             access_url=self.access_url,
             download_url=self.download_url,
             format=self.format,
