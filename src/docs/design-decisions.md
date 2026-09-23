@@ -2,6 +2,8 @@
 
 ## Changelog
 
+2026-09-22: Added decision that child draft resources live under parent revision namespaces.
+
 2026-09-22: Removed Distribution-Service coupling and removed API distributions.
 
 2026-06-08: Added Product Aggregate update about revision-based editing for externally published
@@ -128,6 +130,13 @@ while published contracts must use the revision flow. Services remain a product-
 are managed independently from contract distributions. (Soft-)deleting a live published product
 or contract clears any attached revision, while discarding a revision deletes only that staged
 copy.
+
+**Updated (2026-09-22)**
+Revision-owned child editing now follows the same aggregate boundary explicitly in the URL space.
+Draft services live under the product revision namespace and draft distributions live under the
+contract revision namespace. Child drafts are never published independently: parent product and
+contract revisions remain the only publish and discard boundary. Live child endpoints continue to
+return live state, while revision endpoints carry the staged child state.
 
 #### Aggregate Root: Product
 
