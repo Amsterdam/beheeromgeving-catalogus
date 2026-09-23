@@ -618,25 +618,14 @@ class TestProductService:
             if c.publication_status == enums.PublicationStatus.PUBLISHED
         )
         assert published_contract.id
-        live_distributions = published_contract.distributions
 
-        product_service.update_contract_revision(
+        product_service.create_distribution_revision(
             product_id=published_product.id,
             contract_id=published_contract.id,
             data={
-                "distributions": [
-                    {
-                        "id": live_distributions[0].id,
-                        "download_url": live_distributions[0].download_url,
-                        "format": live_distributions[0].format,
-                        "type": live_distributions[0].type,
-                    },
-                    {
-                        "download_url": "https://bomen.amsterdam.nl/draft.geojson",
-                        "format": "geojson",
-                        "type": enums.DistributionType.FILE,
-                    },
-                ]
+                "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                "format": "geojson",
+                "type": enums.DistributionType.FILE,
             },
             scopes=[team.scope],
         )

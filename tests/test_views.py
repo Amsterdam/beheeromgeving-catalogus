@@ -1873,28 +1873,17 @@ class TestViews:
     ):
         contract = orm_product.contracts.first()
         contract_id = contract.id
-        live_distributions = list(contract.distributions.order_by("id"))
 
-        patch_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
+        create_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions",
             data={
-                "distributions": [
-                    {
-                        "id": live_distributions[0].id,
-                        "download_url": live_distributions[0].download_url,
-                        "format": live_distributions[0].format,
-                        "type": live_distributions[0].type,
-                    },
-                    {
-                        "download_url": "https://bomen.amsterdam.nl/draft.geojson",
-                        "format": "geojson",
-                        "type": "F",
-                    },
-                ]
+                "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                "format": "geojson",
+                "type": "F",
             },
         )
 
-        assert patch_response.status_code == 200, patch_response.data
+        assert create_response.status_code == 201, create_response.data
 
         response = client_with_token([orm_team.scope]).post(
             f"/products/{orm_product.id}/contracts/{contract_id}/revision/publish",
@@ -1902,7 +1891,7 @@ class TestViews:
         )
 
         assert response.status_code == 200, response.data
-        assert len(response.data["distributions"]) == 2
+        assert len(response.data["distributions"]) == 3
         assert any(
             distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
             for distribution in response.data["distributions"]
@@ -1956,157 +1945,204 @@ class TestViews:
         contract_id = contract.id
         live_distributions = list(contract.distributions.order_by("id"))
 
-        response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions",
             data={
-                "distributions": [
-                    {
-                        "id": live_distributions[0].id,
-                        "type": live_distributions[0].type,
-                    },
-                    {
-                        "id": live_distributions[1].id,
-                        "download_url": live_distributions[1].download_url,
-                        "format": live_distributions[1].format,
-                        "type": live_distributions[1].type,
-                    },
-                    {
-                        "download_url": "https://bomen.amsterdam.nl/draft.geojson",
-                        "format": "geojson",
-                        "type": "F",
-                    },
-                ]
+                "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                "format": "geojson",
+                "type": "F",
             },
         )
 
-        assert response.status_code == 200, response.data
-        assert len(response.data["distributions"]) == 3
+        assert response.status_code == 201, response.data
+        assert response.data["id"] not in {distribution.id for distribution in live_distributions}
 
-        draft_distribution_ids = {
-            distribution["id"] for distribution in response.data["distributions"]
-        }
-        live_distribution_ids = {distribution.id for distribution in live_distributions}
-        retained_live_distribution_ids = {live_distributions[0].id, live_distributions[1].id}
-        assert retained_live_distribution_ids.issubset(draft_distribution_ids)
-
-        new_distribution = next(
-            distribution
-            for distribution in response.data["distributions"]
-            if distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
+        revision_list_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions"
         )
-        assert new_distribution["id"] not in live_distribution_ids
+        assert revision_list_response.status_code == 200
+        assert len(revision_list_response.data) == 3
+        assert {distribution["id"] for distribution in revision_list_response.data} == {
+            live_distributions[0].id,
+            live_distributions[1].id,
+            response.data["id"],
+        }
 
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
-        revision_response = client_with_token([orm_team.scope]).get(
-            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
+        revision_detail_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions/{response.data['id']}"
         )
 
         assert live_response.status_code == 200
         assert len(live_response.data["distributions"]) == 2
-        assert revision_response.status_code == 200
-        assert len(revision_response.data["distributions"]) == 3
+        assert revision_detail_response.status_code == 200
+        assert revision_detail_response.data["download_url"] == (
+            "https://bomen.amsterdam.nl/draft.geojson"
+        )
 
-    def test_contract_revision_can_update_a_revision_only_distribution_by_revision_id(
+    def test_contract_revision_distribution_update_keeps_live_distribution_unchanged(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
         contract_id = contract.id
-        live_distributions = list(contract.distributions.order_by("id"))
 
-        create_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
+        create_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions",
             data={
-                "distributions": [
-                    {
-                        "id": live_distributions[0].id,
-                        "type": live_distributions[0].type,
-                    },
-                    {
-                        "id": live_distributions[1].id,
-                        "download_url": live_distributions[1].download_url,
-                        "format": live_distributions[1].format,
-                        "type": live_distributions[1].type,
-                    },
-                    {
-                        "download_url": "https://bomen.amsterdam.nl/draft.geojson",
-                        "format": "geojson",
-                        "type": "F",
-                    },
-                ]
+                "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                "format": "geojson",
+                "type": "F",
             },
         )
-        revision_only_distribution = next(
-            distribution
-            for distribution in create_response.data["distributions"]
-            if distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
-        )
+        assert create_response.status_code == 201, create_response.data
+        revision_only_distribution = create_response.data
 
         update_response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions/{revision_only_distribution['id']}",
             data={
-                "distributions": [
-                    {
-                        "id": live_distributions[0].id,
-                        "type": live_distributions[0].type,
-                    },
-                    {
-                        "id": live_distributions[1].id,
-                        "download_url": live_distributions[1].download_url,
-                        "format": live_distributions[1].format,
-                        "type": live_distributions[1].type,
-                    },
-                    {
-                        "id": revision_only_distribution["id"],
-                        "download_url": "https://bomen.amsterdam.nl/draft-updated.geojson",
-                        "format": "geojson",
-                        "filename": "draft.geojson",
-                        "type": "F",
-                    },
-                ]
+                "download_url": "https://bomen.amsterdam.nl/draft-updated.geojson",
+                "format": "geojson",
+                "filename": "draft.geojson",
+                "type": "F",
             },
         )
 
         assert update_response.status_code == 200, update_response.data
-        updated_revision_only_distribution = next(
-            distribution
-            for distribution in update_response.data["distributions"]
-            if distribution["id"] == revision_only_distribution["id"]
-        )
-        assert updated_revision_only_distribution["download_url"] == (
+        assert update_response.data["id"] == revision_only_distribution["id"]
+        assert update_response.data["download_url"] == (
             "https://bomen.amsterdam.nl/draft-updated.geojson"
         )
-        assert updated_revision_only_distribution["filename"] == "draft.geojson"
+        assert update_response.data["filename"] == "draft.geojson"
 
         live_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
         assert len(live_response.data["distributions"]) == 2
 
-    def test_contract_revision_can_delete_a_distribution_without_mutating_live_contract(
+    def test_contract_revision_distribution_update_lazily_creates_parent_revision(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+        live_distribution = contract.distributions.order_by("id").first()
+        assert live_distribution is not None
+
+        update_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions/{live_distribution.id}",
+            data={"filename": "draft.geojson"},
+        )
+
+        assert update_response.status_code == 200, update_response.data
+        assert update_response.data["id"] == live_distribution.id
+        assert update_response.data["filename"] == "draft.geojson"
+
+        revision_list_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions"
+        )
+        assert revision_list_response.status_code == 200
+        assert len(revision_list_response.data) == 2
+        updated_distribution = next(
+            distribution
+            for distribution in revision_list_response.data
+            if distribution["id"] == live_distribution.id
+        )
+        assert updated_distribution["filename"] == "draft.geojson"
+
+        live_detail_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{live_distribution.id}"
+        )
+        assert live_detail_response.status_code == 200
+        assert live_detail_response.data["filename"] != "draft.geojson"
+
+    def test_contract_revision_distribution_delete_removes_only_staged_distribution(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+
+        create_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions",
+            data={
+                "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                "format": "geojson",
+                "type": "F",
+            },
+        )
+        assert create_response.status_code == 201, create_response.data
+
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions/{create_response.data['id']}"
+        )
+
+        assert response.status_code == 204
+
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions"
+        )
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert revision_response.status_code == 200
+        assert len(revision_response.data) == 2
+        assert live_response.status_code == 200
+        assert len(live_response.data["distributions"]) == 2
+
+    def test_contract_revision_distribution_delete_lazily_creates_parent_revision(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.first()
         contract_id = contract.id
         live_distributions = list(contract.distributions.order_by("id"))
 
-        response = client_with_token([orm_team.scope]).patch(
-            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
-            data={
-                "distributions": [
-                    {
-                        "id": live_distributions[0].id,
-                        "type": live_distributions[0].type,
-                    }
-                ]
-            },
+        response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions/{live_distributions[1].id}"
         )
 
-        assert response.status_code == 200, response.data
-        assert [distribution["id"] for distribution in response.data["distributions"]] == [
+        assert response.status_code == 204
+
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions"
+        )
+        live_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}"
+        )
+
+        assert revision_response.status_code == 200
+        assert [distribution["id"] for distribution in revision_response.data] == [
             live_distributions[0].id
         ]
+        assert live_response.status_code == 200
+        assert len(live_response.data["distributions"]) == 2
+
+    def test_contract_revision_distribution_publish_updates_live_contract(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+
+        create_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions",
+            data={
+                "download_url": "https://bomen.amsterdam.nl/draft.geojson",
+                "format": "geojson",
+                "type": "F",
+            },
+        )
+        assert create_response.status_code == 201, create_response.data
+
+        publish_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/publish",
+            data={},
+        )
+
+        assert publish_response.status_code == 200, publish_response.data
+        assert any(
+            distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
+            for distribution in publish_response.data["distributions"]
+        )
 
         revision_response = client_with_token([orm_team.scope]).get(
             f"/products/{orm_product.id}/contracts/{contract_id}/revision"
@@ -2115,10 +2151,12 @@ class TestViews:
             f"/products/{orm_product.id}/contracts/{contract_id}"
         )
 
-        assert revision_response.status_code == 200
-        assert len(revision_response.data["distributions"]) == 1
+        assert revision_response.status_code == 404
         assert live_response.status_code == 200
-        assert len(live_response.data["distributions"]) == 2
+        assert any(
+            distribution["download_url"] == "https://bomen.amsterdam.nl/draft.geojson"
+            for distribution in live_response.data["distributions"]
+        )
 
     def test_contract_revision_can_be_discarded(self, orm_product, orm_team, client_with_token):
         contract_id = orm_product.contracts.first().id
@@ -2149,7 +2187,6 @@ class TestViews:
         "data",
         [
             {"name": 2},  # Wrong type
-            {"distributions": [{"type": 3}]},  # Wrong type on subfield
         ],
     )
     def test_contract_update_bad_data(self, data, orm_draft_product, orm_team, client_with_token):

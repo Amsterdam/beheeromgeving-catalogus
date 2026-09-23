@@ -596,6 +596,91 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         )
         return Response(status=204)
 
+    @extend_schema(
+        responses={200: dtos.PaginatedResponse[dtos.Distribution]},
+        description=(
+            "Returns the staged distribution collection for the explicit contract revision."
+        ),
+    )
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="contracts/(?P<contract_id>[^/.]+)/revision/distributions",
+        url_name="revision-distributions-list",
+    )
+    def revision_distributions_list(self, request, pk: str, contract_id: str):
+        distributions = product_service.get_distribution_revisions(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(distributions)
+        return Response(data, status=200)
+
+    @extend_schema(request=dtos.DistributionCreateOrUpdate, responses={201: dtos.Distribution})
+    @revision_distributions_list.mapping.post
+    def create_distribution_revision(self, request, pk: str, contract_id: str):
+        distribution_dto = self._validate_dto(request.data, dtos.DistributionCreateOrUpdate)
+        distribution = product_service.create_distribution_revision(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            data=distribution_dto.model_dump(),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(distribution)
+        return Response(data, status=201)
+
+    @extend_schema(
+        responses={200: dtos.Distribution},
+        description="Returns the staged distribution detail for the explicit contract revision.",
+    )
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="contracts/(?P<contract_id>[^/.]+)/revision/distributions/(?P<distribution_id>[^/.]+)",
+        url_name="revision-distribution-detail",
+    )
+    def revision_distribution_detail(
+        self, request, pk: str, contract_id: str, distribution_id: str
+    ):
+        distribution = product_service.get_distribution_revision(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            distribution_id=int(distribution_id),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(distribution)
+        return Response(data, status=200)
+
+    @extend_schema(request=dtos.DistributionCreateOrUpdate, responses={200: dtos.Distribution})
+    @revision_distribution_detail.mapping.patch
+    def update_distribution_revision(
+        self, request, pk: str, contract_id: str, distribution_id: str
+    ):
+        distribution_dto = self._validate_dto(request.data, dtos.DistributionCreateOrUpdate)
+        distribution = product_service.update_distribution_revision(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            distribution_id=int(distribution_id),
+            data=distribution_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(distribution)
+        return Response(data, status=200)
+
+    @extend_schema()
+    @revision_distribution_detail.mapping.delete
+    def delete_distribution_revision(
+        self, request, pk: str, contract_id: str, distribution_id: str
+    ):
+        product_service.delete_distribution_revision(
+            product_id=int(pk),
+            contract_id=int(contract_id),
+            distribution_id=int(distribution_id),
+            scopes=request.get_token_scopes,
+        )
+        return Response(status=204)
+
     @extend_schema(responses={200: dtos.PaginatedResponse[dtos.DataService]})
     @action(detail=True, methods=["get"], url_path="services", url_name="services-list")
     def services_list(self, request, pk: str):

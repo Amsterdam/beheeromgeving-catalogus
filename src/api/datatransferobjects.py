@@ -172,7 +172,6 @@ class DataContractCreateOrUpdate(ModelMixin, BaseModel):
     confidentiality: enums.ConfidentialityLevel | None = None
     start_date: date | None = None
     retainment_period: int | None = None
-    distributions: list[DistributionDraft] | None = None
     tables: list[str] | None = None
 
     @field_validator("purpose")
