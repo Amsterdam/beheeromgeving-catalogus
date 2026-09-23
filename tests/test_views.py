@@ -2515,9 +2515,9 @@ class TestViews:
 
         assert response.status_code == 200
 
-    def test_service_create(self, orm_product, orm_team, client_with_token):
+    def test_service_create(self, orm_draft_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/services",
+            f"/products/{orm_draft_product.id}/services",
             data={
                 "type": "REST",
                 "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2",
@@ -2525,12 +2525,135 @@ class TestViews:
         )
         assert response.status_code == 201
 
-    def test_service_create_empty(self, orm_product, orm_team, client_with_token):
+    def test_service_create_empty(self, orm_draft_product, orm_team, client_with_token):
         response = client_with_token([orm_team.scope]).post(
-            f"/products/{orm_product.id}/services",
+            f"/products/{orm_draft_product.id}/services",
             data={},
         )
         assert response.status_code == 201
+
+    def test_service_create_fails_on_published_product(
+        self, orm_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/services",
+            data={
+                "type": "REST",
+                "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/v2",
+            },
+        )
+
+        assert response.status_code == 400
+
+    def test_service_revision_update_keeps_live_service_unchanged_and_exposes_metadata(
+        self, orm_product, orm_team, client_with_token
+    ):
+        live_service_id = orm_product.services.first().id
+
+        update_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision/services/{live_service_id}",
+            data={"type": "WMS"},
+        )
+
+        assert update_response.status_code == 200
+        assert update_response.data["id"] == live_service_id
+        assert update_response.data["type"] == "WMS"
+
+        live_detail_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/services/{live_service_id}"
+        )
+        assert live_detail_response.status_code == 200
+        assert live_detail_response.data["type"] == "REST"
+        assert live_detail_response.data["has_revision"] is True
+        assert live_detail_response.data["revision_url"] == (
+            f"http://testserver/products/{orm_product.id}/revision/services/{live_service_id}"
+        )
+
+        revision_detail_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision/services/{live_service_id}"
+        )
+        assert revision_detail_response.status_code == 200
+        assert revision_detail_response.data["type"] == "WMS"
+
+    def test_service_revision_create_is_staged_only(
+        self, orm_product, orm_team, client_with_token
+    ):
+        live_service_id = orm_product.services.first().id
+
+        create_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/revision/services",
+            data={
+                "type": "WFS",
+                "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/wfs",
+            },
+        )
+        assert create_response.status_code == 201
+        assert create_response.data["id"] < 0
+        draft_service_id = create_response.data["id"]
+
+        revision_list_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision/services"
+        )
+        assert revision_list_response.status_code == 200
+        assert {service["id"] for service in revision_list_response.data} == {
+            live_service_id,
+            draft_service_id,
+        }
+
+        live_list_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/services"
+        )
+        assert live_list_response.status_code == 200
+        assert [service["id"] for service in live_list_response.data] == [live_service_id]
+
+    def test_service_revision_delete_removes_only_staged_service(
+        self, orm_product, orm_team, client_with_token
+    ):
+        live_service_id = orm_product.services.first().id
+
+        create_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/revision/services",
+            data={
+                "type": "WFS",
+                "endpoint_url": "https://api.data.amsterdam.nl/v1/bomen/wfs",
+            },
+        )
+        assert create_response.status_code == 201
+        draft_service_id = create_response.data["id"]
+
+        delete_response = client_with_token([orm_team.scope]).delete(
+            f"/products/{orm_product.id}/revision/services/{draft_service_id}"
+        )
+        assert delete_response.status_code == 204
+
+        revision_list_after_delete = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision/services"
+        )
+        assert revision_list_after_delete.status_code == 200
+        assert [service["id"] for service in revision_list_after_delete.data] == [live_service_id]
+
+    def test_service_revision_publish_updates_live_service(
+        self, orm_product, orm_team, client_with_token
+    ):
+        live_service_id = orm_product.services.first().id
+
+        update_response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision/services/{live_service_id}",
+            data={"type": "WMS"},
+        )
+        assert update_response.status_code == 200
+
+        publish_response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/revision/publish",
+            data={},
+        )
+        assert publish_response.status_code == 200
+
+        published_live_detail = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/services/{live_service_id}"
+        )
+        assert published_live_detail.status_code == 200
+        assert published_live_detail.data["type"] == "WMS"
 
     def test_service_update(self, orm_draft_product, orm_team, client_with_token):
         service_id = orm_draft_product.services.first().id

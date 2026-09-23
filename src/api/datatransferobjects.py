@@ -126,6 +126,9 @@ class DataServiceCreateOrUpdate(ModelMixin, BaseModel):
 class DataService(IdMixin, DataServiceCreateOrUpdate):
     """DataService detail view"""
 
+    has_revision: bool = False
+    revision_url: str | None = None
+
 
 class RefreshPeriod(ModelMixin, BaseModel):
     frequency: int

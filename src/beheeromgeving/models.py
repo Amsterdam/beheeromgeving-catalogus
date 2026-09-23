@@ -1026,7 +1026,12 @@ class DataService(models.Model):
         return f"{self.type}: {self.endpoint_url}"
 
     def to_domain(self):
-        return objects.DataService(id=self.pk, type=self.type, endpoint_url=self.endpoint_url)
+        return objects.DataService(
+            id=self.pk,
+            has_revision=hasattr(self, "revision_copy"),
+            type=self.type,
+            endpoint_url=self.endpoint_url,
+        )
 
     @classmethod
     def from_domain(cls, service: objects.DataService, product_id: int):

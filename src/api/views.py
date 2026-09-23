@@ -158,6 +158,13 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         data["revision_url"] = request.build_absolute_uri(path)
         return data
 
+    def _attach_service_revision_metadata(self, *, request, data: dict, product_id: str):
+        if data.get("has_revision"):
+            data["revision_url"] = request.build_absolute_uri(
+                f"/products/{product_id}/revision/services/{data['id']}"
+            )
+        return data
+
     @extend_schema(
         responses={200: dtos.PaginatedResponse[dtos.ProductList]},
         parameters=[
@@ -624,7 +631,10 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             scopes=request.get_token_scopes,
         )
         data = dtos.to_response_object(service)
-        return Response(data, status=200)
+        return Response(
+            self._attach_service_revision_metadata(request=request, data=data, product_id=pk),
+            status=200,
+        )
 
     @extend_schema(request=dtos.DataServiceCreateOrUpdate, responses={200: dtos.DataService})
     @service_detail.mapping.patch
@@ -643,6 +653,78 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     @service_detail.mapping.delete
     def delete_service(self, request, pk: str, service_id: str):
         product_service.delete_service(
+            product_id=int(pk),
+            service_id=int(service_id),
+            scopes=request.get_token_scopes,
+        )
+        return Response(status=204)
+
+    @extend_schema(
+        responses={200: dtos.PaginatedResponse[dtos.DataService]},
+        description="Returns the staged service collection for the explicit product revision.",
+    )
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="revision/services",
+        url_name="revision-services-list",
+    )
+    def revision_services_list(self, request, pk: str):
+        services = product_service.get_service_revisions(
+            product_id=int(pk),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(services)
+        return Response(data, status=200)
+
+    @extend_schema(request=dtos.DataServiceCreateOrUpdate, responses={201: dtos.DataService})
+    @revision_services_list.mapping.post
+    def create_service_revision(self, request, pk: str):
+        service_dto = self._validate_dto(request.data, dtos.DataServiceCreateOrUpdate)
+        service = product_service.create_service_revision(
+            product_id=int(pk),
+            data=service_dto.model_dump(),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(service)
+        return Response(data, status=201)
+
+    @extend_schema(
+        responses={200: dtos.DataService},
+        description="Returns the staged service detail for the explicit product revision.",
+    )
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="revision/services/(?P<service_id>[^/.]+)",
+        url_name="revision-service-detail",
+    )
+    def revision_service_detail(self, request, pk: str, service_id: str):
+        service = product_service.get_service_revision(
+            product_id=int(pk),
+            service_id=int(service_id),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(service)
+        return Response(data, status=200)
+
+    @extend_schema(request=dtos.DataServiceCreateOrUpdate, responses={200: dtos.DataService})
+    @revision_service_detail.mapping.patch
+    def update_service_revision(self, request, pk: str, service_id: str):
+        service_dto = self._validate_dto(request.data, dtos.DataServiceCreateOrUpdate)
+        service = product_service.update_service_revision(
+            product_id=int(pk),
+            service_id=int(service_id),
+            data=service_dto.model_dump(exclude_unset=True),
+            scopes=request.get_token_scopes,
+        )
+        data = dtos.to_response_object(service)
+        return Response(data, status=200)
+
+    @extend_schema()
+    @revision_service_detail.mapping.delete
+    def delete_service_revision(self, request, pk: str, service_id: str):
+        product_service.delete_service_revision(
             product_id=int(pk),
             service_id=int(service_id),
             scopes=request.get_token_scopes,

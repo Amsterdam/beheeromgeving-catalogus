@@ -1620,6 +1620,44 @@ class TestProductService:
         assert isinstance(result, DataService)
         assert len(product_service.get_services(product.id, scopes=[team.scope])) == 2
 
+    def test_create_service_on_published_product_requires_revision(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        with pytest.raises(IllegalOperation, match="service revision flow"):
+            product_service.create_service(
+                product_id=published_product.id,
+                data={"type": "WMS"},
+                scopes=[team.scope],
+            )
+
+    def test_update_published_service_through_revision_keeps_live_state_unchanged(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        service_id = published_product.services[0].id
+        assert service_id
+
+        result = product_service.update_service_revision(
+            product_id=published_product.id,
+            service_id=service_id,
+            data={"type": "WMS"},
+            scopes=[team.scope],
+        )
+
+        revision_service = product_service.get_service_revision(
+            product_id=published_product.id,
+            service_id=service_id,
+            scopes=[team.scope],
+        )
+        live_service = product_service.get_service(
+            published_product.id,
+            service_id,
+            scopes=[team.scope],
+        )
+
+        assert result.type == enums.DataServiceType.WMS
+        assert revision_service.type == enums.DataServiceType.WMS
+        assert live_service.type == enums.DataServiceType.REST
+
     @pytest.mark.xfail(raises=NotAuthorized)
     def test_create_service_non_existent_product(
         self, product_service: ProductService, team: Team
