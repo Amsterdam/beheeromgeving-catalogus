@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from beheeromgeving.models import DataContractRevision, ProductRevision
+from beheeromgeving.models import DataContractRevision, ProductRevision, ProductRevisionService
 from beheeromgeving.models import Product as ORMProduct
 from beheeromgeving.models import Team as ORMTeam
 from domain.exceptions import AuthException, ObjectDoesNotExist
@@ -408,6 +408,143 @@ class TestProductRepository:
         assert not live_contract.distributions.filter(
             download_url="https://bomen.amsterdam.nl/draft.geojson"
         ).exists()
+
+    def test_save_product_revision_falls_back_to_live_services_without_draft_changes(
+        self, orm_product: ORMProduct
+    ):
+        repo = ProductRepository()
+        product = repo.get(orm_product.pk)
+        product.description = "draft description"
+
+        saved_revision = repo.save_revision(product)
+        fetched_revision = repo.get_revision(orm_product.pk)
+
+        revision = ProductRevision.objects.get(product_id=orm_product.pk)
+        assert revision.has_service_draft is False
+        assert revision.revision_services.count() == 0
+        assert [service.id for service in saved_revision.services] == [
+            service.id for service in product.services
+        ]
+        assert [service.id for service in fetched_revision.services] == [
+            service.id for service in product.services
+        ]
+
+    def test_save_product_revision_round_trips_live_and_draft_service_ids(
+        self, orm_product: ORMProduct
+    ):
+        repo = ProductRepository()
+        product = repo.get(orm_product.pk)
+        live_service = product.services[0]
+        assert live_service.id is not None
+
+        product.services = [
+            DataService(
+                id=live_service.id,
+                type=enums.DataServiceType.WMS,
+                endpoint_url="https://api.data.amsterdam.nl/v1/bomen/wms",
+            ),
+            DataService(
+                type=enums.DataServiceType.WFS,
+                endpoint_url="https://api.data.amsterdam.nl/v1/bomen/wfs",
+            ),
+        ]
+
+        saved_revision = repo.save_revision(product)
+        draft_service_id = saved_revision.services[1].id
+
+        assert draft_service_id is not None
+        assert draft_service_id < 0
+
+        product.services = saved_revision.services
+        product.services[1].endpoint_url = "https://api.data.amsterdam.nl/v2/bomen/wfs"
+        updated_revision = repo.save_revision(product)
+        fetched_revision = repo.get_revision(orm_product.pk)
+
+        assert ProductRevision.objects.get(product_id=orm_product.pk).has_service_draft is True
+        assert (
+            ProductRevisionService.objects.filter(revision__product_id=orm_product.pk).count() == 2
+        )
+        assert updated_revision.services[0].id == live_service.id
+        assert updated_revision.services[0].type == enums.DataServiceType.WMS
+        assert updated_revision.services[1].id == draft_service_id
+        assert (
+            updated_revision.services[1].endpoint_url
+            == "https://api.data.amsterdam.nl/v2/bomen/wfs"
+        )
+        assert fetched_revision.services[1].id == draft_service_id
+        assert (
+            fetched_revision.services[1].endpoint_url
+            == "https://api.data.amsterdam.nl/v2/bomen/wfs"
+        )
+
+        orm_product.refresh_from_db()
+        live_services = list(orm_product.services.order_by("id"))
+        assert len(live_services) == 1
+        assert live_services[0].type == "REST"
+
+    def test_publish_product_revision_materializes_staged_services(self, orm_product: ORMProduct):
+        repo = ProductRepository()
+        product = repo.get(orm_product.pk)
+        live_service_id = product.services[0].id
+        assert live_service_id is not None
+
+        product.services = [
+            DataService(
+                id=live_service_id,
+                type=enums.DataServiceType.WMS,
+                endpoint_url="https://api.data.amsterdam.nl/v1/bomen/wms",
+            ),
+            DataService(
+                type=enums.DataServiceType.WFS,
+                endpoint_url="https://api.data.amsterdam.nl/v1/bomen/wfs",
+            ),
+        ]
+        repo.save_revision(product)
+
+        published_product = repo.publish_revision(orm_product.pk)
+
+        assert [service.type for service in published_product.services] == [
+            enums.DataServiceType.WMS,
+            enums.DataServiceType.WFS,
+        ]
+        assert all(
+            service.id is not None and service.id > 0 for service in published_product.services
+        )
+        assert not ProductRevision.objects.filter(product_id=orm_product.pk).exists()
+
+        orm_product.refresh_from_db()
+        live_services = list(orm_product.services.order_by("id"))
+        assert len(live_services) == 2
+        assert live_services[0].pk == live_service_id
+        assert live_services[0].type == "WMS"
+        assert live_services[1].type == "WFS"
+
+    def test_discard_product_revision_removes_staged_services_only(self, orm_product: ORMProduct):
+        repo = ProductRepository()
+        product = repo.get(orm_product.pk)
+        live_service_id = product.services[0].id
+        assert live_service_id is not None
+
+        product.services = [
+            DataService(
+                type=enums.DataServiceType.WFS,
+                endpoint_url="https://api.data.amsterdam.nl/v1/bomen/wfs",
+            )
+        ]
+        repo.save_revision(product)
+
+        repo.delete_revision(orm_product.pk)
+
+        assert not ProductRevision.objects.filter(product_id=orm_product.pk).exists()
+        assert (
+            ProductRevisionService.objects.filter(revision__product_id=orm_product.pk).count() == 0
+        )
+
+        orm_product.refresh_from_db()
+        live_services = list(orm_product.services.order_by("id"))
+        assert len(live_services) == 1
+        assert live_services[0].pk == live_service_id
+        assert live_services[0].type == "REST"
 
     def test_publish_contract_revision_assigns_live_ids_and_removes_revision(
         self, orm_product: ORMProduct
