@@ -242,6 +242,7 @@ class Product(models.Model):
 
 class ProductRevision(models.Model):
     team_id: int
+    revision_services: models.Manager[ProductRevisionService]
 
     product = models.OneToOneField(
         Product,
@@ -303,6 +304,7 @@ class ProductRevision(models.Model):
         null=True,
         blank=True,
     )
+    has_service_draft = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name or str(self.pk)
@@ -356,6 +358,11 @@ class ProductRevision(models.Model):
                 "endorsement": self.endorsement,
             }
         )
+        if self.has_service_draft:
+            domain_product.services = [
+                service.to_domain()
+                for service in self.revision_services.select_related("live_service").order_by("id")
+            ]
         return domain_product
 
     @classmethod
@@ -387,7 +394,92 @@ class ProductRevision(models.Model):
         instance.owner = product.owner
         instance.contact_email = product.contact_email
         instance.save()
+
+        live_services = live_product.to_domain().services
+        if instance.has_service_draft or (product.services or []) != live_services:
+            live_services_by_id = {
+                service.pk: service for service in live_product.services.all().order_by("id")
+            }
+            draft_service_ids = set()
+            for service in product.services or []:
+                revision_service = ProductRevisionService.from_domain(
+                    service=service,
+                    revision=instance,
+                    live_service=live_services_by_id.get(service.id),
+                )
+                draft_service_ids.add(revision_service.pk)
+
+            instance.revision_services.exclude(pk__in=draft_service_ids).delete()
+            if not instance.has_service_draft:
+                instance.has_service_draft = True
+                instance.save(update_fields=["has_service_draft"])
+
         return instance.to_domain()
+
+
+class ProductRevisionService(models.Model):
+    live_service_id: int | None
+
+    revision = models.ForeignKey(
+        ProductRevision,
+        on_delete=models.CASCADE,
+        related_name="revision_services",
+    )
+    live_service = models.OneToOneField(
+        "DataService",
+        on_delete=models.SET_NULL,
+        related_name="revision_copy",
+        null=True,
+        blank=True,
+    )
+    type = models.CharField(
+        _("API Type"),
+        choices=enums.DataServiceType.choices(),
+        max_length=10,
+        help_text="Soort API: REST, atom, etc.",
+        blank=True,
+        null=True,
+    )
+    endpoint_url = models.URLField(_("API Link (Intern)"), null=True, blank=True)
+
+    def __str__(self):
+        return str(self.live_service_id or self.pk)
+
+    def to_domain(self):
+        return objects.DataService(
+            id=self.live_service_id or -self.pk,
+            type=self.type,
+            endpoint_url=self.endpoint_url,
+        )
+
+    @classmethod
+    def from_domain(
+        cls,
+        *,
+        service: objects.DataService,
+        revision: ProductRevision,
+        live_service: DataService | None,
+    ):
+        instance = None
+        if live_service is not None:
+            instance = cls.objects.filter(
+                revision=revision,
+                live_service=live_service,
+            ).first()
+        elif service.id is not None and service.id < 0:
+            instance = cls.objects.filter(
+                revision=revision,
+                pk=abs(service.id),
+                live_service__isnull=True,
+            ).first()
+
+        if instance is None:
+            instance = cls(revision=revision, live_service=live_service)
+
+        instance.type = service.type
+        instance.endpoint_url = service.endpoint_url
+        instance.save()
+        return instance
 
 
 class DataContract(models.Model):

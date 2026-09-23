@@ -29,6 +29,8 @@ class ProductRepository(AbstractRepository[Product]):
             "product__contracts",
             "product__contracts__distributions",
             "product__services",
+            "revision_services",
+            "revision_services__live_service",
         )
         self.contract_revision_manager = orm.DataContractRevision.objects.select_related(
             "contract", "contract__product"
@@ -223,6 +225,9 @@ class ProductRepository(AbstractRepository[Product]):
 
                 revision_product = revision.to_domain()
                 revision_product.last_updated = timezone.now()
+                for service in revision_product.services:
+                    if service.id is not None and service.id < 0:
+                        service.id = None
                 published_product = self.save(revision_product)
                 revision.delete()
                 return published_product
