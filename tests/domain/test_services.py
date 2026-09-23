@@ -1473,6 +1473,67 @@ class TestProductService:
                 scopes=[team.scope],
             )
 
+    def test_create_distribution_on_published_contract_requires_revision(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        published_contract = next(
+            contract
+            for contract in published_product.contracts
+            if contract.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+
+        with pytest.raises(IllegalOperation, match="contract revision flow"):
+            assert published_product.id
+            assert published_contract.id
+            product_service.create_distribution(
+                product_id=published_product.id,
+                contract_id=published_contract.id,
+                data={"format": "geojson", "type": enums.DistributionType.FILE},
+                scopes=[team.scope],
+            )
+
+    def test_update_distribution_on_published_contract_requires_revision(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        published_contract = next(
+            contract
+            for contract in published_product.contracts
+            if contract.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        distribution_id = published_contract.distributions[0].id
+        assert distribution_id
+        assert published_product.id
+        assert published_contract.id
+
+        with pytest.raises(IllegalOperation, match="contract revision flow"):
+            product_service.update_distribution(
+                product_id=published_product.id,
+                contract_id=published_contract.id,
+                distribution_id=distribution_id,
+                data={"format": "geojson", "type": enums.DistributionType.FILE},
+                scopes=[team.scope],
+            )
+
+    def test_delete_distribution_on_published_contract_requires_revision(
+        self, product_service: ProductService, published_product: Product, team: Team
+    ):
+        published_contract = next(
+            contract
+            for contract in published_product.contracts
+            if contract.publication_status == enums.PublicationStatus.PUBLISHED
+        )
+        distribution_id = published_contract.distributions[0].id
+        assert distribution_id
+        assert published_product.id
+        assert published_contract.id
+        with pytest.raises(IllegalOperation, match="contract revision flow"):
+            product_service.delete_distribution(
+                product_id=published_product.id,
+                contract_id=published_contract.id,
+                distribution_id=distribution_id,
+                scopes=[team.scope],
+            )
+
     @pytest.mark.parametrize("scope", [("scope_dadi"), ("test_admin")])
     def test_update_distribution(
         self, product_service: ProductService, product: Product, team: Team, scope: str
