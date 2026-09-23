@@ -33,10 +33,11 @@ class RefreshPeriod:
 @dataclass(kw_only=True)
 class DataService(BaseObject):
     id: int | None = None
+    has_revision: bool = False
     type: enums.DataServiceType | None = None
     endpoint_url: str | None = None
 
-    _skip_keys = set()
+    _skip_keys = {"has_revision"}
 
 
 @dataclass(kw_only=True)

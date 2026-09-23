@@ -291,6 +291,60 @@ class ProductService(AbstractService):
         except exceptions.ObjectDoesNotExist:
             pass
 
+    def _get_published_product_for_service_revision(
+        self,
+        *,
+        product_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> Product:
+        product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
+        if product.publication_status != enums.PublicationStatus.PUBLISHED:
+            raise exceptions.IllegalOperation(
+                "Service revisions are only available for externally published products."
+            )
+        return product
+
+    def _get_product_revision_for_service_mutation(
+        self,
+        *,
+        product_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> tuple[Product, Product]:
+        live_product = self._get_published_product_for_service_revision(
+            product_id=product_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        try:
+            revision_product = self.repository.get_revision(product_id)
+        except exceptions.ObjectDoesNotExist:
+            revision_product = copy.deepcopy(live_product)
+
+        revision_product.publication_status = enums.PublicationStatus.DRAFT
+        revision_product.publication_date = None
+        return live_product, revision_product
+
+    def _save_product_service_revision(self, *, live_product: Product, revision_product: Product):
+        revision_product.publication_status = live_product.publication_status
+        revision_product.publication_date = live_product.publication_date
+        return self.repository.save_revision(revision_product)
+
+    def _get_product_for_service_live_mutation(
+        self,
+        *,
+        product_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> Product:
+        product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
+        if product.publication_status == enums.PublicationStatus.PUBLISHED:
+            raise exceptions.IllegalOperation(
+                "Published product services must be edited through the service revision flow."
+            )
+        return product
+
     @authorize.is_admin
     @authorize.is_team_member
     def delete_product(self, *, product_id: int, **kwargs) -> None:
@@ -588,7 +642,6 @@ class ProductService(AbstractService):
             refresh_period=(RefreshPeriod.from_dict(refresh_period) if refresh_period else None),
         )
         product.add_distribution_to_contract(contract_id, distribution)
-
         updated_product = self._persist(product)
         return updated_product.get_contract(contract_id).distributions[-1]
 
@@ -620,6 +673,114 @@ class ProductService(AbstractService):
         self._persist(product)
         return distribution_id
 
+    @authorize.is_admin
+    @authorize.is_team_member
+    def get_service_revisions(
+        self,
+        product_id: int,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> list[DataService]:
+        live_product = self._get_published_product_for_service_revision(
+            product_id=product_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        try:
+            product = self.repository.get_revision(product_id)
+        except exceptions.ObjectDoesNotExist:
+            product = live_product
+        return product.services
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def get_service_revision(
+        self,
+        product_id: int,
+        service_id: int,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> DataService:
+        live_product = self._get_published_product_for_service_revision(
+            product_id=product_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        try:
+            product = self.repository.get_revision(product_id)
+        except exceptions.ObjectDoesNotExist:
+            product = live_product
+        return product.get_service(service_id)
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def create_service_revision(
+        self,
+        product_id: int,
+        data: dict,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> DataService:
+        live_product, revision_product = self._get_product_revision_for_service_mutation(
+            product_id=product_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        revision_product.create_service(data)
+        updated_product = self._save_product_service_revision(
+            live_product=live_product,
+            revision_product=revision_product,
+        )
+        return updated_product.services[-1]
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def update_service_revision(
+        self,
+        product_id: int,
+        service_id: int,
+        data: dict,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> DataService:
+        live_product, revision_product = self._get_product_revision_for_service_mutation(
+            product_id=product_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        service = revision_product.update_service(service_id, data)
+        self._save_product_service_revision(
+            live_product=live_product,
+            revision_product=revision_product,
+        )
+        return service
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def delete_service_revision(
+        self,
+        product_id: int,
+        service_id: int,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> int:
+        live_product, revision_product = self._get_product_revision_for_service_mutation(
+            product_id=product_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        revision_product.delete_service(service_id)
+        self._save_product_service_revision(
+            live_product=live_product,
+            revision_product=revision_product,
+        )
+        return service_id
+
     def get_services(
         self,
         product_id: int,
@@ -644,7 +805,7 @@ class ProductService(AbstractService):
     @authorize.is_admin
     @authorize.is_team_member
     def create_service(self, product_id: int, data: dict, **kwargs) -> DataService:
-        product = self.get_product(product_id=product_id, **kwargs)
+        product = self._get_product_for_service_live_mutation(product_id=product_id, **kwargs)
         product.create_service(data)
         updated_product = self._persist(product)
         return updated_product.services[-1]
@@ -654,7 +815,7 @@ class ProductService(AbstractService):
     def update_service(
         self, product_id: int, service_id: int, data: dict, **kwargs
     ) -> DataService:
-        product = self.get_product(product_id=product_id, **kwargs)
+        product = self._get_product_for_service_live_mutation(product_id=product_id, **kwargs)
         service = product.update_service(service_id, data)
         self._persist(product)
         return service
@@ -662,7 +823,7 @@ class ProductService(AbstractService):
     @authorize.is_admin
     @authorize.is_team_member
     def delete_service(self, product_id: int, service_id: int, **kwargs) -> int:
-        product = self.get_product(product_id=product_id, **kwargs)
+        product = self._get_product_for_service_live_mutation(product_id=product_id, **kwargs)
         product.delete_service(service_id)
         self._persist(product)
         return service_id
