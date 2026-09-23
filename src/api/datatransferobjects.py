@@ -152,6 +152,9 @@ class DistributionCreateOrUpdate(ModelMixin, BaseModel):
 class Distribution(IdMixin, DistributionCreateOrUpdate):
     """Distribution detail view"""
 
+    has_revision: bool = False
+    revision_url: str | None = None
+
 
 class DistributionDraft(DistributionCreateOrUpdate):
     id: int | None = None

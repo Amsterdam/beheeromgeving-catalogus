@@ -1074,6 +1074,26 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == "New Name"
 
+    def test_product_revision_detail_includes_staged_services(
+        self, orm_product, orm_team, client_with_token
+    ):
+        service_id = orm_product.services.first().id
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision/services/{service_id}",
+            data={"type": "WMS"},
+        )
+
+        response = client_with_token([orm_team.scope]).get(f"/products/{orm_product.id}/revision")
+
+        assert response.status_code == 200
+        assert response.data["services"][0]["id"] == service_id
+        assert response.data["services"][0]["type"] == "WMS"
+        assert (
+            response.data["services"][0]["endpoint_url"]
+            == "https://api.data.amsterdam.nl/v1/bomen"
+        )
+
     def test_product_detail_makes_revision_discoverable(
         self, orm_product, orm_team, client_with_token
     ):
@@ -1781,6 +1801,29 @@ class TestViews:
         assert response.status_code == 200
         assert response.data["name"] == "New Name"
 
+    def test_contract_revision_detail_includes_staged_distributions(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+        distribution = contract.distributions.order_by("id").first()
+        assert distribution is not None
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions/{distribution.id}",
+            data={"filename": "draft.geojson"},
+        )
+
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
+        )
+
+        assert response.status_code == 200
+        updated_distribution = next(
+            item for item in response.data["distributions"] if item["id"] == distribution.id
+        )
+        assert updated_distribution["filename"] == "draft.geojson"
+
     def test_contract_detail_makes_revision_discoverable(
         self, orm_product, orm_team, client_with_token
     ):
@@ -2080,6 +2123,31 @@ class TestViews:
         )
         assert live_detail_response.status_code == 200
         assert live_detail_response.data["filename"] != "draft.geojson"
+
+    def test_distribution_detail_makes_revision_discoverable(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.first()
+        contract_id = contract.id
+        distribution = contract.distributions.order_by("id").first()
+        assert distribution is not None
+
+        client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision/distributions/{distribution.id}",
+            data={"filename": "draft.geojson"},
+        )
+
+        response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/distributions/{distribution.id}"
+        )
+
+        assert response.status_code == 200
+        assert response.data["filename"] != "draft.geojson"
+        assert response.data["has_revision"] is True
+        assert response.data["revision_url"] == (
+            "http://testserver/products/"
+            f"{orm_product.id}/contracts/{contract_id}/revision/distributions/{distribution.id}"
+        )
 
     def test_contract_revision_distribution_delete_removes_only_staged_distribution(
         self, orm_product, orm_team, client_with_token

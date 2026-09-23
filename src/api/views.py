@@ -165,6 +165,16 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             )
         return data
 
+    def _attach_distribution_revision_metadata(
+        self, *, request, data: dict, product_id: str, contract_id: str
+    ):
+        if data.get("has_revision"):
+            data["revision_url"] = request.build_absolute_uri(
+                "/products/"
+                f"{product_id}/contracts/{contract_id}/revision/distributions/{data['id']}"
+            )
+        return data
+
     @extend_schema(
         responses={200: dtos.PaginatedResponse[dtos.ProductList]},
         parameters=[
@@ -569,7 +579,15 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             scopes=request.get_token_scopes,
         )
         data = dtos.to_response_object(distribution)
-        return Response(data, status=200)
+        return Response(
+            self._attach_distribution_revision_metadata(
+                request=request,
+                data=data,
+                product_id=pk,
+                contract_id=contract_id,
+            ),
+            status=200,
+        )
 
     @extend_schema(request=dtos.DistributionCreateOrUpdate, responses={200: dtos.Distribution})
     @distribution_detail.mapping.patch

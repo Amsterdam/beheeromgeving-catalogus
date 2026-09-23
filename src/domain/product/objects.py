@@ -43,6 +43,7 @@ class DataService(BaseObject):
 @dataclass(kw_only=True)
 class Distribution(BaseObject):
     id: int | None = None
+    has_revision: bool = False
     access_url: str | None = None
     download_url: str | None = None
     format: str | None = None
@@ -51,7 +52,7 @@ class Distribution(BaseObject):
     refresh_period: RefreshPeriod | None = None
     crs: list[enums.CoordRefSystem] | None = None
 
-    _skip_keys = {"refresh_period"}
+    _skip_keys = {"has_revision", "refresh_period"}
 
 
 class ContractValidator:
