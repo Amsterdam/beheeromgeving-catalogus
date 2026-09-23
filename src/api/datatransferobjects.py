@@ -323,7 +323,6 @@ class ProductUpdate(ModelMixin, BaseModel):
     owner: str | None = None
     contact_email: str | None = None
     data_steward: str | None = None
-    services: list[DataService] | None = None
     endorsement: enums.EndorsementLevel | None = None
     access_url: str | None = None
     sources: list[int] | None = None

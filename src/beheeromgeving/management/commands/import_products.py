@@ -301,6 +301,12 @@ class Command(BaseCommand):
 
     def _create_services(self, product, new_product, team):
         services = []
+        for existing_service in list(new_product.services):
+            self.service.delete_service(
+                product_id=new_product.id,
+                service_id=existing_service.id,
+                scopes=[team.scope],
+            )
         for service in product["api"]:
             s = DataServiceCreateOrUpdate(
                 type=enums.DataServiceType[service["type"].split(" ")[0].upper()],

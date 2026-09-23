@@ -1938,6 +1938,31 @@ class TestViews:
         assert response.data["name"] == "New Name"
         assert response.data["purpose"] == "New Purpose"
 
+    def test_contract_revision_patch_ignores_embedded_distribution_mutation(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract_id = orm_product.contracts.first().id
+
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision",
+            data={
+                "purpose": "New Purpose",
+                "distributions": [
+                    {"type": "F", "download_url": "https://example.com/ignored.csv"}
+                ],
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.data["purpose"] == "New Purpose"
+
+        revision_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/contracts/{contract_id}/revision"
+        )
+        assert revision_response.status_code == 200
+        assert revision_response.data["purpose"] == "New Purpose"
+        assert len(revision_response.data["distributions"]) == 2
+
     def test_contract_revision_can_add_a_new_distribution_without_mutating_live_contract(
         self, orm_product, orm_team, client_with_token
     ):
@@ -2628,6 +2653,27 @@ class TestViews:
         )
         assert revision_detail_response.status_code == 200
         assert revision_detail_response.data["type"] == "WMS"
+
+    def test_product_revision_patch_ignores_embedded_service_mutation(
+        self, orm_product, orm_team, client_with_token
+    ):
+        response = client_with_token([orm_team.scope]).patch(
+            f"/products/{orm_product.id}/revision",
+            data={
+                "description": "a fancy product",
+                "services": [{"type": "WMS"}],
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.data["description"] == "a fancy product"
+
+        revision_services_response = client_with_token([orm_team.scope]).get(
+            f"/products/{orm_product.id}/revision/services"
+        )
+        assert revision_services_response.status_code == 200
+        assert len(revision_services_response.data) == 1
+        assert revision_services_response.data[0]["type"] == "REST"
 
     def test_service_revision_create_is_staged_only(
         self, orm_product, orm_team, client_with_token
