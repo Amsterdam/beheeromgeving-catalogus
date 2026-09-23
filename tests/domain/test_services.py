@@ -345,6 +345,7 @@ class TestProductService:
     def test_publish_product_revision_fails_for_non_published_product(
         self, product_service: ProductService, product: Product, team: Team
     ):
+        assert product.id
         with pytest.raises(IllegalOperation, match="externally published products"):
             product_service.publish_product_revision(
                 product_id=product.id,

@@ -298,7 +298,7 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         last_editor = self._get_last_editor(request)
         product = product_service.update_product_revision(
             product_id=int(pk),
-            data=product_dto.model_dump(exclude_unset=True, exclude={"contracts", "services"}),
+            data=product_dto.model_dump(exclude_unset=True, exclude={"contracts"}),
             scopes=request.get_token_scopes,
             last_editor=last_editor,
         )
