@@ -2343,7 +2343,7 @@ class TestViews:
         contract.refresh_from_db()
         assert contract.distributions.count() == 0
 
-    def test_distribution_update_fails_on_published_contract(
+    def test_distribution_update_fails_on_published_contract_requires_revision_flow(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.filter(publication_status="P").first()
@@ -2357,12 +2357,12 @@ class TestViews:
         )
 
         assert response.status_code == 400
-        assert "revision" in response.data
+        assert "revision flow" in response.data
 
         distribution.refresh_from_db()
         assert distribution.format == ("csv" if distribution.download_url else None)
 
-    def test_distribution_delete_fails_on_published_contract(
+    def test_distribution_delete_fails_on_published_contract_requires_revision_flow(
         self, orm_product, orm_team, client_with_token
     ):
         contract = orm_product.contracts.filter(publication_status="P").first()
@@ -2375,7 +2375,7 @@ class TestViews:
         )
 
         assert response.status_code == 400
-        assert "revision" in response.data
+        assert "revision flow" in response.data
 
         contract.refresh_from_db()
         assert contract.distributions.count() == 2
@@ -2423,6 +2423,22 @@ class TestViews:
             data=data,
         )
         assert response.status_code == 201
+
+    def test_live_distribution_create_fails_on_published_contract_requires_revision_flow(
+        self, orm_product, orm_team, client_with_token
+    ):
+        contract = orm_product.contracts.filter(publication_status="P").first()
+        assert contract is not None
+
+        response = client_with_token([orm_team.scope]).post(
+            f"/products/{orm_product.id}/contracts/{contract.id}/distributions",
+            data={"format": "geojson", "type": "F"},
+        )
+
+        assert response.status_code == 400
+        assert "revision flow" in response.data
+        contract.refresh_from_db()
+        assert contract.distributions.count() == 2
 
     def test_distribution_create_empty(self, orm_product, orm_team, client_with_token):
         contract = orm_product.contracts.filter(publication_status="D").first()
@@ -2581,6 +2597,7 @@ class TestViews:
         )
 
         assert response.status_code == 400
+        assert "service revision flow" in response.data
 
     def test_service_revision_update_keeps_live_service_unchanged_and_exposes_metadata(
         self, orm_product, orm_team, client_with_token
