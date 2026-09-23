@@ -1,4 +1,5 @@
 import copy
+from datetime import UTC, datetime
 
 from domain import exceptions
 from domain.auth import ProductId, Scope, authorize
@@ -25,29 +26,15 @@ class ProductService(AbstractService):
             )
         self.auth = authorize.auth
 
-    def _normalize_contract_draft_data(self, data: dict) -> dict:
-        distributions = data.get("distributions")
-        if distributions is None:
-            return data
-
+    def _normalize_distribution_data(self, data: dict) -> dict:
         normalized = dict(data)
-        normalized["distributions"] = [
-            Distribution(
-                id=distribution.get("id"),
-                access_url=distribution.get("access_url"),
-                download_url=distribution.get("download_url"),
-                format=distribution.get("format"),
-                filename=distribution.get("filename"),
-                type=distribution.get("type"),
-                refresh_period=(
-                    RefreshPeriod.from_dict(distribution["refresh_period"])
-                    if distribution.get("refresh_period")
-                    else None
-                ),
-                crs=distribution.get("crs"),
+        refresh_period = normalized.get("refresh_period")
+        if refresh_period:
+            normalized["refresh_period"] = (
+                refresh_period
+                if isinstance(refresh_period, RefreshPeriod)
+                else RefreshPeriod.from_dict(refresh_period)
             )
-            for distribution in distributions
-        ]
         return normalized
 
     @authorize.is_admin
@@ -481,7 +468,6 @@ class ProductService(AbstractService):
         except exceptions.ObjectDoesNotExist:
             revision_contract = copy.deepcopy(live_contract)
 
-        data = self._normalize_contract_draft_data(data)
         revision_contract.publication_status = enums.PublicationStatus.DRAFT
         revision_contract.update_from_dict(data)
         revision_contract.publication_status = live_contract.publication_status
@@ -490,6 +476,123 @@ class ProductService(AbstractService):
             product_id=product_id,
             contract=revision_contract,
         )
+
+    def _get_contract_revision_for_distribution_reads(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> DataContract:
+        live_contract = self._get_contract_for_revision(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        try:
+            return self.repository.get_contract_revision(
+                product_id=product_id,
+                contract_id=contract_id,
+            )
+        except exceptions.ObjectDoesNotExist:
+            return live_contract
+
+    def _get_contract_revision_for_distribution_mutation(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> tuple[DataContract, DataContract]:
+        live_contract = self._get_contract_for_revision(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        try:
+            revision_contract = self.repository.get_contract_revision(
+                product_id=product_id,
+                contract_id=contract_id,
+            )
+        except exceptions.ObjectDoesNotExist:
+            revision_contract = copy.deepcopy(live_contract)
+
+        revision_contract.publication_status = enums.PublicationStatus.DRAFT
+        revision_contract.publication_date = None
+        return live_contract, revision_contract
+
+    def _save_contract_distribution_revision(
+        self,
+        *,
+        product_id: int,
+        live_contract: DataContract,
+        revision_contract: DataContract,
+    ) -> DataContract:
+        revision_contract.publication_status = live_contract.publication_status
+        revision_contract.publication_date = live_contract.publication_date
+        return self.repository.save_contract_revision(
+            product_id=product_id,
+            contract=revision_contract,
+        )
+
+    def _get_distribution_from_contract(
+        self,
+        *,
+        contract: DataContract,
+        distribution_id: int,
+    ) -> Distribution:
+        try:
+            return next(
+                distribution
+                for distribution in contract.distributions
+                if distribution.id == distribution_id
+            )
+        except StopIteration:
+            raise exceptions.ObjectDoesNotExist(
+                f"Distribution with id {distribution_id} does not exist on contract "
+                f"with id {contract.id}"
+            ) from None
+
+    def _update_distribution_on_contract(
+        self,
+        *,
+        contract: DataContract,
+        distribution_id: int,
+        data: dict,
+    ) -> Distribution:
+        contract.validate.can_update()
+        distribution = self._get_distribution_from_contract(
+            contract=contract,
+            distribution_id=distribution_id,
+        )
+        distribution.update_from_dict(data)
+        if refresh_period := data.get("refresh_period"):
+            distribution.refresh_period = refresh_period
+        contract.last_updated = datetime.now(tz=UTC)
+        return distribution
+
+    def _delete_distribution_from_contract(
+        self,
+        *,
+        contract: DataContract,
+        distribution_id: int,
+    ) -> int:
+        self._get_distribution_from_contract(
+            contract=contract,
+            distribution_id=distribution_id,
+        )
+        contract.validate.can_update()
+        contract.distributions = [
+            distribution
+            for distribution in contract.distributions
+            if distribution.id != distribution_id
+        ]
+        contract.last_updated = datetime.now(tz=UTC)
+        return distribution_id
 
     @authorize.is_admin
     @authorize.is_team_member
@@ -611,6 +714,46 @@ class ProductService(AbstractService):
         product = self.get_product(product_id=product_id, scopes=scopes, **kwargs)
         return product.get_contract(contract_id).distributions
 
+    @authorize.is_admin
+    @authorize.is_team_member
+    def get_distribution_revisions(
+        self,
+        product_id: int,
+        contract_id: int,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> list[Distribution]:
+        contract = self._get_contract_revision_for_distribution_reads(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        return contract.distributions
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def get_distribution_revision(
+        self,
+        product_id: int,
+        contract_id: int,
+        distribution_id: int,
+        *,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> Distribution:
+        contract = self._get_contract_revision_for_distribution_reads(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        return self._get_distribution_from_contract(
+            contract=contract,
+            distribution_id=distribution_id,
+        )
+
     def get_distribution(
         self,
         product_id: int,
@@ -636,10 +779,9 @@ class ProductService(AbstractService):
             contract_id=contract_id,
             **kwargs,
         )
-        refresh_period = data.pop("refresh_period", None)
+        normalized_data = self._normalize_distribution_data(data)
         distribution = Distribution(
-            **data,
-            refresh_period=(RefreshPeriod.from_dict(refresh_period) if refresh_period else None),
+            **normalized_data,
         )
         product.add_distribution_to_contract(contract_id, distribution)
         updated_product = self._persist(product)
@@ -655,7 +797,11 @@ class ProductService(AbstractService):
             contract_id=contract_id,
             **kwargs,
         )
-        distribution = product.update_distribution(contract_id, distribution_id, data)
+        distribution = product.update_distribution(
+            contract_id,
+            distribution_id,
+            self._normalize_distribution_data(data),
+        )
         self._persist(product)
         return distribution
 
@@ -671,6 +817,91 @@ class ProductService(AbstractService):
         )
         product.delete_distribution(contract_id, distribution_id)
         self._persist(product)
+        return distribution_id
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def create_distribution_revision(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        data: dict,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> Distribution:
+        live_contract, revision_contract = self._get_contract_revision_for_distribution_mutation(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        distribution = Distribution(**self._normalize_distribution_data(data))
+        revision_contract.distributions.append(distribution)
+        revision_contract.last_updated = datetime.now(tz=UTC)
+        updated_contract = self._save_contract_distribution_revision(
+            product_id=product_id,
+            live_contract=live_contract,
+            revision_contract=revision_contract,
+        )
+        return updated_contract.distributions[-1]
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def update_distribution_revision(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        distribution_id: int,
+        data: dict,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> Distribution:
+        live_contract, revision_contract = self._get_contract_revision_for_distribution_mutation(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        distribution = self._update_distribution_on_contract(
+            contract=revision_contract,
+            distribution_id=distribution_id,
+            data=self._normalize_distribution_data(data),
+        )
+        self._save_contract_distribution_revision(
+            product_id=product_id,
+            live_contract=live_contract,
+            revision_contract=revision_contract,
+        )
+        return distribution
+
+    @authorize.is_admin
+    @authorize.is_team_member
+    def delete_distribution_revision(
+        self,
+        *,
+        product_id: int,
+        contract_id: int,
+        distribution_id: int,
+        scopes: list[Scope] | None = None,
+        **kwargs,
+    ) -> int:
+        live_contract, revision_contract = self._get_contract_revision_for_distribution_mutation(
+            product_id=product_id,
+            contract_id=contract_id,
+            scopes=scopes,
+            **kwargs,
+        )
+        self._delete_distribution_from_contract(
+            contract=revision_contract,
+            distribution_id=distribution_id,
+        )
+        self._save_contract_distribution_revision(
+            product_id=product_id,
+            live_contract=live_contract,
+            revision_contract=revision_contract,
+        )
         return distribution_id
 
     @authorize.is_admin
