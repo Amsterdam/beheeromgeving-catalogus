@@ -17,7 +17,7 @@ dependencies = [
     "django-healthchecks==1.5.0",
     "djangorestframework==3.18.1",
     "drf-spectacular==0.30.0",
-    "psycopg==3.3.5",
+    "psycopg==3.3.6",
     "pydantic[email]==2.13.5",
     "python-dateutil==2.9.0.post0",
     "python-json-logger==4.2.0",
@@ -33,7 +33,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "debugpy==1.8.21",
+    "debugpy==1.8.22",
     "django-coverage-plugin==3.2.2",
     "django-debug-toolbar==8.0.0",
     "django-extensions==4.1",
@@ -44,7 +44,7 @@ dev = [
     "pytest-django==4.14.0",
     "pytest-sugar==1.1.1",
     "requests-mock==1.12.1",
-    "ruff==0.16.7",
+    "ruff==0.16.8",
     "termcolor==3.3.0",
     "ty>=0.0.69",
 ]
