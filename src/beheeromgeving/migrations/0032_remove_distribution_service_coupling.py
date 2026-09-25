@@ -12,11 +12,15 @@ def delete_service_linked_distributions(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    atomic = False
+
     dependencies = [
         ("beheeromgeving", "0031_productrevision_source_last_updated"),
     ]
 
     operations = [
+        # PostgreSQL keeps FK trigger work from the deletes pending until commit.
+        # This migration must commit the data cleanup before altering Distribution.
         migrations.RunPython(
             delete_service_linked_distributions,
             reverse_code=migrations.RunPython.noop,
