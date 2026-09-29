@@ -7,8 +7,8 @@ from locust.env import Environment
 from locust.stats import stats_history, stats_printer
 
 from integration_tests import settings
-from integration_tests.user import CatalogusUser
-from integration_tests.utils import get_entra_token  # , get_keycloak_token
+from integration_tests.users import AuthorizedUser, CatalogusUser
+from integration_tests.utils import get_entra_token, get_keycloak_token
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 @events.test_start.add_listener
 def _(environment, **kwargs):
     environment.entra_token = get_entra_token()
-    # environment.keycloak_token = get_keycloak_token()
+    environment.keycloak_token = get_keycloak_token()
 
 
 @events.test_stop.add_listener
@@ -35,7 +35,7 @@ def analyze_results(environment, **kwargs):
 
 def run_tests(endpoints, **kwargs):
     # setup Environment and Runner
-    env = Environment(user_classes=[CatalogusUser], events=events, tags=endpoints)
+    env = Environment(user_classes=[CatalogusUser, AuthorizedUser], events=events, tags=endpoints)
     runner = env.create_local_runner()
 
     # start a greenlet that periodically outputs the current stats
@@ -45,7 +45,7 @@ def run_tests(endpoints, **kwargs):
     gevent.spawn(stats_history, env.runner)
 
     # start the test
-    runner.start(user_count=1, spawn_rate=1)
+    runner.start(user_count=2, spawn_rate=1)
 
     # in 30 seconds stop the runner
     gevent.spawn_later(30, runner.quit)

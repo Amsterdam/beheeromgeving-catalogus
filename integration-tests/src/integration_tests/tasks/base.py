@@ -1,14 +1,5 @@
 from locust import TaskSet, task
 
-# USER STORIES:
-# Als medewerker van amsterdam wil ik een succesvol get request kunnen maken naar het /products
-# endpoint met een keycloak authorisatie token.
-# Als anonieme gebruiker wil ik een succesvol get request kunnen maken naar het /products endpoint.
-# Als admin wil ik een succesvol get request kunnen maken naar het /me endpoint met een
-# entra authorisatie token.
-# Als teamlid wil ik een succesvol get request kunnen maken naar het /me endpoint met een entra
-# authorisatie token.
-
 
 class BaseTaskSet(TaskSet):
     path: str = ""

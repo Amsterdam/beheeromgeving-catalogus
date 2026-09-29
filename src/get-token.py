@@ -20,6 +20,7 @@ now = int(time.time())
 claims = {
     "iat": now,
     "exp": now + valid,
+    "iss": "iss",
     "scopes": scopes,
     "sub": "test@tester.nl",
 }
