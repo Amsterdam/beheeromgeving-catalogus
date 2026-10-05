@@ -283,8 +283,12 @@ if CLOUD_ENV.startswith("azure"):
                 and hasattr(request, "get_token_claims")
                 and (email := request.get_token_claims.get("email", request.get_token_subject))
             ):
+                scopes = getattr(request, "get_token_scopes", "")
                 span.set_attribute("user.AuthenticatedId", email)
-                span.set_attribute("user.Scopes", getattr(request, "get_token_scopes", []))
+                span.set_attribute(
+                    "user.Scopes",
+                    scopes if isinstance(scopes, str) else ", ".join(scopes),
+                )
 
         DjangoInstrumentor().instrument(response_hook=response_hook)
         print("Django instrumentor enabled")
