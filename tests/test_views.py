@@ -150,7 +150,7 @@ class TestViews:
         assert product["endorsement"] == orm_product.endorsement
         assert product["created_at"] == orm_product.created_at
         assert product["summary"] == {
-            "availability": ["API", "FILE"],
+            "availability": ["API", "DASHBOARD", "FILE"],
             "service_types": ["REST"],
             "file_formats": ["CSV"],
         }

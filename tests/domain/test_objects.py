@@ -44,11 +44,9 @@ class TestProduct:
             contracts=[
                 DataContract(
                     distributions=[
-                        Distribution(type=enums.DistributionType.API),
                         Distribution(type=enums.DistributionType.FILE, format="csv"),
                         Distribution(type=enums.DistributionType.FILE, format="geojson"),
                         Distribution(type=enums.DistributionType.FILE, format="csv"),
-                        Distribution(type=enums.DistributionType.API, format="json"),
                         Distribution(format="xml"),
                     ]
                 )

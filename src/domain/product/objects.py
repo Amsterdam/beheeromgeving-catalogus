@@ -442,6 +442,7 @@ class Product(BaseObject):
 
     @property
     def summary(self) -> dict[str, list[str]]:
+        service_types = sorted({s.type.name for s in self.services if s.type is not None})
         availability = sorted(
             {
                 d.type.name
@@ -450,6 +451,8 @@ class Product(BaseObject):
                 if d.type is not None
             }
         )
+        if service_types:
+            availability.insert(0, "API")
         file_formats = sorted(
             {
                 d.format.upper()
@@ -458,9 +461,10 @@ class Product(BaseObject):
                 if d.format is not None and d.type == enums.DistributionType.FILE
             }
         )
+
         return {
             "availability": availability,
-            "service_types": sorted({s.type.name for s in self.services if s.type is not None}),
+            "service_types": service_types,
             "file_formats": file_formats,
         }
 

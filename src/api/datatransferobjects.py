@@ -382,6 +382,8 @@ class ProductList(ModelMixin, BaseModel):
         )
 
         availability = set()
+        if service_types:
+            availability.add("API")
         file_formats = set()
         for distribution in distributions:
             if distribution.type is None:

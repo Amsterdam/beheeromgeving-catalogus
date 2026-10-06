@@ -104,7 +104,7 @@ class TestProductDTOValidation:
             publication_date="2024-01-01T00:00:00Z",
         )
 
-        service_wms = DataService.objects.create(
+        DataService.objects.create(
             product=product,
             type="WMS",
             endpoint_url="https://api.data.amsterdam.nl/v1/bomen/wms",
@@ -139,11 +139,6 @@ class TestProductDTOValidation:
             download_url="https://bomen.amsterdam.nl/beheer.geojson",
             format="geojson",
             type="F",
-        )
-        Distribution.objects.create(
-            contract=contract,
-            access_service=service_wms,
-            type="A",
         )
         Distribution.objects.create(
             contract=contract,
