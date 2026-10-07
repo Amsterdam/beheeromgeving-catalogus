@@ -30,4 +30,8 @@ RUN chown integration_tests:integration_tests /app
 COPY --from=builder --chown=integration_tests:integration_tests /app /app
 USER integration_tests
 
+# Zet hier iets om env mee te nemen in deploy,
+# daar gebruiken we wel python src/get-token.py cataloguscms-ota-admin
+# en python src/get-token.py FP/MDW vgm?
+
 ENTRYPOINT ["uv", "run", "catalogus-test"]

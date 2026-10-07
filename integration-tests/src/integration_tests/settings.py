@@ -8,25 +8,22 @@ CATALOGUS_URL = os.environ.get("CATALOGUS_URL", "http://localhost:8096")
 DEBUG = os.environ.get("DEBUG", False)
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG" if DEBUG else "INFO").upper()
 ALLOWED_FAILURES = int(os.environ.get("ALLOWED_FAILURES", 0))
-# For local development we use a token from the environment
-TOKEN = os.environ.get("TOKEN")
-KEYCLOAK_TOKEN = os.environ.get("TOKEN")
+# On Azure we'll get a token from the app registration
+TENANT_ID = os.environ.get("TENANT_ID")
+AUDIENCE = os.environ.get("AUDIENCE")
+CLIENT_ID = os.environ.get("CLIENT_ID")
+SCOPE = os.environ.get("SCOPE", f"{AUDIENCE}/.default")
+_USE_SECRET_STORE = Path("/mnt/secrets-store").exists()
+
+if _USE_SECRET_STORE:
+    CLIENT_SECRET = Path("/mnt/secrets-store/dso-integration-tests-client-secret").read_text()
+else:
+    CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 
 if CLOUD_ENV.startswith("azure"):
     TOKEN = None
-
-    # On Azure we'll get a token from the app registration
-    TENANT_ID = os.environ.get("TENANT_ID")
-    AUDIENCE = os.environ.get("AUDIENCE")
-    CLIENT_ID = os.environ.get("CLIENT_ID")
-    SCOPE = os.environ.get("SCOPE", f"{AUDIENCE}/.default")
-
-    _USE_SECRET_STORE = Path("/mnt/secrets-store").exists()
-
-    if _USE_SECRET_STORE:
-        CLIENT_SECRET = Path("/mnt/secrets-store/dso-integration-tests-client-secret").read_text()
-    else:
-        CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+    ADMIN_TOKEN = None
+    TEAM_TOKEN = None
 
     if not TENANT_ID:
         raise ImproperlyConfigured("Missing TENTANT_ID environment variable")
@@ -39,3 +36,5 @@ if CLOUD_ENV.startswith("azure"):
 else:
     # For local development we use a token from the environment
     TOKEN = os.environ.get("TOKEN")
+    ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")
+    TEAM_TOKEN = os.environ.get("TEAM_TOKEN")

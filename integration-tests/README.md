@@ -14,11 +14,12 @@ Requirements:
 
 The easiest way to run these integration tests is by using Docker Compose. This will also start Beheeromgeving Datacatalogus.
 
-To be able to run the tests you will need a valid token to be able to make the requests. The easiest way is to set up
-direnv with an `.envrc` file or export a token from the command line:
+To be able to run the tests you will need a valid token to be able to make the requests. The easiest way is to set up direnv with an `.envrc` file or export a token from the command line:
 
 ```shell
-export TOKEN="$(docker compose run web python get-token.py FP/MDW)"
+export TOKEN="$(docker compose run web python get-token.py <employee_scope>)"
+export TEAM_TOKEN="$(docker compose run web python get-token.py <team_scope>)"
+export ADMIN_TOKEN="$(docker compose run web python get-token.py <admin_scope>)"
 ```
 
 The catalogus test container has both the `me` and `products` endpoint available. After having a valid token in your environment you'll be able to start the tests using:

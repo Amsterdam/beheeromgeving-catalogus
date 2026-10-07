@@ -12,6 +12,8 @@ services:
         condition: service_healthy
     environment:
       TOKEN: "${TOKEN}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN}"
+      TEAM_TOKEN: "${TEAM_TOKEN}"
       CATALOGUS_URL: "${CATALOGUS_URL:-http://web:8000}"
 
 # start web, wait until web health check passes, start tests container
