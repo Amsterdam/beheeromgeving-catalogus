@@ -37,9 +37,6 @@ def analyze_results(environment, **kwargs):
 def run_tests(endpoints, **kwargs):
     # setup Environment and Runner
     env = Environment(user_classes=[CatalogusUser], events=events, tags=endpoints)
-    # env.employee_token = get_token(settings.TOKEN) if settings.TOKEN else None
-    # env.team_token = get_token(settings.TEAM_TOKEN) if settings.TEAM_TOKEN else None
-    # env.admin_token = get_token(settings.ADMIN_TOKEN) if settings.ADMIN_TOKEN else None
     runner = env.create_local_runner()
 
     # start a greenlet that periodically outputs the current stats

@@ -44,9 +44,7 @@ class Me(BaseTaskSet):
         with self.client.get(url, catch_response=True) as response:
             self.response_json_or_failure(response, "Failed to retrieve data")
 
-            if (
-                response.status_code == 200 and len(response["teams"]) > 1
-            ):  # and {"teams":[],"products":{"count":0,"next":null,"previous":null,"results":[]}}
+            if response.status_code == 200 and len(response["teams"]) > 1:
                 response.success()
 
     @task
