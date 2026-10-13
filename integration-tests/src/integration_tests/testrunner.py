@@ -46,7 +46,7 @@ def run_tests(endpoints, **kwargs):
     gevent.spawn(stats_history, env.runner)
 
     # start the test
-    runner.start(user_count=2, spawn_rate=1)
+    runner.start(user_count=1, spawn_rate=1)
 
     # in 30 seconds stop the runner
     gevent.spawn_later(30, runner.quit)

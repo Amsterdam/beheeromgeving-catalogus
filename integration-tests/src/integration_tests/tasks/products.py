@@ -21,6 +21,9 @@ class Products(BaseTaskSet):
         with self.client.get(url, catch_response=True) as response:
             self.response_json_or_failure(response, "Failed to retrieve product data")
 
+            if response.status_code == 200:
+                response.success()
+
     @task
     def employee_request_to_products_endpoint(self):
         url = self.user.base_url + "products/55"
@@ -29,22 +32,8 @@ class Products(BaseTaskSet):
         )
         with self.client.get(url, catch_response=True) as response:
             self.response_json_or_failure(response, "Failed to retrieve product data")
-
-    @task
-    def team_member_request_to_products_endpoint(self):
-        url = self.user.base_url + "products/55"
-        self.client.headers.update({"Authorization": f"Bearer {self.user.environment.team_token}"})
-        with self.client.get(url, catch_response=True) as response:
-            self.response_json_or_failure(response, "Failed to retrieve product data")
-
-    @task
-    def admin_request_to_products_endpoint(self):
-        url = self.user.base_url + "products/55"
-        self.client.headers.update(
-            {"Authorization": f"Bearer {self.user.environment.admin_token}"}
-        )
-        with self.client.get(url, catch_response=True) as response:
-            self.response_json_or_failure(response, "Failed to retrieve product data")
+            if response.status_code == 200:
+                response.success()
 
     @task
     def anonymous_request_internal_products(self):
@@ -63,3 +52,26 @@ class Products(BaseTaskSet):
         )
         with self.client.get(url, catch_response=True) as response:
             self.response_json_or_failure(response, "Failed to retrieve product data")
+
+            if response.status_code == 200:
+                response.success()
+
+    @task
+    def team_member_request_to_products_endpoint(self):
+        url = self.user.base_url + "products/339"
+        self.client.headers.update({"Authorization": f"Bearer {self.user.environment.team_token}"})
+        with self.client.get(url, catch_response=True) as response:
+            self.response_json_or_failure(response, "Failed to retrieve product data")
+            if response.status_code == 200:
+                response.success()
+
+    @task
+    def admin_request_to_products_endpoint(self):
+        url = self.user.base_url + "products/339"
+        self.client.headers.update(
+            {"Authorization": f"Bearer {self.user.environment.admin_token}"}
+        )
+        with self.client.get(url, catch_response=True) as response:
+            self.response_json_or_failure(response, "Failed to retrieve product data")
+            if response.status_code == 200:
+                response.success()
