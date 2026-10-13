@@ -16,7 +16,9 @@ SCOPE = os.environ.get("SCOPE", f"{AUDIENCE}/.default")
 _USE_SECRET_STORE = Path("/mnt/secrets-store").exists()
 
 if _USE_SECRET_STORE:
-    CLIENT_SECRET = Path("/mnt/secrets-store/dso-integration-tests-client-secret").read_text()
+    CLIENT_SECRET = Path(
+        "/mnt/secrets-store/catalogus-integration-tests-client-secret"
+    ).read_text()
 else:
     CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 
