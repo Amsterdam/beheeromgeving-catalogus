@@ -166,3 +166,9 @@ max-complexity = 10
 "docs/_ext/djangodummy/settings.py" = ["S105"]  # allow hardcoded SECRET_KEY
 "tests/settings.py" = ["F405"]  # allow unknown variables via import from *
 "tests/**/*.py" = ["DJ008", "S101", "S105", "S106", "S314", "S320", "S608"]  # allow asserts, hardcoded passwords, lxml parsing, SQL injection
+
+[tool.ty.rules]
+all = "warn"
+
+[tool.ty.terminal]
+error-on-warning = false
