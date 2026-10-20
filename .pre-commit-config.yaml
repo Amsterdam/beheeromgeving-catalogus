@@ -46,5 +46,6 @@ repos:
     rev: v0.0.89
     hooks:
       - id: ty
+        verbose: true
         # Match Docker's Python when uv installs the project dependencies.
         args: [--python=3.14]
