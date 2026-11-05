@@ -1095,7 +1095,7 @@ class TestViews:
         )
 
     def test_product_detail_makes_revision_discoverable(
-        self, orm_product, orm_team, client_with_token
+        self, orm_product, orm_team, client_with_token, script_prefix
     ):
         client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/revision",
@@ -1108,7 +1108,7 @@ class TestViews:
         assert response.data["name"] == "Bomen"
         assert response.data["has_revision"] is True
         assert response.data["revision_url"] == (
-            f"http://testserver/products/{orm_product.id}/revision"
+            f"http://testserver{script_prefix}/products/{orm_product.id}/revision"
         )
 
     def test_product_revision_detail_fails_for_non_published_product(
@@ -1825,7 +1825,7 @@ class TestViews:
         assert updated_distribution["filename"] == "draft.geojson"
 
     def test_contract_detail_makes_revision_discoverable(
-        self, orm_product, orm_team, client_with_token
+        self, orm_product, orm_team, client_with_token, script_prefix
     ):
         contract_id = orm_product.contracts.first().id
 
@@ -1842,7 +1842,8 @@ class TestViews:
         assert response.data["name"] == "beheer bomen"
         assert response.data["has_revision"] is True
         assert response.data["revision_url"] == (
-            f"http://testserver/products/{orm_product.id}/contracts/{contract_id}/revision"
+            f"http://testserver{script_prefix}/products/{orm_product.id}"
+            f"/contracts/{contract_id}/revision"
         )
 
     def test_contract_revision_can_be_published(self, orm_product, orm_team, client_with_token):
@@ -2125,7 +2126,7 @@ class TestViews:
         assert live_detail_response.data["filename"] != "draft.geojson"
 
     def test_distribution_detail_makes_revision_discoverable(
-        self, orm_product, orm_team, client_with_token
+        self, orm_product, orm_team, client_with_token, script_prefix
     ):
         contract = orm_product.contracts.first()
         contract_id = contract.id
@@ -2145,7 +2146,7 @@ class TestViews:
         assert response.data["filename"] != "draft.geojson"
         assert response.data["has_revision"] is True
         assert response.data["revision_url"] == (
-            "http://testserver/products/"
+            f"http://testserver{script_prefix}/products/"
             f"{orm_product.id}/contracts/{contract_id}/revision/distributions/{distribution.id}"
         )
 
@@ -2693,7 +2694,7 @@ class TestViews:
         assert "service revision flow" in response.data
 
     def test_service_revision_update_keeps_live_service_unchanged_and_exposes_metadata(
-        self, orm_product, orm_team, client_with_token
+        self, orm_product, orm_team, client_with_token, script_prefix
     ):
         live_service_id = orm_product.services.first().id
 
@@ -2713,7 +2714,8 @@ class TestViews:
         assert live_detail_response.data["type"] == "REST"
         assert live_detail_response.data["has_revision"] is True
         assert live_detail_response.data["revision_url"] == (
-            f"http://testserver/products/{orm_product.id}/revision/services/{live_service_id}"
+            f"http://testserver{script_prefix}/products/{orm_product.id}"
+            f"/revision/services/{live_service_id}"
         )
 
         revision_detail_response = client_with_token([orm_team.scope]).get(
@@ -2936,7 +2938,9 @@ class TestViews:
         ]:
             assert key in response.data["products"]["results"][0]["contracts"][0]
 
-    def test_me_includes_product_revision_metadata(self, orm_product, orm_team, client_with_token):
+    def test_me_includes_product_revision_metadata(
+        self, orm_product, orm_team, client_with_token, script_prefix
+    ):
         patch_response = client_with_token([orm_team.scope]).patch(
             f"/products/{orm_product.id}/revision",
             data={"name": "New Name"},
@@ -2948,10 +2952,12 @@ class TestViews:
         assert response.status_code == 200
         product = response.data["products"]["results"][0]
         assert product["has_revision"] is True
-        assert product["revision_url"] == f"http://testserver/products/{orm_product.id}/revision"
+        assert product["revision_url"] == (
+            f"http://testserver{script_prefix}/products/{orm_product.id}/revision"
+        )
 
     def test_me_includes_contract_revision_metadata(
-        self, orm_product, orm_team, client_with_token
+        self, orm_product, orm_team, client_with_token, script_prefix
     ):
         contract_id = orm_product.contracts.first().id
 
@@ -2967,8 +2973,45 @@ class TestViews:
         contract = response.data["products"]["results"][0]["contracts"][0]
         assert contract["has_revision"] is True
         assert contract["revision_url"] == (
-            f"http://testserver/products/{orm_product.id}/contracts/{contract_id}/revision"
+            f"http://testserver{script_prefix}/products/{orm_product.id}"
+            f"/contracts/{contract_id}/revision"
         )
+
+    def test_revision_urls_without_pending_revision(
+        self, orm_product, orm_draft_product, orm_team, client_with_token, script_prefix
+    ):
+        client = client_with_token([orm_team.scope])
+        base_url = f"http://testserver{script_prefix}"
+
+        for product in (orm_product, orm_draft_product):
+            suffix = "/revision" if product.publication_status == "P" else ""
+            response = client.get(f"/products/{product.id}")
+            assert response.status_code == 200
+            assert response.data["has_revision"] is False
+            assert response.data["revision_url"] == f"{base_url}/products/{product.id}{suffix}"
+
+            for contract in product.contracts.all():
+                suffix = "/revision" if contract.publication_status == "P" else ""
+                response = client.get(f"/products/{product.id}/contracts/{contract.id}")
+                assert response.status_code == 200
+                assert response.data["has_revision"] is False
+                assert response.data["revision_url"] == (
+                    f"{base_url}/products/{product.id}/contracts/{contract.id}{suffix}"
+                )
+
+        response = client.get("/me")
+        assert response.status_code == 200
+        assert len(response.data["products"]["results"]) == 2
+        for product in response.data["products"]["results"]:
+            suffix = "/revision" if product["publication_status"] == "P" else ""
+            assert product["has_revision"] is False
+            assert product["revision_url"] == f"{base_url}/products/{product['id']}{suffix}"
+            for contract in product["contracts"]:
+                suffix = "/revision" if contract["publication_status"] == "P" else ""
+                assert contract["has_revision"] is False
+                assert contract["revision_url"] == (
+                    f"{base_url}/products/{product['id']}/contracts/{contract['id']}{suffix}"
+                )
 
     def test_me_admin_scope(
         self, orm_product, orm_product2, orm_team, orm_other_team, client_with_token
