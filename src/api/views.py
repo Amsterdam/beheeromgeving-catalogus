@@ -1,5 +1,6 @@
 from typing import overload
 
+from django.urls import reverse
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from pydantic import BaseModel, ValidationError
 from rest_framework.decorators import action, api_view
@@ -149,11 +150,20 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
         # Raises if data is invalid
         return dto_type(**data)
 
-    def _attach_revision_metadata(self, *, request, data: dict, base_path: str):
-        path = (
-            f"{base_path}/revision"
+    def _attach_revision_metadata(
+        self,
+        *,
+        request,
+        data: dict,
+        url_name: str,
+        revision_url_name: str,
+        url_kwargs: dict[str, str],
+    ):
+        path = reverse(
+            revision_url_name
             if data["has_revision"] or data["publication_status"] == "P"
-            else base_path
+            else url_name,
+            kwargs=url_kwargs,
         )
         data["revision_url"] = request.build_absolute_uri(path)
         return data
@@ -161,7 +171,10 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     def _attach_service_revision_metadata(self, *, request, data: dict, product_id: str):
         if data.get("has_revision"):
             data["revision_url"] = request.build_absolute_uri(
-                f"/products/{product_id}/revision/services/{data['id']}"
+                reverse(
+                    "products-revision-service-detail",
+                    kwargs={"pk": product_id, "service_id": data["id"]},
+                )
             )
         return data
 
@@ -170,8 +183,14 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
     ):
         if data.get("has_revision"):
             data["revision_url"] = request.build_absolute_uri(
-                "/products/"
-                f"{product_id}/contracts/{contract_id}/revision/distributions/{data['id']}"
+                reverse(
+                    "products-revision-distribution-detail",
+                    kwargs={
+                        "pk": product_id,
+                        "contract_id": contract_id,
+                        "distribution_id": data["id"],
+                    },
+                )
             )
         return data
 
@@ -260,7 +279,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             self._attach_revision_metadata(
                 request=request,
                 data=data,
-                base_path=f"/products/{pk}",
+                url_name="products-detail",
+                revision_url_name="products-revision-detail",
+                url_kwargs={"pk": pk},
             ),
             status=200,
         )
@@ -419,7 +440,9 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
             self._attach_revision_metadata(
                 request=request,
                 data=data,
-                base_path=f"/products/{pk}/contracts/{contract_id}",
+                url_name="products-contract-detail",
+                revision_url_name="products-contract-revision-detail",
+                url_kwargs={"pk": pk, "contract_id": contract_id},
             ),
             status=200,
         )
@@ -837,18 +860,20 @@ class ProductViewSet(ExceptionHandlerMixin, ViewSet):
 
 def _attach_product_revision_metadata(*, request, product_data: dict) -> dict:
     product_id = product_data["id"]
-    path = (
-        f"/products/{product_id}/revision"
+    path = reverse(
+        "products-revision-detail"
         if product_data["has_revision"] or product_data["publication_status"] == "P"
-        else f"/products/{product_id}"
+        else "products-detail",
+        kwargs={"pk": product_id},
     )
     product_data["revision_url"] = request.build_absolute_uri(path)
     for contract_data in product_data.get("contracts", []):
         contract_id = contract_data["id"]
-        path = (
-            f"/products/{product_id}/contracts/{contract_id}/revision"
+        path = reverse(
+            "products-contract-revision-detail"
             if contract_data["has_revision"] or contract_data["publication_status"] == "P"
-            else f"/products/{product_id}/contracts/{contract_id}"
+            else "products-contract-detail",
+            kwargs={"pk": product_id, "contract_id": contract_id},
         )
         contract_data["revision_url"] = request.build_absolute_uri(path)
     return product_data

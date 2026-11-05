@@ -3,10 +3,23 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from django.urls import get_script_prefix, set_script_prefix
 from rest_framework.test import APIClient
 
 from beheeromgeving.models import DataContract, DataService, Distribution, Product, Team
 from tests.utils import build_jwt_token
+
+
+@pytest.fixture(params=["", "/catalogus"])
+def script_prefix(request, settings):
+    original_prefix = get_script_prefix()
+    settings.FORCE_SCRIPT_NAME = request.param or None
+    # APIClient bypasses WSGIHandler, which normally sets the URL resolver's prefix.
+    set_script_prefix(request.param or "/")
+    try:
+        yield request.param
+    finally:
+        set_script_prefix(original_prefix)
 
 
 @pytest.fixture()
