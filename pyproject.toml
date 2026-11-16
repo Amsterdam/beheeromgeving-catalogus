@@ -17,7 +17,7 @@ dependencies = [
     "django-healthchecks==1.6.0",
     "djangorestframework==3.18.3",
     "drf-spectacular==0.30.0",
-    "psycopg==3.3.8",
+    "psycopg==3.3.9",
     "pydantic[email]==2.14.3",
     "python-dateutil==4.0.0",
     "python-json-logger==4.2.0",
@@ -44,7 +44,7 @@ dev = [
     "pytest-django==4.14.0",
     "pytest-sugar==1.1.1",
     "requests-mock==1.12.1",
-    "ruff==0.17.4",
+    "ruff==0.17.5",
     "termcolor==3.3.0",
     "ty>=0.0.69",
 ]
